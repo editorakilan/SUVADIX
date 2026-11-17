@@ -25,14 +25,21 @@
   var tool = getToolById(params.get('t')) || getToolById('merge');
   // Check if All-In-One Studio requested
   if (tool.id === 'all-in-one') {
-    window.addEventListener('DOMContentLoaded', function() {
+    function mountAio() {
       var ws = document.getElementById('tool-workspace');
       if (ws && window.AllInOneTool) {
         ws.innerHTML = '<div id="aio-mount" style="padding:10px 0 30px"></div>';
         window.AllInOneTool.render(document.getElementById('aio-mount'));
         if (window.lucide) window.lucide.createIcons();
       }
-    });
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', mountAio);
+    } else {
+      mountAio();
+    }
+    renderToolSeoSection(tool);
+    return;
   }
 
 
@@ -121,7 +128,10 @@
   var cameraStream = null;
 
   // ---- File selection ----
-  function openPicker() { fileInput.click(); }
+  function openPicker(e) {
+    if (e && e.target === fileInput) return;
+    fileInput.click();
+  }
   if (dropzone) {
     dropzone.addEventListener('click', openPicker);
     dropzone.addEventListener('keydown', function (e) {

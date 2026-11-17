@@ -2452,7 +2452,6 @@ function readAsArrayBuffer(file) {
   Engine.loadPdfJsDoc = loadPdfJsDoc;
   Engine.parseRanges = parseRanges;
 
-  
   Engine.formatSize = function (bytes) {
     if (bytes === 0) return '0 B';
     if (!bytes && bytes !== 0) return '';
@@ -2462,15 +2461,42 @@ function readAsArrayBuffer(file) {
     return (bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
   };
 
-  Engine.loadPdfJsDoc = loadPdfJsDoc;
-  Engine.parseRanges = parseRanges;
+  /** 38. ALL-IN-ONE STUDIO ENGINE HANDLER */
+  Engine['all-in-one'] = async function (files, opts, progress) {
+    var file = files[0];
+    progress(50, 'Opening document in All-In-One Studio…');
+    var blob = new Blob([await readAsArrayBuffer(file)], { type: 'application/pdf' });
+    return { files: [{ name: file.name, blob: blob }], note: 'Document ready in All-In-One Studio.' };
+  };
 
-  // Attach all tool methods to both PDFEngine and window.pdfEngine
+  // 1. Explicitly assign Engine to global.PDFEngine
+  global.PDFEngine = Engine;
+  global.PDFEngineHandler = Engine;
+
+  // 2. Ensure global.pdfEngine instance exists
+  if (!global.pdfEngine && typeof PDFEngine === 'function') {
+    global.pdfEngine = new PDFEngine();
+  }
+
+  // 3. Bidirectionally merge methods so PDFEngine and pdfEngine have ALL capabilities
   for (var k in Engine) {
     if (Object.prototype.hasOwnProperty.call(Engine, k)) {
-      if (global.PDFEngine) global.PDFEngine[k] = Engine[k];
+      global.PDFEngine[k] = Engine[k];
       if (global.pdfEngine) global.pdfEngine[k] = Engine[k];
     }
   }
-  global.PDFEngineHandler = Engine;
+
+  if (global.pdfEngine) {
+    var inst = global.pdfEngine;
+    var proto = Object.getPrototypeOf(inst);
+    var names = Object.getOwnPropertyNames(proto);
+    for (var j = 0; j < names.length; j++) {
+      var fnName = names[j];
+      if (fnName !== 'constructor' && typeof inst[fnName] === 'function') {
+        if (!global.PDFEngine[fnName]) {
+          global.PDFEngine[fnName] = inst[fnName].bind(inst);
+        }
+      }
+    }
+  }
 })(window);
