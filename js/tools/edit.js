@@ -728,9 +728,11 @@ const EditTools = {
     const renderPdfPagePreview = async () => {
       if (!pdfDoc) return;
       pageIndicator.innerText = `Page ${currentPageNum} / ${totalPages}`;
-      await window.pdfEngine.renderPageToCanvas(pdfDoc, currentPageNum, pdfCanvas, Math.round(420 * wmZoom));
+      await window.pdfEngine.renderPageToCanvas(pdfDoc, currentPageNum, pdfCanvas, Math.round(650 * wmZoom));
       overlayCanvas.width = pdfCanvas.width;
       overlayCanvas.height = pdfCanvas.height;
+      overlayCanvas.style.width = pdfCanvas.style.width;
+      overlayCanvas.style.height = pdfCanvas.style.height;
       updateOverlay();
     };
 
@@ -1364,25 +1366,38 @@ const EditTools = {
       boxPlaceholder.classList.add('hidden');
     });
 
+    // Helper: get current CSS display dimensions of the rendered PDF canvas
+    const getCanvasCssDimensions = () => {
+      const w = parseFloat(pdfCanvas.style.width) || pdfCanvas.clientWidth || 650;
+      const h = parseFloat(pdfCanvas.style.height) || pdfCanvas.clientHeight || 850;
+      return { w, h };
+    };
+
+    // Normalized signature position & dimensions (0.0 to 1.0 relative to page)
+    let currentNorm = {
+      xRatio: 0.15,
+      yRatio: 0.65,
+      wRatio: 0.35,
+      hRatio: 0.12
+    };
+
     // Sizing slider
     sizeSlider.addEventListener('input', () => {
-      const w = parseInt(sizeSlider.value, 10);
-      const h = Math.round(w * 0.36);
-      sigBox.w = w;
-      sigBox.h = h;
-      dragBox.style.width = `${w}px`;
-      dragBox.style.height = `${h}px`;
-      sizeVal.innerText = `${w} px`;
+      const wPx = parseInt(sizeSlider.value, 10);
+      const dims = getCanvasCssDimensions();
+      currentNorm.wRatio = Math.max(0.1, Math.min(0.9, wPx / dims.w));
+      currentNorm.hRatio = currentNorm.wRatio * 0.36;
 
-      // If current page is placed, update its saved normalized dimensions
+      const newW = Math.round(currentNorm.wRatio * dims.w);
+      const newH = Math.round(currentNorm.hRatio * dims.h);
+      dragBox.style.width = `${newW}px`;
+      dragBox.style.height = `${newH}px`;
+      sizeVal.innerText = `${newW} px`;
+
+      // Update placed signature if active on this page
       const pageIdx = currentPageNum - 1;
-      if (placedSignatures.has(pageIdx) && pdfCanvas.width > 0) {
-        placedSignatures.set(pageIdx, {
-          xRatio: dragBox.offsetLeft / pdfCanvas.width,
-          yRatio: dragBox.offsetTop / pdfCanvas.height,
-          wRatio: w / pdfCanvas.width,
-          hRatio: h / pdfCanvas.height
-        });
+      if (placedSignatures.has(pageIdx)) {
+        placedSignatures.set(pageIdx, { ...currentNorm });
       }
     });
 
@@ -1400,27 +1415,27 @@ const EditTools = {
 
     window.addEventListener('mousemove', (e) => {
       if (!isDraggingBox) return;
+      const dims = getCanvasCssDimensions();
       let newLeft = e.clientX - dragStartX;
       let newTop = e.clientY - dragStartY;
 
-      // Bound within page preview
-      newLeft = Math.max(0, Math.min(newLeft, pageWrapper.offsetWidth - dragBox.offsetWidth));
-      newTop = Math.max(0, Math.min(newTop, pageWrapper.offsetHeight - dragBox.offsetHeight));
+      // Bound strictly within visible page preview
+      newLeft = Math.max(0, Math.min(newLeft, dims.w - dragBox.offsetWidth));
+      newTop = Math.max(0, Math.min(newTop, dims.h - dragBox.offsetHeight));
 
       dragBox.style.left = `${newLeft}px`;
       dragBox.style.top = `${newTop}px`;
-      sigBox.x = newLeft;
-      sigBox.y = newTop;
+
+      // Immediately record normalized position
+      currentNorm.xRatio = newLeft / dims.w;
+      currentNorm.yRatio = newTop / dims.h;
+      currentNorm.wRatio = dragBox.offsetWidth / dims.w;
+      currentNorm.hRatio = dragBox.offsetHeight / dims.h;
 
       // If current page is placed, update its saved normalized position
       const pageIdx = currentPageNum - 1;
-      if (placedSignatures.has(pageIdx) && pdfCanvas.width > 0) {
-        placedSignatures.set(pageIdx, {
-          xRatio: newLeft / pdfCanvas.width,
-          yRatio: newTop / pdfCanvas.height,
-          wRatio: dragBox.offsetWidth / pdfCanvas.width,
-          hRatio: dragBox.offsetHeight / pdfCanvas.height
-        });
+      if (placedSignatures.has(pageIdx)) {
+        placedSignatures.set(pageIdx, { ...currentNorm });
       }
     });
 
@@ -1460,14 +1475,7 @@ const EditTools = {
         placedSignatures.delete(pageIdx);
         UI.showToast(`Removed signature from Page ${currentPageNum}`, 'info');
       } else {
-        if (pdfCanvas.width > 0) {
-          placedSignatures.set(pageIdx, {
-            xRatio: dragBox.offsetLeft / pdfCanvas.width,
-            yRatio: dragBox.offsetTop / pdfCanvas.height,
-            wRatio: dragBox.offsetWidth / pdfCanvas.width,
-            hRatio: dragBox.offsetHeight / pdfCanvas.height
-          });
-        }
+        placedSignatures.set(pageIdx, { ...currentNorm });
         UI.showToast(`Signature placed on Page ${currentPageNum}!`, 'success');
       }
       updatePlacementUI();
@@ -1480,53 +1488,45 @@ const EditTools = {
       jumpInput.max = `${totalPages}`;
       totalPagesSpan.innerText = `${totalPages}`;
 
-      const baseWidth = Math.round(460 * sigZoom);
+      // High base width for crystal-clear vector text supersampling
+      const baseWidth = Math.round(650 * sigZoom);
       await window.pdfEngine.renderPageToCanvas(pdfDoc, currentPageNum, pdfCanvas, baseWidth);
 
-      // Restore position if page already placed, otherwise maintain current position
-      const pageIdx = currentPageNum - 1;
-      if (placedSignatures.has(pageIdx)) {
-        const norm = placedSignatures.get(pageIdx);
-        const newLeft = Math.round(norm.xRatio * pdfCanvas.width);
-        const newTop = Math.round(norm.yRatio * pdfCanvas.height);
-        const newW = Math.round(norm.wRatio * pdfCanvas.width);
-        const newH = Math.round(norm.hRatio * pdfCanvas.height);
+      const dims = getCanvasCssDimensions();
 
-        dragBox.style.left = `${newLeft}px`;
-        dragBox.style.top = `${newTop}px`;
-        dragBox.style.width = `${newW}px`;
-        dragBox.style.height = `${newH}px`;
-        sigBox.x = newLeft;
-        sigBox.y = newTop;
-        sigBox.w = newW;
-        sigBox.h = newH;
-        sizeSlider.value = `${newW}`;
-        sizeVal.innerText = `${newW} px`;
-      } else {
-        // Bound within canvas
-        let curLeft = Math.min(dragBox.offsetLeft, Math.max(0, pdfCanvas.width - dragBox.offsetWidth));
-        let curTop = Math.min(dragBox.offsetTop, Math.max(0, pdfCanvas.height - dragBox.offsetHeight));
-        dragBox.style.left = `${curLeft}px`;
-        dragBox.style.top = `${curTop}px`;
-        sigBox.x = curLeft;
-        sigBox.y = curTop;
-      }
+      // Retrieve normalized position (for placed page or active session position)
+      const pageIdx = currentPageNum - 1;
+      const norm = placedSignatures.get(pageIdx) || currentNorm;
+      currentNorm = { ...norm };
+
+      // Pinpoint positioning locked to the exact same relative spot on the page
+      const newLeft = Math.round(norm.xRatio * dims.w);
+      const newTop = Math.round(norm.yRatio * dims.h);
+      const newW = Math.round(norm.wRatio * dims.w);
+      const newH = Math.round(norm.hRatio * dims.h);
+
+      dragBox.style.left = `${newLeft}px`;
+      dragBox.style.top = `${newTop}px`;
+      dragBox.style.width = `${newW}px`;
+      dragBox.style.height = `${newH}px`;
+      sizeSlider.value = `${newW}`;
+      sizeVal.innerText = `${newW} px`;
 
       updatePlacementUI();
     };
 
-    // Zoom Handlers
+    // Zoom Handlers (Smooth, pinpoint zoom from 60% up to 250%)
     zoomInBtn.addEventListener('click', async () => {
-      if (sigZoom < 2.0) {
-        sigZoom = Math.min(2.0, +(sigZoom + 0.2).toFixed(1));
+      if (sigZoom < 2.5) {
+        sigZoom = Math.min(2.5, +(sigZoom + 0.25).toFixed(2));
         zoomValSpan.innerText = `${Math.round(sigZoom * 100)}%`;
         await renderPdfPage();
       }
     });
 
     zoomOutBtn.addEventListener('click', async () => {
-      if (sigZoom > 0.6) {
-        sigZoom = Math.max(0.6, +(sigZoom - 0.2).toFixed(1));
+      if (sigZoom > 0.5) {
+        sigZoom = Math.max(0.5, +(sigZoom - 0.25).toFixed(2));
         zoomValSpan.innerText = `${Math.round(sigZoom * 100)}%`;
         await renderPdfPage();
       }
@@ -1576,12 +1576,13 @@ const EditTools = {
       placedSignatures.clear();
 
       // Automatically place on page 1 initially
-      placedSignatures.set(0, {
+      currentNorm = {
         xRatio: 0.15,
         yRatio: 0.65,
         wRatio: 0.38,
         hRatio: 0.12
-      });
+      };
+      placedSignatures.set(0, { ...currentNorm });
 
       updateTypedSignature();
       await renderPdfPage();
@@ -1640,14 +1641,15 @@ const EditTools = {
           const page = await pdfDoc.getPage(pIdx + 1);
           const unscaledVp = page.getViewport({ scale: 1.0 });
 
-          // Retrieve normalized position or fall back to current dragBox
+          // Retrieve normalized position or fall back to current session normalized position
+          const dims = getCanvasCssDimensions();
           let norm = placedSignatures.get(pIdx);
           if (!norm) {
             norm = {
-              xRatio: dragBox.offsetLeft / pdfCanvas.width,
-              yRatio: dragBox.offsetTop / pdfCanvas.height,
-              wRatio: dragBox.offsetWidth / pdfCanvas.width,
-              hRatio: dragBox.offsetHeight / pdfCanvas.height
+              xRatio: dragBox.offsetLeft / dims.w,
+              yRatio: dragBox.offsetTop / dims.h,
+              wRatio: dragBox.offsetWidth / dims.w,
+              hRatio: dragBox.offsetHeight / dims.h
             };
           }
 
@@ -1682,6 +1684,834 @@ const EditTools = {
       } catch (err) {
         UI.hideProgress();
         UI.showToast(err.message, 'error');
+      }
+    });
+  },
+
+  // 5. MAJOR PDF CONTENT CORRECTION & EDITING (Sentences, Find & Replace, Whiteout, Images)
+  renderEditPdf(container) {
+    let currentBuffer = null;
+    let currentFile = null;
+    let pdfDoc = null;
+    let currentPageNum = 1;
+    let totalPages = 1;
+    let editZoom = 1.0;
+
+    // Staged edits across pages
+    let stagedEdits = [];
+
+    // Active tool mode: 'replace' | 'text' | 'image' | 'whiteout'
+    let currentMode = 'replace';
+
+    // Image upload state
+    let uploadedImageBuffer = null;
+    let uploadedImageType = 'image/png';
+    let uploadedImageDataUrl = null;
+
+    // Normalized coordinates for active draggable box (0.0 to 1.0 relative to page)
+    let activeBox = {
+      xRatio: 0.12,
+      yRatio: 0.35,
+      wRatio: 0.45,
+      hRatio: 0.08
+    };
+
+    container.innerHTML = `
+      <div class="max-w-6xl mx-auto space-y-6">
+        <div class="text-center space-y-2">
+          <h2 class="text-2xl font-bold tracking-tight">Edit PDF Content & Corrections</h2>
+          <p class="text-sm text-slate-500">Edit sentences, replace text, correct typos, whiteout errors, and replace or insert images.</p>
+        </div>
+
+        <div id="edit-dropzone" class="dropzone p-8 rounded-2xl text-center cursor-pointer hover:border-purple-500 transition">
+          <input type="file" id="edit-file-input" accept="application/pdf" class="hidden">
+          <div class="flex flex-col items-center gap-3">
+            <div class="w-16 h-16 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center">
+              <i data-lucide="edit-3" class="w-8 h-8"></i>
+            </div>
+            <div>
+              <p class="font-semibold text-slate-700">Upload PDF to edit content</p>
+              <p class="text-xs text-slate-400 mt-1" id="edit-file-status">Drag & drop or click</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="edit-workspace" class="grid grid-cols-1 lg:grid-cols-12 gap-6 hidden">
+          <!-- Left Column: Correction Tools -->
+          <div class="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+            <!-- Mode Tabs -->
+            <div class="flex rounded-xl bg-slate-100 p-1">
+              <button id="edit-tab-replace" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-white shadow-sm text-purple-600 transition">Find & Replace</button>
+              <button id="edit-tab-text" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-800 transition">Add / Correct Text</button>
+              <button id="edit-tab-image" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-800 transition">Replace Image</button>
+              <button id="edit-tab-whiteout" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-800 transition">Whiteout</button>
+            </div>
+
+            <!-- PANEL 1: FIND & REPLACE SENTENCE -->
+            <div id="edit-panel-replace" class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Sentence / Text to Find</label>
+                <input type="text" id="edit-find-input" placeholder="e.g. Total Amount: $1,200" class="w-full text-xs font-medium bg-slate-50 p-2.5 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Replace With (New Sentence)</label>
+                <input type="text" id="edit-replace-input" placeholder="e.g. Total Amount: $1,450" class="w-full text-xs font-medium bg-slate-50 p-2.5 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-purple-500">
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-500 mb-1">Font Family</label>
+                  <select id="edit-replace-font" class="w-full text-xs font-medium bg-slate-50 p-2 rounded-xl border border-slate-200 outline-none">
+                    <option value="Helvetica">Helvetica (Standard)</option>
+                    <option value="HelveticaBold">Helvetica Bold</option>
+                    <option value="TimesRoman">Times New Roman</option>
+                    <option value="TimesRomanBold">Times Bold</option>
+                    <option value="Courier">Courier</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-500 mb-1">Font Size</label>
+                  <input type="number" id="edit-replace-size" value="12" min="6" max="48" class="w-full text-xs font-medium bg-slate-50 p-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <label class="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-600">
+                  <input type="checkbox" id="edit-replace-whiteout" checked class="text-purple-600 rounded">
+                  <span>Whiteout old sentence first</span>
+                </label>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs text-slate-500">Color:</span>
+                  <input type="color" id="edit-replace-color" value="#000000" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent">
+                </div>
+              </div>
+
+              <div class="pt-2 flex gap-2">
+                <button id="edit-btn-replace-page" class="flex-1 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold transition flex items-center justify-center gap-1.5">
+                  <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                  <span>Replace on Page <span id="edit-cur-page-replace">1</span></span>
+                </button>
+                <button id="edit-btn-replace-all" class="flex-1 py-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold transition flex items-center justify-center gap-1.5">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                  <span>Replace Across All Pages</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- PANEL 2: INTERACTIVE TEXT INSERTION / CORRECTION -->
+            <div id="edit-panel-text" class="space-y-4 hidden">
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Corrected Sentence / Paragraph</label>
+                <textarea id="edit-insert-textarea" rows="3" placeholder="Type new sentence or correction to stamp on page..." class="w-full text-xs font-medium bg-slate-50 p-2.5 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-500 mb-1">Font Family</label>
+                  <select id="edit-insert-font" class="w-full text-xs font-medium bg-slate-50 p-2 rounded-xl border border-slate-200 outline-none">
+                    <option value="Helvetica">Helvetica</option>
+                    <option value="HelveticaBold">Helvetica Bold</option>
+                    <option value="TimesRoman">Times New Roman</option>
+                    <option value="TimesRomanBold">Times Bold</option>
+                    <option value="Courier">Courier</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-500 mb-1">Font Size</label>
+                  <input type="number" id="edit-insert-size" value="12" min="6" max="48" class="w-full text-xs font-medium bg-slate-50 p-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <label class="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-600">
+                  <input type="checkbox" id="edit-insert-whiteout" checked class="text-purple-600 rounded">
+                  <span>Cover underneath with whiteout</span>
+                </label>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs text-slate-500">Color:</span>
+                  <input type="color" id="edit-insert-color" value="#000000" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent">
+                </div>
+              </div>
+
+              <button id="edit-btn-stamp-text" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow transition flex items-center justify-center gap-1.5">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Stamp Corrected Text at Box Position</span>
+              </button>
+            </div>
+
+            <!-- PANEL 3: IMAGE REPLACEMENT / INSERTION -->
+            <div id="edit-panel-image" class="space-y-4 hidden">
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Upload Replacement Image (PNG/JPG)</label>
+                <input type="file" id="edit-img-input" accept="image/png,image/jpeg,image/webp" class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-600 hover:file:bg-purple-100">
+                <p class="text-[11px] text-slate-400 mt-1">Replace logos, photos, signatures, or official stamps.</p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 mb-1">Image Box Width</label>
+                <input type="range" id="edit-img-width-slider" min="50" max="400" value="160" class="w-full accent-purple-600">
+              </div>
+
+              <button id="edit-btn-place-image" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow transition flex items-center justify-center gap-1.5">
+                <i data-lucide="image" class="w-3.5 h-3.5"></i>
+                <span>Place Image at Box Position</span>
+              </button>
+            </div>
+
+            <!-- PANEL 4: WHITEOUT ERASER PATCH -->
+            <div id="edit-panel-whiteout" class="space-y-4 hidden">
+              <div class="p-3 bg-purple-50 rounded-xl text-xs text-purple-700 flex items-center gap-2">
+                <i data-lucide="eraser" class="w-4 h-4 flex-shrink-0"></i>
+                <span>Drag the whiteout box on the preview to cleanly erase any sentence, line, or typo.</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-500 mb-1">Width (px)</label>
+                  <input type="number" id="edit-wo-width" value="180" min="20" max="600" class="w-full text-xs font-medium bg-slate-50 p-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-500 mb-1">Height (px)</label>
+                  <input type="number" id="edit-wo-height" value="24" min="10" max="400" class="w-full text-xs font-medium bg-slate-50 p-2 rounded-xl border border-slate-200 outline-none">
+                </div>
+              </div>
+
+              <button id="edit-btn-apply-whiteout" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow transition flex items-center justify-center gap-1.5">
+                <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
+                <span>Apply Whiteout Patch at Box Position</span>
+              </button>
+            </div>
+
+            <!-- STAGED EDITS LIST -->
+            <div class="pt-3 border-t border-slate-100 space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-slate-700">Staged Corrections (<span id="edit-staged-count">0</span>)</span>
+                <button id="edit-btn-clear-all" class="text-xs text-red-500 hover:underline">Clear All</button>
+              </div>
+              <div id="edit-staged-list" class="max-h-36 overflow-y-auto space-y-1.5 pr-1 text-xs text-slate-600">
+                <p class="text-slate-400 italic py-1 text-center">No corrections staged yet</p>
+              </div>
+            </div>
+
+            <!-- ACTION BUTTON -->
+            <div class="pt-2">
+              <button id="edit-run-btn" class="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-lg shadow-purple-600/20 transition flex items-center justify-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                <span>Apply All Corrections & Preview</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Column: Interactive Document Viewer with Drag-and-Drop Placement -->
+          <div class="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200 flex flex-col justify-between space-y-4 shadow-sm">
+            <!-- Viewer Toolbar -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-purple-600">Page Correction Viewer</span>
+              </div>
+
+              <div class="flex items-center flex-wrap gap-2">
+                <!-- Page Navigation & Jump -->
+                <div class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-0.5">
+                  <button id="edit-prev-page" class="p-1 hover:text-purple-600 transition" title="Previous Page">
+                    <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                  </button>
+                  <span class="text-[11px] text-slate-500 font-medium">Page</span>
+                  <input type="number" id="edit-jump-input" min="1" max="1" value="1" class="w-10 text-center text-xs font-bold bg-white border border-slate-300 rounded px-1 py-0.5 outline-none focus:ring-1 focus:ring-purple-500">
+                  <span class="text-[11px] text-slate-500 font-medium">/ <span id="edit-total-pages">1</span></span>
+                  <button id="edit-jump-btn" class="px-1.5 py-0.5 bg-white border border-slate-300 hover:bg-purple-50 hover:text-purple-600 rounded text-[11px] font-bold text-slate-700 transition">Go</button>
+                  <button id="edit-next-page" class="p-1 hover:text-purple-600 transition" title="Next Page">
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+
+                <!-- Zoom Scaler -->
+                <div class="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-0.5">
+                  <button id="edit-zoom-out" class="p-1 hover:text-purple-600 transition" title="Zoom Out">
+                    <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
+                  </button>
+                  <span id="edit-zoom-val" class="text-[11px] font-mono text-slate-600 font-bold">100%</span>
+                  <button id="edit-zoom-in" class="p-1 hover:text-purple-600 transition" title="Zoom In">
+                    <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+
+                <!-- Close Preview -->
+                <button id="edit-close-preview-btn" class="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition" title="Close Preview & choose another file">
+                  <i data-lucide="x" class="w-3.5 h-3.5 text-slate-500"></i>
+                  <span>Close Preview</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Page Viewer Canvas with Overlays & Draggable Placement Box -->
+            <div class="flex-1 min-h-[460px] flex items-center justify-center p-4 bg-slate-100 rounded-xl overflow-auto">
+              <div id="edit-page-wrapper" class="relative border border-slate-300 shadow-md bg-white select-none">
+                <canvas id="edit-pdf-canvas" class="block"></canvas>
+                <!-- Rendered markers of applied edits on this page -->
+                <div id="edit-markers-layer" class="absolute inset-0 pointer-events-none"></div>
+                <!-- Draggable Active Correction Box -->
+                <div id="edit-drag-box" class="absolute cursor-move border-2 border-dashed border-purple-600 bg-purple-600/10 rounded flex items-center justify-center shadow-lg transition-colors group" style="left: 60px; top: 180px; width: 220px; height: 35px;">
+                  <span id="edit-drag-label" class="text-[11px] font-bold text-purple-700 select-none px-2 text-center truncate">Correction Box</span>
+                  <div class="absolute -top-3 -right-3 w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-[10px] shadow pointer-events-none">
+                    <i data-lucide="move" class="w-3 h-3"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (window.lucide) window.lucide.createIcons();
+
+    const dropzone = container.querySelector('#edit-dropzone');
+    const input = container.querySelector('#edit-file-input');
+    const statusEl = container.querySelector('#edit-file-status');
+    const workspace = container.querySelector('#edit-workspace');
+
+    // Tabs
+    const tabReplace = container.querySelector('#edit-tab-replace');
+    const tabText = container.querySelector('#edit-tab-text');
+    const tabImage = container.querySelector('#edit-tab-image');
+    const tabWhiteout = container.querySelector('#edit-tab-whiteout');
+    const panelReplace = container.querySelector('#edit-panel-replace');
+    const panelText = container.querySelector('#edit-panel-text');
+    const panelImage = container.querySelector('#edit-panel-image');
+    const panelWhiteout = container.querySelector('#edit-panel-whiteout');
+
+    // Controls
+    const findInput = container.querySelector('#edit-find-input');
+    const replaceInput = container.querySelector('#edit-replace-input');
+    const replaceFont = container.querySelector('#edit-replace-font');
+    const replaceSize = container.querySelector('#edit-replace-size');
+    const replaceColor = container.querySelector('#edit-replace-color');
+    const replaceWhiteout = container.querySelector('#edit-replace-whiteout');
+    const curPageReplaceSpan = container.querySelector('#edit-cur-page-replace');
+    const btnReplacePage = container.querySelector('#edit-btn-replace-page');
+    const btnReplaceAll = container.querySelector('#edit-btn-replace-all');
+
+    const insertTextarea = container.querySelector('#edit-insert-textarea');
+    const insertFont = container.querySelector('#edit-insert-font');
+    const insertSize = container.querySelector('#edit-insert-size');
+    const insertColor = container.querySelector('#edit-insert-color');
+    const insertWhiteout = container.querySelector('#edit-insert-whiteout');
+    const btnStampText = container.querySelector('#edit-btn-stamp-text');
+
+    const imgInput = container.querySelector('#edit-img-input');
+    const imgWidthSlider = container.querySelector('#edit-img-width-slider');
+    const btnPlaceImage = container.querySelector('#edit-btn-place-image');
+
+    const woWidthInput = container.querySelector('#edit-wo-width');
+    const woHeightInput = container.querySelector('#edit-wo-height');
+    const btnApplyWhiteout = container.querySelector('#edit-btn-apply-whiteout');
+
+    const stagedCountSpan = container.querySelector('#edit-staged-count');
+    const stagedListEl = container.querySelector('#edit-staged-list');
+    const btnClearAll = container.querySelector('#edit-btn-clear-all');
+    const runBtn = container.querySelector('#edit-run-btn');
+
+    // Viewer
+    const pdfCanvas = container.querySelector('#edit-pdf-canvas');
+    const markersLayer = container.querySelector('#edit-markers-layer');
+    const dragBox = container.querySelector('#edit-drag-box');
+    const dragLabel = container.querySelector('#edit-drag-label');
+    const prevPageBtn = container.querySelector('#edit-prev-page');
+    const nextPageBtn = container.querySelector('#edit-next-page');
+    const jumpInput = container.querySelector('#edit-jump-input');
+    const jumpBtn = container.querySelector('#edit-jump-btn');
+    const totalPagesSpan = container.querySelector('#edit-total-pages');
+    const zoomInBtn = container.querySelector('#edit-zoom-in');
+    const zoomOutBtn = container.querySelector('#edit-zoom-out');
+    const zoomValSpan = container.querySelector('#edit-zoom-val');
+    const closeBtn = container.querySelector('#edit-close-preview-btn');
+
+    const getCanvasDims = () => {
+      const w = parseFloat(pdfCanvas.style.width) || pdfCanvas.clientWidth || 650;
+      const h = parseFloat(pdfCanvas.style.height) || pdfCanvas.clientHeight || 850;
+      return { w, h };
+    };
+
+    // Mode tab switching
+    const setMode = (mode) => {
+      currentMode = mode;
+      [tabReplace, tabText, tabImage, tabWhiteout].forEach(t => {
+        t.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-800 transition';
+      });
+      [panelReplace, panelText, panelImage, panelWhiteout].forEach(p => p.classList.add('hidden'));
+
+      if (mode === 'replace') {
+        tabReplace.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg bg-white shadow-sm text-purple-600 transition';
+        panelReplace.classList.remove('hidden');
+        dragLabel.innerText = replaceInput.value.trim() || 'Replacement Box';
+        dragBox.className = 'absolute cursor-move border-2 border-dashed border-emerald-600 bg-emerald-600/10 rounded flex items-center justify-center shadow-lg';
+      } else if (mode === 'text') {
+        tabText.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg bg-white shadow-sm text-purple-600 transition';
+        panelText.classList.remove('hidden');
+        dragLabel.innerText = insertTextarea.value.trim() || 'Corrected Text';
+        dragBox.className = 'absolute cursor-move border-2 border-dashed border-purple-600 bg-purple-600/10 rounded flex items-center justify-center shadow-lg';
+      } else if (mode === 'image') {
+        tabImage.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg bg-white shadow-sm text-purple-600 transition';
+        panelImage.classList.remove('hidden');
+        dragLabel.innerText = 'Image Position';
+        dragBox.className = 'absolute cursor-move border-2 border-dashed border-blue-600 bg-blue-600/10 rounded flex items-center justify-center shadow-lg';
+      } else if (mode === 'whiteout') {
+        tabWhiteout.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg bg-white shadow-sm text-purple-600 transition';
+        panelWhiteout.classList.remove('hidden');
+        dragLabel.innerText = 'Whiteout / Erase Area';
+        dragBox.className = 'absolute cursor-move border-2 border-dashed border-amber-600 bg-amber-600/20 rounded flex items-center justify-center shadow-lg';
+      }
+    };
+
+    tabReplace.addEventListener('click', () => setMode('replace'));
+    tabText.addEventListener('click', () => setMode('text'));
+    tabImage.addEventListener('click', () => setMode('image'));
+    tabWhiteout.addEventListener('click', () => setMode('whiteout'));
+
+    // Dynamic label updates
+    replaceInput.addEventListener('input', () => {
+      if (currentMode === 'replace') dragLabel.innerText = replaceInput.value.trim() || 'Replacement Box';
+    });
+    insertTextarea.addEventListener('input', () => {
+      if (currentMode === 'text') dragLabel.innerText = insertTextarea.value.trim() || 'Corrected Text';
+    });
+
+    // Image load
+    imgInput.addEventListener('change', async () => {
+      const f = imgInput.files[0];
+      if (!f) return;
+      uploadedImageType = f.type || 'image/png';
+      uploadedImageBuffer = await window.pdfEngine.readFileAsArrayBuffer(f);
+      uploadedImageDataUrl = await window.pdfEngine.readFileAsDataURL(f);
+      dragLabel.innerHTML = `<img src="${uploadedImageDataUrl}" class="max-h-full max-w-full object-contain pointer-events-none">`;
+    });
+
+    // Sizing controls for drag box
+    imgWidthSlider.addEventListener('input', () => {
+      const dims = getCanvasDims();
+      const w = parseInt(imgWidthSlider.value, 10);
+      const h = Math.round(w * 0.6);
+      dragBox.style.width = `${w}px`;
+      dragBox.style.height = `${h}px`;
+      activeBox.wRatio = w / dims.w;
+      activeBox.hRatio = h / dims.h;
+    });
+
+    [woWidthInput, woHeightInput].forEach(inp => {
+      inp.addEventListener('input', () => {
+        const dims = getCanvasDims();
+        const w = parseInt(woWidthInput.value, 10) || 180;
+        const h = parseInt(woHeightInput.value, 10) || 24;
+        dragBox.style.width = `${w}px`;
+        dragBox.style.height = `${h}px`;
+        activeBox.wRatio = w / dims.w;
+        activeBox.hRatio = h / dims.h;
+      });
+    });
+
+    // Dragging logic
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+
+    dragBox.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      dragStartX = e.clientX - dragBox.offsetLeft;
+      dragStartY = e.clientY - dragBox.offsetTop;
+      e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const dims = getCanvasDims();
+      let newLeft = e.clientX - dragStartX;
+      let newTop = e.clientY - dragStartY;
+
+      newLeft = Math.max(0, Math.min(newLeft, dims.w - dragBox.offsetWidth));
+      newTop = Math.max(0, Math.min(newTop, dims.h - dragBox.offsetHeight));
+
+      dragBox.style.left = `${newLeft}px`;
+      dragBox.style.top = `${newTop}px`;
+
+      activeBox.xRatio = newLeft / dims.w;
+      activeBox.yRatio = newTop / dims.h;
+      activeBox.wRatio = dragBox.offsetWidth / dims.w;
+      activeBox.hRatio = dragBox.offsetHeight / dims.h;
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    // Update UI markers and staged list
+    const updateStagedUI = () => {
+      stagedCountSpan.innerText = `${stagedEdits.length}`;
+
+      if (stagedEdits.length === 0) {
+        stagedListEl.innerHTML = '<p class="text-slate-400 italic py-1 text-center">No corrections staged yet</p>';
+      } else {
+        stagedListEl.innerHTML = stagedEdits.map((ed, idx) => `
+          <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200">
+            <div class="truncate mr-2">
+              <span class="font-bold text-[10px] uppercase px-1.5 py-0.5 rounded ${ed.type === 'replace' ? 'bg-emerald-100 text-emerald-800' : (ed.type === 'whiteout' ? 'bg-amber-100 text-amber-800' : 'bg-purple-100 text-purple-800')}">P.${ed.pageIndex + 1} ${ed.type}</span>
+              <span class="text-slate-700 ml-1 truncate font-medium">${ed.newText || ed.text || (ed.type === 'whiteout' ? 'Whiteout Patch' : 'Image')}</span>
+            </div>
+            <button class="text-red-500 hover:text-red-700 p-1" data-id="${ed.id}" title="Remove edit">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        `).join('');
+
+        stagedListEl.querySelectorAll('button[data-id]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = parseFloat(btn.dataset.id);
+            stagedEdits = stagedEdits.filter(e => e.id !== id);
+            updateStagedUI();
+            renderMarkers();
+          });
+        });
+      }
+
+      if (window.lucide) window.lucide.createIcons();
+      renderMarkers();
+    };
+
+    // Render visual markers for staged edits on current page
+    const renderMarkers = () => {
+      if (!markersLayer) return;
+      markersLayer.innerHTML = '';
+      const dims = getCanvasDims();
+
+      const pageEdits = stagedEdits.filter(e => e.pageIndex === currentPageNum - 1);
+      pageEdits.forEach(ed => {
+        const marker = document.createElement('div');
+        marker.className = 'absolute rounded border text-[10px] font-bold p-1 overflow-hidden pointer-events-none ' +
+          (ed.type === 'replace' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-900' :
+          (ed.type === 'whiteout' ? 'bg-white border-slate-300 text-slate-400' : 'bg-purple-500/20 border-purple-500 text-purple-900'));
+
+        const left = Math.round(ed.xRatio * dims.w);
+        const top = Math.round(ed.yRatio * dims.h);
+        const w = Math.round(ed.wRatio * dims.w);
+        const h = Math.round(ed.hRatio * dims.h);
+
+        marker.style.left = `${left}px`;
+        marker.style.top = `${top}px`;
+        marker.style.width = `${w}px`;
+        marker.style.height = `${h}px`;
+        marker.innerText = ed.newText || (ed.type === 'whiteout' ? 'ERASED' : 'IMAGE');
+        markersLayer.appendChild(marker);
+      });
+    };
+
+    // Render PDF page
+    const renderPdfPage = async () => {
+      if (!pdfDoc) return;
+      jumpInput.value = `${currentPageNum}`;
+      jumpInput.max = `${totalPages}`;
+      totalPagesSpan.innerText = `${totalPages}`;
+      curPageReplaceSpan.innerText = `${currentPageNum}`;
+
+      const baseWidth = Math.round(650 * editZoom);
+      await window.pdfEngine.renderPageToCanvas(pdfDoc, currentPageNum, pdfCanvas, baseWidth);
+
+      const dims = getCanvasDims();
+      const newLeft = Math.round(activeBox.xRatio * dims.w);
+      const newTop = Math.round(activeBox.yRatio * dims.h);
+      const newW = Math.round(activeBox.wRatio * dims.w);
+      const newH = Math.round(activeBox.hRatio * dims.h);
+
+      dragBox.style.left = `${newLeft}px`;
+      dragBox.style.top = `${newTop}px`;
+      dragBox.style.width = `${newW}px`;
+      dragBox.style.height = `${newH}px`;
+
+      renderMarkers();
+    };
+
+    // Zoom Handlers
+    zoomInBtn.addEventListener('click', async () => {
+      if (editZoom < 2.5) {
+        editZoom = Math.min(2.5, +(editZoom + 0.25).toFixed(2));
+        zoomValSpan.innerText = `${Math.round(editZoom * 100)}%`;
+        await renderPdfPage();
+      }
+    });
+
+    zoomOutBtn.addEventListener('click', async () => {
+      if (editZoom > 0.5) {
+        editZoom = Math.max(0.5, +(editZoom - 0.25).toFixed(2));
+        zoomValSpan.innerText = `${Math.round(editZoom * 100)}%`;
+        await renderPdfPage();
+      }
+    });
+
+    // Page navigation & Jump
+    prevPageBtn.addEventListener('click', async () => {
+      if (currentPageNum > 1) {
+        currentPageNum--;
+        await renderPdfPage();
+      }
+    });
+
+    nextPageBtn.addEventListener('click', async () => {
+      if (currentPageNum < totalPages) {
+        currentPageNum++;
+        await renderPdfPage();
+      }
+    });
+
+    const handleJump = async () => {
+      const val = parseInt(jumpInput.value, 10);
+      if (val >= 1 && val <= totalPages) {
+        currentPageNum = val;
+        await renderPdfPage();
+      } else {
+        UI.showToast(`Enter page between 1 and ${totalPages}`, 'warning');
+      }
+    };
+    jumpBtn.addEventListener('click', handleJump);
+    jumpInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleJump();
+    });
+
+    // --- Action: Find & Replace on Page ---
+    const executeReplace = async (allPages = false) => {
+      const findText = findInput.value.trim();
+      const replaceText = replaceInput.value.trim();
+      if (!findText) {
+        UI.showToast('Please enter sentence or text to find.', 'error');
+        return;
+      }
+
+      UI.showProgress(0.2, 'Searching text occurrences in PDF...');
+      const targetPages = allPages ? Array.from({ length: totalPages }, (_, i) => i) : [currentPageNum - 1];
+      let matchesFound = 0;
+
+      for (const pIdx of targetPages) {
+        const page = await pdfDoc.getPage(pIdx + 1);
+        const textContent = await page.getTextContent();
+        const unscaledVp = page.getViewport({ scale: 1.0 });
+
+        for (const item of textContent.items) {
+          if (item.str && item.str.toLowerCase().includes(findText.toLowerCase())) {
+            matchesFound++;
+            const itemX = item.transform[4];
+            const itemY = item.transform[5];
+            const itemW = item.width || (item.str.length * 7);
+            const itemH = item.height || 14;
+
+            stagedEdits.push({
+              id: Date.now() + Math.random(),
+              pageIndex: pIdx,
+              type: 'replace',
+              x: itemX,
+              y: itemY,
+              width: itemW + 4,
+              height: itemH + 2,
+              // Normalized coords for marker rendering
+              xRatio: itemX / unscaledVp.width,
+              yRatio: (unscaledVp.height - (itemY + itemH)) / unscaledVp.height,
+              wRatio: (itemW + 4) / unscaledVp.width,
+              hRatio: (itemH + 2) / unscaledVp.height,
+              text: item.str,
+              newText: replaceText,
+              font: replaceFont.value,
+              size: parseInt(replaceSize.value, 10) || 12,
+              color: replaceColor.value,
+              bgWhiteout: replaceWhiteout.checked
+            });
+          }
+        }
+      }
+
+      UI.hideProgress();
+
+      if (matchesFound > 0) {
+        UI.showToast(`Found and replaced ${matchesFound} occurrence(s)!`, 'success');
+        updateStagedUI();
+      } else {
+        // If not found in text stream (e.g. scanned/flattened text), prompt to use interactive box
+        UI.showToast(`"${findText}" not found in digital text stream. Placed at cursor box position.`, 'info');
+        const page = await pdfDoc.getPage(currentPageNum);
+        const unscaledVp = page.getViewport({ scale: 1.0 });
+
+        stagedEdits.push({
+          id: Date.now() + Math.random(),
+          pageIndex: currentPageNum - 1,
+          type: 'replace',
+          x: activeBox.xRatio * unscaledVp.width,
+          y: (1 - (activeBox.yRatio + activeBox.hRatio)) * unscaledVp.height,
+          width: activeBox.wRatio * unscaledVp.width,
+          height: activeBox.hRatio * unscaledVp.height,
+          xRatio: activeBox.xRatio,
+          yRatio: activeBox.yRatio,
+          wRatio: activeBox.wRatio,
+          hRatio: activeBox.hRatio,
+          text: findText,
+          newText: replaceText,
+          font: replaceFont.value,
+          size: parseInt(replaceSize.value, 10) || 12,
+          color: replaceColor.value,
+          bgWhiteout: replaceWhiteout.checked
+        });
+        updateStagedUI();
+      }
+    };
+
+    btnReplacePage.addEventListener('click', () => executeReplace(false));
+    btnReplaceAll.addEventListener('click', () => executeReplace(true));
+
+    // --- Action: Stamp Corrected Text ---
+    btnStampText.addEventListener('click', async () => {
+      const text = insertTextarea.value.trim();
+      if (!text) {
+        UI.showToast('Please type text to stamp.', 'error');
+        return;
+      }
+
+      const page = await pdfDoc.getPage(currentPageNum);
+      const unscaledVp = page.getViewport({ scale: 1.0 });
+
+      stagedEdits.push({
+        id: Date.now() + Math.random(),
+        pageIndex: currentPageNum - 1,
+        type: 'text',
+        x: activeBox.xRatio * unscaledVp.width,
+        y: (1 - (activeBox.yRatio + activeBox.hRatio)) * unscaledVp.height,
+        width: activeBox.wRatio * unscaledVp.width,
+        height: activeBox.hRatio * unscaledVp.height,
+        xRatio: activeBox.xRatio,
+        yRatio: activeBox.yRatio,
+        wRatio: activeBox.wRatio,
+        hRatio: activeBox.hRatio,
+        newText: text,
+        font: insertFont.value,
+        size: parseInt(insertSize.value, 10) || 12,
+        color: insertColor.value,
+        bgWhiteout: insertWhiteout.checked
+      });
+
+      UI.showToast(`Stamped corrected text on Page ${currentPageNum}!`, 'success');
+      updateStagedUI();
+    });
+
+    // --- Action: Place Image ---
+    btnPlaceImage.addEventListener('click', async () => {
+      if (!uploadedImageBuffer) {
+        UI.showToast('Please choose an image file first.', 'error');
+        return;
+      }
+
+      const page = await pdfDoc.getPage(currentPageNum);
+      const unscaledVp = page.getViewport({ scale: 1.0 });
+
+      stagedEdits.push({
+        id: Date.now() + Math.random(),
+        pageIndex: currentPageNum - 1,
+        type: 'image',
+        x: activeBox.xRatio * unscaledVp.width,
+        y: (1 - (activeBox.yRatio + activeBox.hRatio)) * unscaledVp.height,
+        width: activeBox.wRatio * unscaledVp.width,
+        height: activeBox.hRatio * unscaledVp.height,
+        xRatio: activeBox.xRatio,
+        yRatio: activeBox.yRatio,
+        wRatio: activeBox.wRatio,
+        hRatio: activeBox.hRatio,
+        imageBuffer: window.pdfEngine.cloneBuffer(uploadedImageBuffer),
+        imageType: uploadedImageType
+      });
+
+      UI.showToast(`Placed image on Page ${currentPageNum}!`, 'success');
+      updateStagedUI();
+    });
+
+    // --- Action: Apply Whiteout Patch ---
+    btnApplyWhiteout.addEventListener('click', async () => {
+      const page = await pdfDoc.getPage(currentPageNum);
+      const unscaledVp = page.getViewport({ scale: 1.0 });
+
+      stagedEdits.push({
+        id: Date.now() + Math.random(),
+        pageIndex: currentPageNum - 1,
+        type: 'whiteout',
+        x: activeBox.xRatio * unscaledVp.width,
+        y: (1 - (activeBox.yRatio + activeBox.hRatio)) * unscaledVp.height,
+        width: activeBox.wRatio * unscaledVp.width,
+        height: activeBox.hRatio * unscaledVp.height,
+        xRatio: activeBox.xRatio,
+        yRatio: activeBox.yRatio,
+        wRatio: activeBox.wRatio,
+        hRatio: activeBox.hRatio
+      });
+
+      UI.showToast(`Whiteout patch applied on Page ${currentPageNum}!`, 'success');
+      updateStagedUI();
+    });
+
+    btnClearAll.addEventListener('click', () => {
+      stagedEdits = [];
+      updateStagedUI();
+      UI.showToast('Cleared all staged corrections.', 'info');
+    });
+
+    // --- File Dropzone ---
+    UI.setupDropzone(dropzone, input, async (files) => {
+      if (files.length === 0) return;
+      currentFile = files[0];
+      statusEl.innerText = `${currentFile.name} (${window.pdfEngine.formatBytes(currentFile.size)})`;
+      currentBuffer = await window.pdfEngine.readFileAsArrayBuffer(currentFile);
+      workspace.classList.remove('hidden');
+
+      pdfDoc = await window.pdfEngine.getPdfJsDoc(window.pdfEngine.cloneBuffer(currentBuffer));
+      totalPages = pdfDoc.numPages;
+      currentPageNum = 1;
+      stagedEdits = [];
+
+      await renderPdfPage();
+      updateStagedUI();
+    });
+
+    // Close preview
+    closeBtn.addEventListener('click', () => {
+      currentBuffer = null;
+      currentFile = null;
+      pdfDoc = null;
+      stagedEdits = [];
+      workspace.classList.add('hidden');
+      dropzone.classList.remove('hidden');
+      statusEl.innerText = 'Drag & drop or click';
+      input.value = '';
+    });
+
+    // Final Action: Save & Download Corrected PDF
+    runBtn.addEventListener('click', async () => {
+      if (!currentBuffer && !currentFile) return;
+
+      if (stagedEdits.length === 0) {
+        UI.showToast('Please stage at least one correction or sentence edit first.', 'error');
+        return;
+      }
+
+      try {
+        UI.showProgress(0.3, 'Applying content corrections and sentence replacements...');
+        const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
+
+        const correctedBlob = await window.pdfEngine.applyContentEdits(window.pdfEngine.cloneBuffer(bufferToUse), stagedEdits);
+
+        UI.hideProgress();
+        UI.celebrate();
+        UI.showToast(`Applied ${stagedEdits.length} correction(s) successfully!`, 'success');
+        UI.showResultPreview({
+          title: 'Corrected PDF Ready',
+          subtitle: `Applied ${stagedEdits.length} correction(s). Inspect document before saving`,
+          blob: correctedBlob,
+          filename: `${currentFile.name.replace(/\.pdf$/i, '')}_edited.pdf`
+        });
+      } catch (err) {
+        UI.hideProgress();
+        UI.showToast(`Error: ${err.message}`, 'error');
       }
     });
   }

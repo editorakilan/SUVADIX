@@ -314,11 +314,12 @@ const UI = {
           if (!pdfDoc || !canvas) return;
           const page = await pdfDoc.getPage(currentPage);
           const baseViewport = page.getViewport({ scale: 1.0 });
-          const targetWidth = Math.min(750, Math.max(380, baseViewport.width)) * zoomLevel;
+          const targetWidth = Math.round(Math.max(650, baseViewport.width) * zoomLevel);
           const scale = targetWidth / baseViewport.width;
           const viewport = page.getViewport({ scale });
 
-          const outputScale = window.devicePixelRatio || 1;
+          // Crystal clear 2x HiDPI super-sampling so zooming in never blurs
+          const outputScale = Math.max(2.0, window.devicePixelRatio || 1);
           canvas.width = Math.floor(viewport.width * outputScale);
           canvas.height = Math.floor(viewport.height * outputScale);
           canvas.style.width = Math.floor(viewport.width) + 'px';

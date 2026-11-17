@@ -213,6 +213,16 @@ const TOOLS_CONFIG = [
     color: 'text-purple-600 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-900',
     handler: (c) => EditTools.renderSign(c)
   },
+  {
+    id: 'edit-pdf',
+    name: 'Edit PDF',
+    category: 'edit',
+    categoryLabel: 'EDIT PDF',
+    desc: 'Edit sentences, replace text, correct typos, whiteout errors, and replace images.',
+    icon: 'edit-3',
+    color: 'text-purple-600 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-900',
+    handler: (c) => EditTools.renderEditPdf(c)
+  },
 
   // 6. PDF SECURITY
   {

@@ -28,8 +28,38 @@ const ConvertToTools = {
           </div>
         </div>
 
-        <div id="jpg-options" class="p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4 hidden">
-          <h3 class="font-semibold text-sm">Page Formatting</h3>
+        <div id="jpg-options" class="p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-5 hidden">
+          <!-- Output Type Selection -->
+          <div class="space-y-2">
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Conversion Output Type</label>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <label class="flex flex-col p-3 rounded-xl border border-amber-400 bg-amber-50/70 cursor-pointer transition hover:bg-amber-50 shadow-sm" id="jpg-mode-img-card">
+                <div class="flex items-center gap-2">
+                  <input type="radio" name="jpg-mode" value="image" checked class="text-amber-600">
+                  <span class="text-xs font-bold text-slate-800">Standard Image PDF</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1 pl-5">Preserves exact photos, graphics & scans as high-res images.</p>
+              </label>
+
+              <label class="flex flex-col p-3 rounded-xl border border-slate-200 bg-white cursor-pointer transition hover:bg-slate-50" id="jpg-mode-ocr-card">
+                <div class="flex items-center gap-2">
+                  <input type="radio" name="jpg-mode" value="ocr" class="text-amber-600">
+                  <span class="text-xs font-bold text-slate-800">Searchable OCR PDF</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1 pl-5">Embeds photo + invisible text layer. Search (Ctrl+F), select & copy text!</p>
+              </label>
+
+              <label class="flex flex-col p-3 rounded-xl border border-slate-200 bg-white cursor-pointer transition hover:bg-slate-50" id="jpg-mode-txt-card">
+                <div class="flex items-center gap-2">
+                  <input type="radio" name="jpg-mode" value="text" class="text-amber-600">
+                  <span class="text-xs font-bold text-slate-800">Digital Text Type</span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1 pl-5">Extracts OCR text into clean, printable vector text paragraphs.</p>
+              </label>
+            </div>
+          </div>
+
+          <h3 class="font-semibold text-sm pt-2 border-t border-slate-100 dark:border-slate-700">Page Formatting</h3>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label class="block text-xs font-semibold text-slate-500 mb-1">Page Size</label>
@@ -79,6 +109,24 @@ const ConvertToTools = {
     const orientSelect = container.querySelector('#jpg-orientation');
     const marginSelect = container.querySelector('#jpg-margin');
 
+    // Radio card highlight toggles
+    const modeCards = {
+      image: container.querySelector('#jpg-mode-img-card'),
+      ocr: container.querySelector('#jpg-mode-ocr-card'),
+      text: container.querySelector('#jpg-mode-txt-card')
+    };
+
+    container.querySelectorAll('input[name="jpg-mode"]').forEach(r => {
+      r.addEventListener('change', () => {
+        Object.keys(modeCards).forEach(k => {
+          const isSelected = r.value === k;
+          modeCards[k].className = isSelected
+            ? 'flex flex-col p-3 rounded-xl border border-amber-400 bg-amber-50/70 cursor-pointer transition hover:bg-amber-50 shadow-sm'
+            : 'flex flex-col p-3 rounded-xl border border-slate-200 bg-white cursor-pointer transition hover:bg-slate-50';
+        });
+      });
+    });
+
     const updateThumbs = () => {
       if (imageFiles.length === 0) {
         optionsEl.classList.add('hidden');
@@ -115,20 +163,40 @@ const ConvertToTools = {
     runBtn.addEventListener('click', async () => {
       if (imageFiles.length === 0) return;
       try {
-        UI.showProgress(0.3, 'Converting images into PDF pages...');
+        const mode = container.querySelector('input[name="jpg-mode"]:checked').value;
         const pageSize = pageSizeSelect.value;
         const orientation = orientSelect.value;
         const margin = parseInt(marginSelect.value, 10);
 
-        const pdfBlob = await window.pdfEngine.imagesToPDF(imageFiles, { pageSize, orientation, margin });
+        let pdfBlob = null;
+        let subtitle = '';
+
+        if (mode === 'ocr') {
+          UI.showProgress(0.1, 'Initializing Tesseract OCR engine for searchable PDF...');
+          pdfBlob = await window.pdfEngine.imagesToSearchablePdf(imageFiles, { pageSize, orientation, margin }, (pct, msg) => {
+            UI.showProgress(pct, msg);
+          });
+          subtitle = `${imageFiles.length} image(s) converted to Searchable OCR PDF (Ctrl+F & select text enabled)`;
+        } else if (mode === 'text') {
+          UI.showProgress(0.1, 'Extracting OCR text from images into formatted pages...');
+          pdfBlob = await window.pdfEngine.imagesToTextPdf(imageFiles, { pageSize, orientation, margin }, (pct, msg) => {
+            UI.showProgress(pct, msg);
+          });
+          subtitle = `${imageFiles.length} image(s) digitized into clean vector text document`;
+        } else {
+          UI.showProgress(0.3, 'Converting images into standard high-res PDF pages...');
+          pdfBlob = await window.pdfEngine.imagesToPDF(imageFiles, { pageSize, orientation, margin });
+          subtitle = `${imageFiles.length} image(s) combined into high-resolution PDF`;
+        }
+
         UI.hideProgress();
         UI.celebrate();
-        UI.showToast('Images converted to PDF successfully!', 'success');
+        UI.showToast('PDF created successfully!', 'success');
         UI.showResultPreview({
-          title: 'Converted PDF Ready',
-          subtitle: `${imageFiles.length} image(s) combined into high-resolution PDF`,
+          title: mode === 'ocr' ? 'Searchable OCR PDF Ready' : (mode === 'text' ? 'Digital Text PDF Ready' : 'Converted PDF Ready'),
+          subtitle,
           blob: pdfBlob,
-          filename: 'converted_images.pdf'
+          filename: `converted_images_${mode}.pdf`
         });
       } catch (err) {
         UI.hideProgress();

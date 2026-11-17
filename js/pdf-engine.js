@@ -629,6 +629,253 @@ class PDFEngine {
   }
 
   /**
+   * Convert Images to Searchable OCR PDF (Image + Invisible Searchable & Selectable Text Layer)
+   */
+  async imagesToSearchablePdf(imageFileList, options = {}, onProgress) {
+    const { pageSize = 'A4', orientation = 'portrait', margin = 20 } = options;
+    const { PDFDocument, PageSizes, StandardFonts, rgb } = PDFLib;
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+
+    const standardSizes = {
+      'A4': PageSizes.A4,
+      'Letter': PageSizes.Letter,
+      'Legal': PageSizes.Legal
+    };
+
+    const total = imageFileList.length;
+    for (let i = 0; i < total; i++) {
+      const file = imageFileList[i];
+      if (onProgress) onProgress((i / total) * 0.25, `Preparing image ${i + 1} of ${total}...`);
+
+      const arrayBuffer = await this.readFileAsArrayBuffer(file);
+      let image;
+      const type = file.type || '';
+      if (type.includes('png')) {
+        image = await doc.embedPng(arrayBuffer);
+      } else {
+        image = await doc.embedJpg(arrayBuffer);
+      }
+
+      let pageWidth, pageHeight;
+      if (pageSize === 'Fit') {
+        pageWidth = image.width + margin * 2;
+        pageHeight = image.height + margin * 2;
+      } else {
+        const baseSize = standardSizes[pageSize] || PageSizes.A4;
+        pageWidth = orientation === 'landscape' ? baseSize[1] : baseSize[0];
+        pageHeight = orientation === 'landscape' ? baseSize[0] : baseSize[1];
+      }
+
+      const page = doc.addPage([pageWidth, pageHeight]);
+      const availWidth = pageWidth - margin * 2;
+      const availHeight = pageHeight - margin * 2;
+
+      const imgRatio = image.width / image.height;
+      const pageRatio = availWidth / availHeight;
+
+      let renderWidth = availWidth;
+      let renderHeight = availHeight;
+
+      if (imgRatio > pageRatio) {
+        renderHeight = availWidth / imgRatio;
+      } else {
+        renderWidth = availHeight * imgRatio;
+      }
+
+      const x = margin + (availWidth - renderWidth) / 2;
+      const y = margin + (availHeight - renderHeight) / 2;
+
+      page.drawImage(image, {
+        x,
+        y,
+        width: renderWidth,
+        height: renderHeight
+      });
+
+      // Optical Character Recognition (OCR) for Searchable Text Layer
+      try {
+        if (window.Tesseract) {
+          if (onProgress) onProgress(0.25 + (i / total) * 0.65, `Running OCR text recognition on image ${i + 1}...`);
+          const res = await Tesseract.recognize(file, 'eng', {
+            logger: m => {
+              if (m.status === 'recognizing text' && onProgress) {
+                const prog = 0.25 + ((i + m.progress) / total) * 0.65;
+                onProgress(prog, `OCR page ${i + 1}: ${Math.round(m.progress * 100)}%`);
+              }
+            }
+          });
+
+          if (res && res.data && res.data.words) {
+            const scaleX = renderWidth / image.width;
+            const scaleY = renderHeight / image.height;
+
+            for (const w of res.data.words) {
+              if (!w.text || !w.bbox) continue;
+              const bbox = w.bbox;
+              const wordX = x + (bbox.x0 * scaleX);
+              const wordH = (bbox.y1 - bbox.y0) * scaleY;
+              // In PDF coordinates, origin is bottom-left; image top-left is at y + renderHeight
+              const wordY = y + renderHeight - (bbox.y1 * scaleY);
+              const fontSize = Math.max(7, Math.min(60, wordH * 0.85));
+
+              try {
+                page.drawText(w.text, {
+                  x: wordX,
+                  y: wordY,
+                  size: fontSize,
+                  font,
+                  color: rgb(0, 0, 0),
+                  opacity: 0 // Invisible overlay: completely selectable, copyable, and searchable (Ctrl+F)
+                });
+              } catch (_) {}
+            }
+          }
+        }
+      } catch (ocrErr) {
+        console.warn('OCR error on image:', ocrErr);
+      }
+    }
+
+    if (onProgress) onProgress(0.95, 'Finalizing Searchable OCR PDF...');
+    const bytes = await doc.save({ useObjectStreams: false });
+    return new Blob([bytes], { type: 'application/pdf' });
+  }
+
+  /**
+   * Convert Images to Pure Digital Text PDF (Extracts OCR text into formatted pages)
+   */
+  async imagesToTextPdf(imageFileList, options = {}, onProgress) {
+    const { pageSize = 'A4', orientation = 'portrait', margin = 40 } = options;
+    const { PDFDocument, PageSizes, StandardFonts, rgb } = PDFLib;
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    const boldFont = await doc.embedFont(StandardFonts.HelveticaBold);
+
+    const standardSizes = {
+      'A4': PageSizes.A4,
+      'Letter': PageSizes.Letter,
+      'Legal': PageSizes.Legal
+    };
+
+    const base = standardSizes[pageSize] || PageSizes.A4;
+    const pageWidth = orientation === 'landscape' ? base[1] : base[0];
+    const pageHeight = orientation === 'landscape' ? base[0] : base[1];
+
+    const total = imageFileList.length;
+    let combinedText = '';
+
+    for (let i = 0; i < total; i++) {
+      const file = imageFileList[i];
+      if (onProgress) onProgress((i / total) * 0.75, `Extracting text from image ${i + 1} of ${total}...`);
+      if (window.Tesseract) {
+        const res = await Tesseract.recognize(file, 'eng', {
+          logger: m => {
+            if (m.status === 'recognizing text' && onProgress) {
+              const prog = ((i + m.progress) / total) * 0.75;
+              onProgress(prog, `Extracting text from image ${i + 1}: ${Math.round(m.progress * 100)}%`);
+            }
+          }
+        });
+        if (res && res.data && res.data.text) {
+          combinedText += `\n--- Page ${i + 1} (${file.name}) ---\n\n` + res.data.text + '\n';
+        }
+      }
+    }
+
+    if (!combinedText.trim()) {
+      combinedText = 'No text detected in uploaded images.';
+    }
+
+    const fontSize = 11;
+    const lineHeight = 16;
+    const usableWidth = pageWidth - margin * 2;
+
+    const lines = combinedText.split('\n');
+    let currentPage = doc.addPage([pageWidth, pageHeight]);
+    let currentY = pageHeight - margin - 20;
+
+    for (const rawLine of lines) {
+      if (rawLine.startsWith('--- Page')) {
+        currentY -= 12;
+        if (currentY < margin + 40) {
+          currentPage = doc.addPage([pageWidth, pageHeight]);
+          currentY = pageHeight - margin - 20;
+        }
+        currentPage.drawText(rawLine, {
+          x: margin,
+          y: currentY,
+          size: 13,
+          font: boldFont,
+          color: rgb(0.2, 0.3, 0.7)
+        });
+        currentY -= lineHeight + 8;
+        continue;
+      }
+
+      if (!rawLine.trim()) {
+        currentY -= 8;
+        continue;
+      }
+
+      // Word wrap
+      const words = rawLine.split(/\s+/);
+      let lineBuf = '';
+
+      for (const w of words) {
+        const testLine = lineBuf ? `${lineBuf} ${w}` : w;
+        let testWidth = usableWidth + 1;
+        try {
+          testWidth = font.widthOfTextAtSize(testLine, fontSize);
+        } catch (_) {
+          testWidth = testLine.length * (fontSize * 0.55);
+        }
+
+        if (testWidth > usableWidth && lineBuf) {
+          if (currentY < margin + lineHeight) {
+            currentPage = doc.addPage([pageWidth, pageHeight]);
+            currentY = pageHeight - margin - 20;
+          }
+          try {
+            currentPage.drawText(lineBuf, {
+              x: margin,
+              y: currentY,
+              size: fontSize,
+              font,
+              color: rgb(0.12, 0.12, 0.12)
+            });
+          } catch (_) {}
+          currentY -= lineHeight;
+          lineBuf = w;
+        } else {
+          lineBuf = testLine;
+        }
+      }
+
+      if (lineBuf) {
+        if (currentY < margin + lineHeight) {
+          currentPage = doc.addPage([pageWidth, pageHeight]);
+          currentY = pageHeight - margin - 20;
+        }
+        try {
+          currentPage.drawText(lineBuf, {
+            x: margin,
+            y: currentY,
+            size: fontSize,
+            font,
+            color: rgb(0.12, 0.12, 0.12)
+          });
+        } catch (_) {}
+        currentY -= lineHeight;
+      }
+    }
+
+    if (onProgress) onProgress(0.95, 'Finalizing Digital Text Document...');
+    const bytes = await doc.save({ useObjectStreams: false });
+    return new Blob([bytes], { type: 'application/pdf' });
+  }
+
+  /**
    * Apply Redactions (blackout boxes) permanently
    */
   async applyRedactions(arrayBuffer, redactionsList) {
@@ -671,9 +918,15 @@ class PDFEngine {
     const scale = targetWidth / unscaledViewport.width;
     const viewport = page.getViewport({ scale });
 
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
+    // HiDPI Supersampling: renders at at least 2x device pixel ratio so text stays razor sharp when zooming
+    const dpr = Math.max(2.0, window.devicePixelRatio || 1);
+    canvas.width = Math.floor(viewport.width * dpr);
+    canvas.height = Math.floor(viewport.height * dpr);
+    canvas.style.width = `${Math.floor(viewport.width)}px`;
+    canvas.style.height = `${Math.floor(viewport.height)}px`;
+
     const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const renderContext = {
       canvasContext: ctx,
@@ -732,6 +985,87 @@ class PDFEngine {
     }
 
     return fullText;
+  }
+
+  /**
+   * Apply Content Edits (Sentence Replacement, Whiteout, Text Insertion, Image Replacement)
+   */
+  async applyContentEdits(arrayBuffer, editsList) {
+    const { PDFDocument, StandardFonts, rgb } = PDFLib;
+    const safeBuffer = this.cloneBuffer(arrayBuffer);
+    const doc = await PDFDocument.load(safeBuffer, { ignoreEncryption: true });
+    const pages = doc.getPages();
+
+    const fontMap = {
+      'Helvetica': await doc.embedFont(StandardFonts.Helvetica),
+      'HelveticaBold': await doc.embedFont(StandardFonts.HelveticaBold),
+      'TimesRoman': await doc.embedFont(StandardFonts.TimesRoman),
+      'TimesRomanBold': await doc.embedFont(StandardFonts.TimesRomanBold),
+      'Courier': await doc.embedFont(StandardFonts.Courier),
+      'CourierBold': await doc.embedFont(StandardFonts.CourierBold)
+    };
+
+    for (const edit of editsList) {
+      const page = pages[edit.pageIndex];
+      if (!page) continue;
+
+      if (edit.type === 'whiteout') {
+        // Eraser / Whiteout patch
+        page.drawRectangle({
+          x: edit.x,
+          y: edit.y,
+          width: edit.width,
+          height: edit.height,
+          color: rgb(1, 1, 1) // Clean opaque white
+        });
+      } else if (edit.type === 'text' || edit.type === 'replace') {
+        // Cover old sentence with whiteout background if requested
+        if (edit.bgWhiteout !== false) {
+          page.drawRectangle({
+            x: edit.x - 2,
+            y: edit.y - 2,
+            width: edit.width + 4,
+            height: edit.height + 4,
+            color: rgb(1, 1, 1)
+          });
+        }
+
+        const selectedFont = fontMap[edit.font] || fontMap['Helvetica'];
+        let r = 0, g = 0, b = 0;
+        if (edit.color && edit.color.startsWith('#')) {
+          r = parseInt(edit.color.slice(1, 3), 16) / 255;
+          g = parseInt(edit.color.slice(3, 5), 16) / 255;
+          b = parseInt(edit.color.slice(5, 7), 16) / 255;
+        }
+
+        const textToDraw = edit.newText || edit.text || '';
+        const fontSize = edit.size || 12;
+
+        page.drawText(textToDraw, {
+          x: edit.x,
+          y: edit.y + 2,
+          size: fontSize,
+          font: selectedFont,
+          color: rgb(r, g, b)
+        });
+      } else if (edit.type === 'image' && edit.imageBuffer) {
+        let embeddedImg;
+        if (edit.imageType?.includes('png')) {
+          embeddedImg = await doc.embedPng(edit.imageBuffer);
+        } else {
+          embeddedImg = await doc.embedJpg(edit.imageBuffer);
+        }
+        page.drawImage(embeddedImg, {
+          x: edit.x,
+          y: edit.y,
+          width: edit.width,
+          height: edit.height
+        });
+      }
+    }
+
+    const bytes = await doc.save({ useObjectStreams: false });
+    return new Blob([bytes], { type: 'application/pdf' });
   }
 
   // --- JSZip Helper ---
