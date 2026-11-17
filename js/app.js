@@ -1,5 +1,5 @@
 /**
- * PDFNova - Main Application Controller
+ * SUVADIX - Main Application Controller
  * Handles dashboard grid, category navigation, real-time search, theme toggle, and tool dispatching.
  */
 

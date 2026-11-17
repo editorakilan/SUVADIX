@@ -1,12 +1,12 @@
 {
-  "name": "PDFNova — 100% Client-Side PDF Suite",
-  "short_name": "PDFNova",
+  "name": "SUVADIX — All Your Documents. One Smart Place.",
+  "short_name": "SUVADIX",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#0f172a",
-  "theme_color": "#4f46e5",
-  "description": "Every tool you need to work with PDFs in one place. 100% free, private, in-browser PDF tools with zero server uploads.",
+  "theme_color": "#7c3aed",
+  "description": "All your documents in one smart, 100% private place. Merge, split, compress, sign, watermark, edit and organize PDFs with zero server uploads.",
   "icons": [
     {
       "src": "assets/favicon.png",
@@ -14,7 +14,7 @@
       "type": "image/png"
     },
     {
-      "src": "assets/pdfnova-icon.png",
+      "src": "assets/suvadix-icon.png",
       "sizes": "512x512",
       "type": "image/png"
     }

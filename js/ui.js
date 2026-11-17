@@ -1,5 +1,5 @@
 /**
- * PDFNova - UI Helpers & Interaction Components
+ * SUVADIX - UI Helpers & Interaction Components
  */
 
 const UI = {
@@ -90,7 +90,7 @@ const UI = {
       if (files.length > 0 && onFilesSelected) onFilesSelected(files);
     });
 
-    zoneEl.addEventListener('click', () => inputEl.click());
+    zoneEl.addEventListener('click', (e) => { if (e.target !== inputEl) inputEl.click(); });
 
     inputEl.addEventListener('change', () => {
       const files = Array.from(inputEl.files);

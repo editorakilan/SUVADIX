@@ -1,5 +1,5 @@
 /**
- * PDFNova - Organize Tools
+ * SUVADIX - Organize Tools
  * Merge, Split, Remove Pages, Extract Pages, Organize, Scan to PDF
  */
 

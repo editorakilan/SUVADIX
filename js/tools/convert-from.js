@@ -1,5 +1,5 @@
 /**
- * PDFNova - Convert From PDF Tools
+ * SUVADIX - Convert From PDF Tools
  * PDF to JPG, PDF to PNG, PDF to Text
  */
 

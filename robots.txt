@@ -1,4 +1,4 @@
-# Production robots.txt for PDFNova
+# Production robots.txt for SUVADIX
 User-agent: *
 Allow: /
 

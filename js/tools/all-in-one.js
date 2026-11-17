@@ -1,5 +1,5 @@
 /**
- * PDFNova - All-In-One Studio
+ * SUVADIX - All-In-One Studio
  * Complete unified workspace where all PDF operations can be performed in one place:
  * Organize & Swap pages, Edit Text, Whiteout, Sign, Watermark, Redact, Protect & Compress.
  */
@@ -417,7 +417,7 @@ const AllInOneTool = {
               <div id="aio-edit-sec-replace" class="grid grid-cols-1 md:grid-cols-12 gap-4 text-xs">
                 <div class="md:col-span-5 space-y-1">
                   <label class="font-semibold text-slate-500 block">Original Sentence / Text to Correct:</label>
-                  <input type="text" id="aio-edit-orig-text" placeholder="e.g. Total Amount: $450 or Patient: John Doe" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
+                  <input type="text" id="aio-edit-orig-text" placeholder="e.g. Total Amount: $450 or Patient: Dr. Vijayapriya Aki" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
                 </div>
                 <div class="md:col-span-5 space-y-1">
                   <label class="font-semibold text-slate-500 block">New Replacement Sentence:</label>

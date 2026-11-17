@@ -1,5 +1,5 @@
 /**
- * PDFNova - PDF Intelligence Tools
+ * SUVADIX - PDF Intelligence Tools
  * AI Summarizer, Translate PDF, PDF to Markdown
  */
 

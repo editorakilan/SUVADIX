@@ -1,5 +1,5 @@
 /**
- * PDFNova - Optimize Tools
+ * SUVADIX - Optimize Tools
  * Compress PDF, Repair PDF, OCR PDF
  */
 

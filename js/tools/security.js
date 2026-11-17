@@ -1,5 +1,5 @@
 /**
- * PDFNova - Security Tools
+ * SUVADIX - Security Tools
  * Protect PDF, Unlock PDF, Compare PDF, Redact PDF
  */
 
