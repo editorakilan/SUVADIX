@@ -1,5 +1,5 @@
 /**
- * PDF Suite - Convert To PDF Tools
+ * PDFNova - Convert To PDF Tools
  * JPG/PNG to PDF, Word (.docx) to PDF, HTML to PDF, Markdown to PDF
  */
 

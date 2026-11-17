@@ -1,5 +1,5 @@
 /**
- * PDF Suite - Organize Tools
+ * PDFNova - Organize Tools
  * Merge, Split, Remove Pages, Extract Pages, Organize, Scan to PDF
  */
 

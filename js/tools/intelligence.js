@@ -1,5 +1,5 @@
 /**
- * PDF Suite - PDF Intelligence Tools
+ * PDFNova - PDF Intelligence Tools
  * AI Summarizer, Translate PDF, PDF to Markdown
  */
 

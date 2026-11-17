@@ -1,5 +1,5 @@
 /**
- * PDF Suite - Security Tools
+ * PDFNova - Security Tools
  * Protect PDF, Unlock PDF, Compare PDF, Redact PDF
  */
 

@@ -1,5 +1,5 @@
 /**
- * PDF Suite - Core Client-Side PDF Engine
+ * PDFNova - Core Client-Side PDF Engine
  * Zero-server, 100% in-browser manipulation using PDF-Lib, PDF.js, and JSZip.
  */
 
@@ -1013,7 +1013,7 @@ class PDFEngine {
     return canvas;
   }
 
-  async pdfToImages(arrayBuffer, format = 'image/jpeg', scale = 2.0, onProgress) {
+  async pdfToImages(arrayBuffer, format = 'image/jpeg', scale = 2.0, onProgress, quality = 0.92) {
     const pdfDoc = await this.getPdfJsDoc(arrayBuffer);
     const totalPages = pdfDoc.numPages;
     const results = [];
@@ -1033,7 +1033,7 @@ class PDFEngine {
       await page.render({ canvasContext: ctx, viewport }).promise;
 
       const blob = await new Promise(resolve => {
-        canvas.toBlob(resolve, format, 0.95);
+        canvas.toBlob(resolve, format, quality);
       });
 
       const ext = format === 'image/png' ? 'png' : 'jpg';
@@ -1041,11 +1041,84 @@ class PDFEngine {
         pageNum: i,
         name: `page_${i}.${ext}`,
         blob,
-        dataUrl: canvas.toDataURL(format, 0.95)
+        dataUrl: canvas.toDataURL(format, quality)
       });
     }
 
     return results;
+  }
+
+  /**
+   * Compress PDF to a Target File Size (GB/MB/KB/Bytes) or Target Ratio
+   */
+  async compressPdfToTarget(arrayBuffer, targetBytes, onProgress) {
+    const origBytes = arrayBuffer.byteLength;
+    if (onProgress) onProgress(0.1, `Analyzing document streams for target ${this.formatBytes(targetBytes)}...`);
+
+    // 1. Try lossless vector & stream rebuild first
+    const { PDFDocument } = PDFLib;
+    const srcDoc = await PDFDocument.load(this.cloneBuffer(arrayBuffer), { ignoreEncryption: true });
+    const newDoc = await PDFDocument.create();
+    const pages = await newDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+    pages.forEach(p => newDoc.addPage(p));
+    const vectorBytes = await newDoc.save({ useObjectStreams: false });
+
+    // If lossless vector optimization already meets or is smaller than the target size, return it directly!
+    if (vectorBytes.byteLength <= targetBytes || targetBytes >= origBytes) {
+      if (onProgress) onProgress(1.0, `Target reached via lossless stream optimization (${this.formatBytes(vectorBytes.byteLength)})!`);
+      return new Blob([vectorBytes], { type: 'application/pdf' });
+    }
+
+    // 2. Compute dynamic calibration based on target ratio
+    const ratio = Math.max(0.04, Math.min(0.96, targetBytes / origBytes));
+    let scale = 1.25;
+    let quality = 0.72;
+
+    if (ratio >= 0.75) {
+      scale = 1.45;
+      quality = 0.85;
+    } else if (ratio >= 0.55) {
+      scale = 1.25;
+      quality = 0.74;
+    } else if (ratio >= 0.35) {
+      scale = 1.05;
+      quality = 0.60;
+    } else if (ratio >= 0.20) {
+      scale = 0.88;
+      quality = 0.48;
+    } else if (ratio >= 0.10) {
+      scale = 0.75;
+      quality = 0.38;
+    } else {
+      scale = 0.60;
+      quality = 0.28;
+    }
+
+    if (onProgress) onProgress(0.25, `Downsampling pages to reach target size ${this.formatBytes(targetBytes)}...`);
+    let images = await this.pdfToImages(this.cloneBuffer(arrayBuffer), 'image/jpeg', scale, (pct, status) => {
+      if (onProgress) onProgress(0.25 + pct * 0.50, status);
+    }, quality);
+
+    let fileList = images.map(img => new File([img.blob], img.name, { type: 'image/jpeg' }));
+    let compressedBlob = await this.imagesToPDF(fileList, { pageSize: 'Fit' });
+
+    // 3. Precision refinement pass if result is > 8% over target
+    if (compressedBlob.size > targetBytes * 1.08 && quality > 0.25) {
+      if (onProgress) onProgress(0.78, 'Fine-tuning compression to strictly meet your target file size...');
+      const factor = targetBytes / compressedBlob.size;
+      const refQuality = Math.max(0.20, Math.min(0.85, quality * factor * 0.96));
+      const refScale = Math.max(0.50, Math.min(1.4, scale * Math.sqrt(factor)));
+
+      images = await this.pdfToImages(this.cloneBuffer(arrayBuffer), 'image/jpeg', refScale, (pct, status) => {
+        if (onProgress) onProgress(0.78 + pct * 0.18, `Refining: ${status}`);
+      }, refQuality);
+
+      fileList = images.map(img => new File([img.blob], img.name, { type: 'image/jpeg' }));
+      compressedBlob = await this.imagesToPDF(fileList, { pageSize: 'Fit' });
+    }
+
+    if (onProgress) onProgress(1.0, 'Compression complete!');
+    return compressedBlob;
   }
 
   async extractText(arrayBuffer, onProgress) {

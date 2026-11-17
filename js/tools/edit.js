@@ -1,5 +1,5 @@
 /**
- * PDF Suite - Edit PDF Tools
+ * PDFNova - Edit PDF Tools
  * Rotate PDF, Add Page Numbers, Advanced Watermark (Text/Image + Live Preview), Advanced Sign PDF (Custom Placement, Multi-page, Image/Draw/Type)
  */
 

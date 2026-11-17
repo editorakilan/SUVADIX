@@ -1,5 +1,5 @@
 /**
- * PDF Suite - UI Helpers & Interaction Components
+ * PDFNova - UI Helpers & Interaction Components
  */
 
 const UI = {

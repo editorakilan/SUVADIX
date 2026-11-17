@@ -1,5 +1,5 @@
 /**
- * PDF Suite - Convert From PDF Tools
+ * PDFNova - Convert From PDF Tools
  * PDF to JPG, PDF to PNG, PDF to Text
  */
 

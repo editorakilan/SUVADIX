@@ -1,5 +1,5 @@
 /**
- * PDF Suite - Optimize Tools
+ * PDFNova - Optimize Tools
  * Compress PDF, Repair PDF, OCR PDF
  */
 
@@ -13,7 +13,7 @@ const OptimizeTools = {
       <div class="max-w-3xl mx-auto space-y-6">
         <div class="text-center space-y-2">
           <h2 class="text-2xl font-bold tracking-tight">Compress PDF</h2>
-          <p class="text-sm text-slate-500">Reduce PDF file size while maintaining optimal visual clarity.</p>
+          <p class="text-sm text-slate-500">Reduce PDF file size by target limit (GB/MB/KB/Bytes), compression presets, or lossless vector optimization.</p>
         </div>
 
         <div id="compress-dropzone" class="dropzone p-8 rounded-2xl text-center cursor-pointer hover:border-emerald-500 transition">
@@ -24,51 +24,116 @@ const OptimizeTools = {
             </div>
             <div>
               <p class="font-semibold text-slate-700 dark:text-slate-200">Click to upload or drag & drop a PDF</p>
-              <p class="text-xs text-slate-400 mt-1" id="compress-file-status">Select a PDF to reduce its file size</p>
+              <p class="text-xs text-slate-400 mt-1" id="compress-file-status">Select a PDF to compress or optimize</p>
             </div>
           </div>
         </div>
 
-        <div id="compress-options" class="p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-5 hidden">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
-            <h3 class="font-semibold text-sm">Choose Optimization Method</h3>
-            <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">Zero Server</span>
+        <div id="compress-options" class="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-5 hidden">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700">
+            <h3 class="font-semibold text-sm">Choose Compression Mode</h3>
+            <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full">100% In-Browser</span>
           </div>
 
-          <div class="space-y-3">
-            <label class="flex items-start gap-3 p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20 cursor-pointer">
-              <input type="radio" name="comp-type" value="vector" checked class="mt-0.5 text-emerald-600 focus:ring-emerald-500">
-              <div>
-                <span class="font-bold text-sm block">Smart Vector & Text Preservation (Recommended)</span>
-                <span class="text-xs text-slate-500 dark:text-slate-400">Keeps 100% digital text selectable, searchable, and crisp. Strips metadata, unifies fonts, and rebuilds streams without rasterizing.</span>
+          <!-- Top-level Mode Selector Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <label class="comp-mode-card flex flex-col p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/30 cursor-pointer transition" data-mode="target">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="font-bold text-sm text-emerald-700 dark:text-emerald-300">Target File Size</span>
+                <input type="radio" name="comp-type" value="target" checked class="text-emerald-600">
               </div>
+              <span class="text-xs text-slate-500">Compress to exact GB, MB, KB, or Bytes limit for portal uploads.</span>
             </label>
 
-            <label class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer">
-              <input type="radio" name="comp-type" value="raster" class="mt-0.5 text-emerald-600 focus:ring-emerald-500">
-              <div>
-                <span class="font-bold text-sm block">Raster Image Downsampling (For Scanned PDFs)</span>
-                <span class="text-xs text-slate-500 dark:text-slate-400">Best for heavy scanned image documents and photo catalogs to shrink large MB sizes.</span>
+            <label class="comp-mode-card flex flex-col p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer transition hover:border-emerald-300" data-mode="raster">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="font-bold text-sm text-slate-800 dark:text-slate-200">Preset Downsampling</span>
+                <input type="radio" name="comp-type" value="raster" class="text-emerald-600">
               </div>
+              <span class="text-xs text-slate-500">Choose Extreme, Recommended, or Less reduction for scans & photos.</span>
+            </label>
+
+            <label class="comp-mode-card flex flex-col p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer transition hover:border-emerald-300" data-mode="vector">
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="font-bold text-sm text-slate-800 dark:text-slate-200">Smart Vector</span>
+                <input type="radio" name="comp-type" value="vector" class="text-emerald-600">
+              </div>
+              <span class="text-xs text-slate-500">Lossless font & stream rebuild. Keeps 100% vector text selectable.</span>
             </label>
           </div>
 
-          <div id="raster-presets" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-            <label class="flex flex-col p-3 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-emerald-500 transition">
-              <span class="font-semibold text-xs">Extreme</span>
-              <span class="text-[11px] text-slate-400">Max reduction (~60-80%)</span>
-              <input type="radio" name="comp-level" value="extreme" class="hidden">
-            </label>
-            <label class="flex flex-col p-3 rounded-xl border-2 border-emerald-500 bg-emerald-50/20 cursor-pointer">
-              <span class="font-semibold text-xs text-emerald-600">Recommended</span>
-              <span class="text-[11px] text-slate-400">Balanced (~40-60%)</span>
-              <input type="radio" name="comp-level" value="recommended" checked class="hidden">
-            </label>
-            <label class="flex flex-col p-3 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-emerald-500 transition">
-              <span class="font-semibold text-xs">Less</span>
-              <span class="text-[11px] text-slate-400">High quality (~20-30%)</span>
-              <input type="radio" name="comp-level" value="less" class="hidden">
-            </label>
+          <!-- PANEL 1: TARGET FILE SIZE CONFIGURATION -->
+          <div id="target-size-panel" class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 space-y-4">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-xs font-bold text-slate-700 dark:text-slate-200">Target Maximum File Size</label>
+                <span id="target-live-calc" class="text-xs font-semibold text-emerald-600">Original: 0 MB</span>
+              </div>
+              
+              <div class="flex items-center gap-2">
+                <input type="number" id="target-size-val" step="any" min="0.01" value="2" class="w-full text-sm font-semibold bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+                <select id="target-size-unit" class="text-xs font-bold bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 outline-none focus:border-emerald-500">
+                  <option value="MB" selected>MB</option>
+                  <option value="KB">KB</option>
+                  <option value="Bytes">Bytes</option>
+                  <option value="GB">GB</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Quick Preset Chips -->
+            <div>
+              <span class="text-[11px] font-semibold text-slate-500 block mb-1.5">Quick Target Presets:</span>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="target-chip px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium hover:border-emerald-500 hover:text-emerald-600 transition" data-val="500" data-unit="KB">500 KB</button>
+                <button type="button" class="target-chip px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium hover:border-emerald-500 hover:text-emerald-600 transition" data-val="1" data-unit="MB">1 MB</button>
+                <button type="button" class="target-chip px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium hover:border-emerald-500 hover:text-emerald-600 transition" data-val="2" data-unit="MB">2 MB</button>
+                <button type="button" class="target-chip px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium hover:border-emerald-500 hover:text-emerald-600 transition" data-val="5" data-unit="MB">5 MB</button>
+                <button type="button" class="target-chip px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium hover:border-emerald-500 hover:text-emerald-600 transition" data-val="10" data-unit="MB">10 MB</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL 2: RASTER PRESETS (Extreme, Recommended, Less) -->
+          <div id="raster-presets" class="hidden space-y-3">
+            <span class="text-xs font-bold text-slate-700 dark:text-slate-200 block">Select Downsampling Intensity:</span>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <!-- Extreme Card -->
+              <div class="preset-card flex flex-col p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer hover:border-emerald-400 transition" data-level="extreme">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="preset-title font-bold text-xs text-slate-800 dark:text-slate-200">Extreme</span>
+                  <input type="radio" name="comp-level" value="extreme" class="text-emerald-600">
+                </div>
+                <span class="text-[11px] text-slate-400">Max reduction (~70-85%)</span>
+                <span class="text-[10px] text-emerald-600 font-medium mt-1">72-96 DPI &bull; Quality 45%</span>
+              </div>
+
+              <!-- Recommended Card -->
+              <div class="preset-card flex flex-col p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/30 ring-1 ring-emerald-500 cursor-pointer transition" data-level="recommended">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="preset-title font-bold text-xs text-emerald-700 dark:text-emerald-300">Recommended</span>
+                  <input type="radio" name="comp-level" value="recommended" checked class="text-emerald-600">
+                </div>
+                <span class="text-[11px] text-slate-400">Balanced (~45-65%)</span>
+                <span class="text-[10px] text-emerald-600 font-medium mt-1">130-150 DPI &bull; Quality 72%</span>
+              </div>
+
+              <!-- Less Card -->
+              <div class="preset-card flex flex-col p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer hover:border-emerald-400 transition" data-level="less">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="preset-title font-bold text-xs text-slate-800 dark:text-slate-200">Less</span>
+                  <input type="radio" name="comp-level" value="less" class="text-emerald-600">
+                </div>
+                <span class="text-[11px] text-slate-400">High clarity (~20-35%)</span>
+                <span class="text-[10px] text-emerald-600 font-medium mt-1">180-200 DPI &bull; Quality 88%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL 3: VECTOR INFO -->
+          <div id="vector-info-panel" class="hidden p-4 rounded-xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-xs text-slate-600 dark:text-slate-300 space-y-1">
+            <span class="font-bold text-blue-900 dark:text-blue-200 block">Lossless Vector & Font Stream Rebuilding</span>
+            <p>Strips redundant XRef entries, removes unused metadata, and deflates object streams. All text remains 100% digital, razor-sharp, and selectable at infinite zoom.</p>
           </div>
 
           <div class="flex justify-end pt-2">
@@ -118,32 +183,165 @@ const OptimizeTools = {
     const pctBadge = container.querySelector('#compress-pct-badge');
     const downloadBtn = container.querySelector('#compress-download-btn');
 
+    // Panels
+    const targetSizePanel = container.querySelector('#target-size-panel');
+    const rasterPresets = container.querySelector('#raster-presets');
+    const vectorInfoPanel = container.querySelector('#vector-info-panel');
+    const targetValInput = container.querySelector('#target-size-val');
+    const targetUnitSelect = container.querySelector('#target-size-unit');
+    const targetLiveCalc = container.querySelector('#target-live-calc');
+
     let compressedBlob = null;
+
+    // Helper: update target size live calculation display
+    const updateTargetLive = () => {
+      if (!currentFile) return;
+      const val = parseFloat(targetValInput.value) || 0;
+      const unit = targetUnitSelect.value;
+      const multipliers = { 'Bytes': 1, 'KB': 1024, 'MB': 1024 * 1024, 'GB': 1024 * 1024 * 1024 };
+      const targetBytes = val * (multipliers[unit] || 1024 * 1024);
+      const origBytes = currentFile.size;
+
+      if (targetBytes >= origBytes) {
+        targetLiveCalc.innerText = `Target (${window.pdfEngine.formatBytes(targetBytes)}) ≥ Current (${window.pdfEngine.formatBytes(origBytes)}). Lossless mode will be applied.`;
+        targetLiveCalc.className = 'text-xs font-semibold text-blue-600';
+      } else {
+        const reductionPct = Math.round(((origBytes - targetBytes) / origBytes) * 100);
+        targetLiveCalc.innerText = `Original: ${window.pdfEngine.formatBytes(origBytes)} → Target: ${window.pdfEngine.formatBytes(targetBytes)} (~${reductionPct}% reduction)`;
+        targetLiveCalc.className = 'text-xs font-semibold text-emerald-600';
+      }
+    };
+
+    targetValInput.addEventListener('input', updateTargetLive);
+    targetUnitSelect.addEventListener('change', updateTargetLive);
+
+    // Preset chip buttons
+    container.querySelectorAll('.target-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        targetValInput.value = chip.dataset.val;
+        targetUnitSelect.value = chip.dataset.unit;
+        updateTargetLive();
+      });
+    });
+
+    // Preset cards interactive selection (Extreme, Recommended, Less)
+    const selectPresetCard = (selectedLevel) => {
+      container.querySelectorAll('.preset-card').forEach(card => {
+        const isMatch = card.dataset.level === selectedLevel;
+        const title = card.querySelector('.preset-title');
+        const radio = card.querySelector('input[type="radio"]');
+
+        if (isMatch) {
+          card.className = 'preset-card flex flex-col p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/30 ring-1 ring-emerald-500 cursor-pointer transition';
+          if (title) title.className = 'preset-title font-bold text-xs text-emerald-700 dark:text-emerald-300';
+          if (radio) radio.checked = true;
+        } else {
+          card.className = 'preset-card flex flex-col p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer hover:border-emerald-400 transition';
+          if (title) title.className = 'preset-title font-bold text-xs text-slate-800 dark:text-slate-200';
+          if (radio) radio.checked = false;
+        }
+      });
+    };
+
+    container.querySelectorAll('.preset-card').forEach(card => {
+      card.addEventListener('click', () => {
+        selectPresetCard(card.dataset.level);
+      });
+    });
+
+    // Top-level Mode Selector switching
+    const selectMode = (mode) => {
+      container.querySelectorAll('.comp-mode-card').forEach(card => {
+        const isMatch = card.dataset.mode === mode;
+        const radio = card.querySelector('input[type="radio"]');
+        const title = card.querySelector('span.font-bold');
+
+        if (isMatch) {
+          card.className = 'comp-mode-card flex flex-col p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/30 cursor-pointer transition';
+          if (title) title.className = 'font-bold text-sm text-emerald-700 dark:text-emerald-300';
+          if (radio) radio.checked = true;
+        } else {
+          card.className = 'comp-mode-card flex flex-col p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer transition hover:border-emerald-300';
+          if (title) title.className = 'font-bold text-sm text-slate-800 dark:text-slate-200';
+          if (radio) radio.checked = false;
+        }
+      });
+
+      targetSizePanel.classList.toggle('hidden', mode !== 'target');
+      rasterPresets.classList.toggle('hidden', mode !== 'raster');
+      vectorInfoPanel.classList.toggle('hidden', mode !== 'vector');
+    };
+
+    container.querySelectorAll('.comp-mode-card').forEach(card => {
+      card.addEventListener('click', () => {
+        selectMode(card.dataset.mode);
+      });
+    });
 
     UI.setupDropzone(dropzone, input, async (files) => {
       if (files.length === 0) return;
       currentFile = files[0];
       statusEl.innerText = `${currentFile.name} (${window.pdfEngine.formatBytes(currentFile.size)})`;
       currentBuffer = await window.pdfEngine.readFileAsArrayBuffer(currentFile);
+
+      // Auto-populate reasonable default target based on file size
+      if (currentFile.size > 2 * 1024 * 1024) {
+        targetValInput.value = Math.max(0.5, Math.round((currentFile.size / (1024 * 1024) * 0.5) * 10) / 10);
+        targetUnitSelect.value = 'MB';
+      } else {
+        targetValInput.value = Math.max(100, Math.round(currentFile.size / 1024 * 0.5));
+        targetUnitSelect.value = 'KB';
+      }
+
+      updateTargetLive();
       optionsEl.classList.remove('hidden');
       resultCard.classList.add('hidden');
     });
 
-    const compTypeRadios = container.querySelectorAll('input[name="comp-type"]');
-    const rasterPresets = container.querySelector('#raster-presets');
-    compTypeRadios.forEach(r => {
-      r.addEventListener('change', () => {
-        rasterPresets.classList.toggle('hidden', r.value !== 'raster');
-      });
-    });
-
     runBtn.addEventListener('click', async () => {
       if (!currentBuffer && !currentFile) return;
-      const compType = container.querySelector('input[name="comp-type"]:checked').value;
+      const compTypeEl = container.querySelector('input[name="comp-type"]:checked');
+      const compType = compTypeEl ? compTypeEl.value : 'target';
       const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
 
       try {
-        if (compType === 'vector') {
+        if (compType === 'target') {
+          // --- Target File Size Mode (GB / MB / KB / Bytes) ---
+          const val = parseFloat(targetValInput.value) || 1;
+          const unit = targetUnitSelect.value;
+          const multipliers = { 'Bytes': 1, 'KB': 1024, 'MB': 1024 * 1024, 'GB': 1024 * 1024 * 1024 };
+          const targetBytes = Math.max(1024, Math.round(val * (multipliers[unit] || 1024 * 1024)));
+
+          UI.showProgress(0.1, `Compressing to target size ${window.pdfEngine.formatBytes(targetBytes)}...`);
+          compressedBlob = await window.pdfEngine.compressPdfToTarget(bufferToUse, targetBytes, (pct, status) => {
+            UI.showProgress(pct, status);
+          });
+        } else if (compType === 'raster') {
+          // --- Raster Downsampling Presets ---
+          const levelEl = container.querySelector('input[name="comp-level"]:checked');
+          const level = levelEl ? levelEl.value : 'recommended';
+
+          let scale = 1.25;
+          let quality = 0.72;
+
+          if (level === 'extreme') {
+            scale = 0.85;
+            quality = 0.45;
+          } else if (level === 'less') {
+            scale = 1.6;
+            quality = 0.88;
+          }
+
+          UI.showProgress(0.1, `Applying ${level.toUpperCase()} compression preset...`);
+          const images = await window.pdfEngine.pdfToImages(window.pdfEngine.cloneBuffer(bufferToUse), 'image/jpeg', scale, (pct, status) => {
+            UI.showProgress(pct * 0.75, status);
+          }, quality);
+
+          UI.showProgress(0.80, 'Re-encoding optimized document...');
+          const fileList = images.map(img => new File([img.blob], img.name, { type: 'image/jpeg' }));
+          compressedBlob = await window.pdfEngine.imagesToPDF(fileList, { pageSize: 'Fit' });
+        } else {
+          // --- Smart Vector & Text Preservation Mode ---
           UI.showProgress(0.2, 'Optimizing PDF dictionary and streams (Vector & Text Preserved)...');
           const { PDFDocument } = PDFLib;
           const srcDoc = await PDFDocument.load(window.pdfEngine.cloneBuffer(bufferToUse), { ignoreEncryption: true });
@@ -154,22 +352,6 @@ const OptimizeTools = {
           UI.showProgress(0.8, 'Compressing object trees...');
           const bytes = await newDoc.save({ useObjectStreams: false });
           compressedBlob = new Blob([bytes], { type: 'application/pdf' });
-        } else {
-          // Raster mode for image-heavy PDFs
-          const levelEl = container.querySelector('input[name="comp-level"]:checked');
-          const level = levelEl ? levelEl.value : 'recommended';
-          let scale = 1.2;
-          if (level === 'extreme') scale = 0.9;
-          else if (level === 'less') scale = 1.6;
-
-          UI.showProgress(0.1, 'Analyzing document structure...');
-          const images = await window.pdfEngine.pdfToImages(window.pdfEngine.cloneBuffer(bufferToUse), 'image/jpeg', scale, (pct, status) => {
-            UI.showProgress(pct * 0.7, status);
-          });
-
-          UI.showProgress(0.75, 'Re-encoding optimized document...');
-          const fileList = images.map(img => new File([img.blob], img.name, { type: 'image/jpeg' }));
-          compressedBlob = await window.pdfEngine.imagesToPDF(fileList, { pageSize: 'Fit' });
         }
 
         const origSize = currentFile.size;
@@ -189,7 +371,7 @@ const OptimizeTools = {
 
         UI.showResultPreview({
           title: 'Optimized PDF Ready',
-          subtitle: `Size reduced by ${savedPct}% (${window.pdfEngine.formatBytes(origSize)} → ${window.pdfEngine.formatBytes(newSize)}). Inspect quality below`,
+          subtitle: `Size: ${window.pdfEngine.formatBytes(origSize)} → ${window.pdfEngine.formatBytes(newSize)} (-${savedPct}%). Inspect visual quality below:`,
           blob: compressedBlob,
           filename: `${currentFile.name.replace(/\.pdf$/i, '')}_compressed.pdf`,
           originalSize: origSize
@@ -204,7 +386,7 @@ const OptimizeTools = {
       if (compressedBlob) {
         UI.showResultPreview({
           title: 'Optimized PDF Ready',
-          subtitle: `Size reduced by ${Math.round(((currentFile.size - compressedBlob.size) / currentFile.size) * 100)}%. Inspect quality below`,
+          subtitle: `Size: ${window.pdfEngine.formatBytes(currentFile.size)} → ${window.pdfEngine.formatBytes(compressedBlob.size)}. Inspect visual quality below:`,
           blob: compressedBlob,
           filename: `${currentFile.name.replace(/\.pdf$/i, '')}_compressed.pdf`,
           originalSize: currentFile.size

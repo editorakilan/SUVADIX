@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PDF Suite - Professional Client-Side PDF Toolkit</title>
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <title>PDFNova - Your PDFs. Your Tools. One Platform.</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/pdfnova-icon.png">
 
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -46,20 +47,19 @@
   <!-- Custom Styles -->
   <link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900 antialiased selection:bg-red-500 selection:text-white">
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900 antialiased selection:bg-indigo-500 selection:text-white">
 
   <!-- Top Clean Navigation -->
   <header class="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm transition-colors duration-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3 cursor-pointer group" onclick="window.app && window.app.closeToolWorkspace()">
-        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-500 p-0.5 shadow-md shadow-red-500/20 group-hover:scale-105 transition-transform duration-300">
-          <div class="w-full h-full bg-white rounded-[14px] flex items-center justify-center">
-            <img src="assets/favicon.svg" alt="PDF Suite Logo" class="w-6 h-6">
+        <img src="assets/pdfnova-icon.png" alt="PDFNova Logo" class="w-10 h-10 object-contain rounded-xl shadow-sm group-hover:scale-105 transition-transform duration-300">
+        <div class="flex flex-col">
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-2xl tracking-tight text-slate-900 leading-none">PDF<span class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">Nova</span></span>
+            <span class="hidden sm:inline-block px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-full">Private & Fast</span>
           </div>
-        </div>
-        <div>
-          <span class="font-extrabold text-xl tracking-tight text-slate-900">PDF <span class="text-red-600">Suite</span></span>
-          <span class="hidden sm:inline-block ml-2 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-red-50 text-red-600 border border-red-200 rounded-full">100% Free & Private</span>
+          <span class="text-[9px] font-bold tracking-wider text-slate-400 uppercase mt-0.5 hidden sm:block">YOUR PDFS. YOUR TOOLS. ONE PLATFORM.</span>
         </div>
       </div>
 
@@ -81,7 +81,7 @@
       <!-- Hero Header -->
       <div class="text-center max-w-3xl mx-auto space-y-4 pt-4 pb-2">
         <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight text-slate-900">
-          Every tool you need to work with <span class="text-red-600">PDFs</span> in one place
+          Every tool you need to work with <span class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">PDFs</span> in one place
         </h1>
         <p class="text-sm sm:text-base text-slate-600 max-w-xl mx-auto">
           Private, fast, and 100% in-browser. All processing runs directly on your machine with zero remote server limits.
@@ -154,9 +154,13 @@
   <!-- Footer -->
   <footer class="border-t border-slate-200 py-6 bg-white mt-auto">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-      <div class="flex items-center gap-2">
-        <img src="assets/favicon.svg" alt="PDF Suite" class="w-5 h-5">
-        <span class="font-bold text-slate-800">PDF Suite</span>
+      <div class="flex items-center gap-2.5">
+        <img src="assets/pdfnova-icon.png" alt="PDFNova" class="w-6 h-6 object-contain rounded-md">
+        <div class="flex items-center gap-2">
+          <span class="font-extrabold text-slate-900 text-sm">PDF<span class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">Nova</span></span>
+          <span class="text-slate-300">|</span>
+          <span class="text-[10px] text-slate-500 font-bold tracking-wider uppercase">YOUR PDFS. YOUR TOOLS. ONE PLATFORM.</span>
+        </div>
       </div>
       <div>
         <span>All processing runs privately in your local browser</span>

@@ -1,5 +1,5 @@
 /**
- * PDF Suite - Main Application Controller
+ * PDFNova - Main Application Controller
  * Handles dashboard grid, category navigation, real-time search, theme toggle, and tool dispatching.
  */
 
