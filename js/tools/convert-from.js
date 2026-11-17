@@ -135,7 +135,14 @@ const ConvertFromTools = {
           UI.showProgress(pct, status);
         });
         UI.hideProgress();
-        window.pdfEngine.downloadBlob(zipBlob, `${currentFile.name.replace(/\.pdf$/i, '')}_images.zip`);
+        UI.celebrate();
+        UI.showToast('Images packaged into ZIP!', 'success');
+        UI.showResultPreview({
+          title: 'ZIP Archive Ready',
+          subtitle: `${generatedImages.length} extracted images archived into ZIP`,
+          blob: zipBlob,
+          filename: `${currentFile.name.replace(/\.pdf$/i, '')}_images.zip`
+        });
       } catch (err) {
         UI.hideProgress();
         UI.showToast(err.message, 'error');

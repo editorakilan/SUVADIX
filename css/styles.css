@@ -1,120 +1,191 @@
-/* PDF Suite - Professional Web Application Styles */
+/* PDF Suite - Premium Modern UI Styles with Fluid Animations */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  --primary: #EF4444;
-  --primary-hover: #DC2626;
-  --primary-light: #FEE2E2;
-  --surface: #FFFFFF;
-  --surface-alt: #F9FAFB;
-  --border: #E5E7EB;
-  --text-main: #111827;
-  --text-muted: #6B7280;
-  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-  --card-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  /* Vibrant Brand Accents */
+  --brand-primary: #FF3B30;
+  --brand-gradient: linear-gradient(135deg, #FF3B30 0%, #FF6B00 50%, #9013FE 100%);
+  --brand-glow: 0 10px 30px -5px rgba(255, 59, 48, 0.3);
+  
+  /* Light Theme */
+  --bg-main: #F8FAFC;
+  --bg-surface: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --border: rgba(226, 232, 240, 0.8);
+  --border-hover: rgba(255, 59, 48, 0.35);
+  --text-main: #0F172A;
+  --text-muted: #64748B;
+  --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  --card-hover-shadow: 0 20px 35px -8px rgba(255, 59, 48, 0.15), 0 8px 16px -4px rgba(15, 23, 42, 0.06);
 }
 
 .dark {
-  --primary: #F87171;
-  --primary-hover: #EF4444;
-  --primary-light: rgba(239, 68, 68, 0.15);
-  --surface: #1E293B;
-  --surface-alt: #0F172A;
-  --border: #334155;
+  /* Rich Deep Space Dark Theme (No plain boring black/white) */
+  --bg-main: #090D16;
+  --bg-surface: #0F172A;
+  --bg-card: rgba(15, 23, 42, 0.75);
+  --border: rgba(51, 65, 85, 0.6);
+  --border-hover: rgba(255, 59, 48, 0.5);
   --text-main: #F8FAFC;
   --text-muted: #94A3B8;
-  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
-  --card-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+  --card-hover-shadow: 0 20px 40px -10px rgba(255, 59, 48, 0.25), 0 0 20px rgba(139, 92, 246, 0.15);
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   color: var(--text-main);
-  background-color: var(--surface-alt);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  background-color: var(--bg-main);
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(255, 59, 48, 0.07) 0%, transparent 40%),
+    radial-gradient(circle at 90% 15%, rgba(139, 92, 246, 0.07) 0%, transparent 40%),
+    radial-gradient(circle at 50% 80%, rgba(14, 165, 233, 0.05) 0%, transparent 50%);
+  background-attachment: fixed;
+  transition: background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1), color 0.3s ease;
+  min-height: 100vh;
 }
 
-/* Custom Scrollbars */
+/* Custom Sleek Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: #CBD5E1;
-  border-radius: 4px;
+  border-radius: 9999px;
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: #334155;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: #FF3B30;
 }
 
-/* Glassmorphism effects */
+/* Glassmorphism Header with animated glow */
 .glass-nav {
   background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
 }
 .dark .glass-nav {
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(9, 13, 22, 0.85);
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
 }
 
-/* Tool card animations */
-.tool-card {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: var(--card-shadow);
+/* Fluid Navigation Tabs */
+.nav-tab-slider {
+  position: relative;
+  background: rgba(241, 245, 249, 0.8);
   border: 1px solid var(--border);
-  background: var(--surface);
+  border-radius: 9999px;
+  padding: 4px;
+}
+.dark .nav-tab-slider {
+  background: rgba(15, 23, 42, 0.8);
+}
+
+.cat-filter-btn {
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1;
+}
+.cat-filter-btn:hover {
+  transform: translateY(-1px);
+}
+.cat-filter-btn.active {
+  background: linear-gradient(135deg, #FF3B30 0%, #E11D48 100%);
+  color: white !important;
+  box-shadow: 0 4px 14px rgba(255, 59, 48, 0.35);
+}
+
+/* Tool Cards with 3D Elevation & Border Glow */
+.tool-card {
+  position: relative;
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+  border-radius: 1.25rem;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+.tool-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #FF3B30, #9013FE);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 .tool-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--card-hover);
-  border-color: rgba(239, 68, 68, 0.4);
+  transform: translateY(-4px) scale(1.01);
+  border-color: var(--border-hover);
+  box-shadow: var(--card-hover-shadow);
+}
+.tool-card:hover::before {
+  opacity: 1;
 }
 
 /* Drag-and-drop dropzone */
 .dropzone {
   border: 2px dashed var(--border);
-  transition: all 0.2s ease;
-  background: var(--surface);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
 }
 .dropzone.dragover {
-  border-color: #EF4444;
-  background: var(--primary-light);
+  border-color: #FF3B30;
+  background: rgba(255, 59, 48, 0.08);
   transform: scale(1.01);
+  box-shadow: 0 10px 25px rgba(255, 59, 48, 0.2);
 }
 
-/* Page Thumbnail Grids */
-.page-thumb-card {
-  transition: all 0.15s ease;
+/* Shimmer Button Effect */
+.btn-shimmer {
   position: relative;
-  border: 2px solid transparent;
-  user-select: none;
+  overflow: hidden;
 }
-.page-thumb-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(60deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transform: rotate(30deg);
+  transition: transform 0.6s ease;
 }
-.page-thumb-card.selected {
-  border-color: #EF4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+.btn-shimmer:hover::after {
+  transform: rotate(30deg) translate(100%, 100%);
 }
-.page-thumb-card.marked-delete {
-  opacity: 0.4;
-  filter: grayscale(80%);
-  border-color: #DC2626;
+
+/* Realistic PDF Paper Texture in Previews */
+.pdf-paper-preview {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  background: #FFFFFF;
+  transition: transform 0.2s ease;
 }
 
 /* Smooth modal fade */
 .modal-backdrop {
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  animation: modalFadeIn 0.2s ease forwards;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: modalFadeIn 0.25s ease forwards;
 }
 @keyframes modalFadeIn {
   from { opacity: 0; }
@@ -122,69 +193,23 @@ body {
 }
 
 .modal-content {
-  animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modalScaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-@keyframes modalSlideUp {
-  from { opacity: 0; transform: translateY(16px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-/* Signature Pad */
-#sig-canvas {
-  touch-action: none;
-  cursor: crosshair;
-  background-color: #FFFFFF;
+@keyframes modalScaleUp {
+  from { opacity: 0; transform: scale(0.95) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* Comparison Slider */
-.comparison-container {
-  position: relative;
-  overflow: hidden;
-  user-select: none;
-}
-.comparison-slider-handle {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: #EF4444;
-  cursor: ew-resize;
-}
-.comparison-slider-handle::after {
-  content: '◂ ▸';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 32px;
-  height: 32px;
-  background: #EF4444;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: bold;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-}
-
-/* Redaction overlay cursor */
-.redact-canvas-active {
-  cursor: crosshair;
-}
-
-/* Toasts */
+/* Toast Notifications */
 #toast-container {
   pointer-events: none;
   z-index: 9999;
 }
 .toast-msg {
   pointer-events: auto;
-  animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-@keyframes toastIn {
-  from { opacity: 0; transform: translateY(12px) scale(0.95); }
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.95); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
-

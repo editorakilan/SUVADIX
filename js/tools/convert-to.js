@@ -124,7 +124,12 @@ const ConvertToTools = {
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('Images converted to PDF successfully!', 'success');
-        window.pdfEngine.downloadBlob(pdfBlob, 'converted_images.pdf');
+        UI.showResultPreview({
+          title: 'Converted PDF Ready',
+          subtitle: `${imageFiles.length} image(s) combined into high-resolution PDF`,
+          blob: pdfBlob,
+          filename: 'converted_images.pdf'
+        });
       } catch (err) {
         UI.hideProgress();
         UI.showToast(`Error: ${err.message}`, 'error');

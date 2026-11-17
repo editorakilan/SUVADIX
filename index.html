@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en" class="dark scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -41,35 +41,39 @@
   <!-- Custom Styles -->
   <link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased selection:bg-red-500 selection:text-white">
+<body class="min-h-screen flex flex-col bg-slate-50 dark:bg-[#090D16] text-slate-900 dark:text-slate-100 antialiased selection:bg-red-500 selection:text-white">
 
   <!-- Top Glass Navigation -->
   <header class="sticky top-0 z-40 glass-nav transition-colors duration-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3 cursor-pointer" onclick="window.app && window.app.closeToolWorkspace()">
-        <img src="assets/favicon.svg" alt="PDF Suite Logo" class="w-9 h-9">
+      <div class="flex items-center gap-3 cursor-pointer group" onclick="window.app && window.app.closeToolWorkspace()">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-red-600 via-rose-500 to-purple-600 p-0.5 shadow-lg shadow-red-500/20 group-hover:scale-105 transition-transform duration-300">
+          <div class="w-full h-full bg-white dark:bg-slate-950 rounded-[14px] flex items-center justify-center">
+            <img src="assets/favicon.svg" alt="PDF Suite Logo" class="w-6 h-6">
+          </div>
+        </div>
         <div>
-          <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-red-600 to-rose-500 bg-clip-text text-transparent">PDF Suite</span>
-          <span class="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 rounded-full">Open Source</span>
+          <span class="font-extrabold text-xl tracking-tight bg-gradient-to-r from-red-500 via-rose-500 to-purple-500 bg-clip-text text-transparent">PDF Suite</span>
+          <span class="hidden sm:inline-block ml-2 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-red-500/10 text-red-500 dark:text-red-400 border border-red-500/20 rounded-full">Client-Side</span>
         </div>
       </div>
 
       <div class="flex items-center gap-3">
         <!-- Privacy Badge -->
-        <div class="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
-          <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+        <div class="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>100% In-Browser Privacy</span>
         </div>
 
         <!-- GitHub Link Button -->
-        <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition" title="View Source on GitHub">
+        <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-300 transition" title="View Source on GitHub">
           <i data-lucide="github" class="w-5 h-5"></i>
         </a>
 
         <!-- Theme Toggle -->
-        <button id="theme-toggle-btn" class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition" title="Toggle Light/Dark Theme">
-          <i data-lucide="sun" class="w-5 h-5 dark:hidden"></i>
-          <i data-lucide="moon" class="w-5 h-5 hidden dark:block"></i>
+        <button id="theme-toggle-btn" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-300 transition" title="Toggle Light/Dark Theme">
+          <i data-lucide="sun" class="w-5 h-5 dark:hidden text-amber-500"></i>
+          <i data-lucide="moon" class="w-5 h-5 hidden dark:block text-purple-400"></i>
         </button>
       </div>
     </div>
@@ -81,37 +85,43 @@
     <!-- DASHBOARD VIEW -->
     <div id="dashboard-view" class="space-y-8">
       <!-- Hero Header -->
-      <div class="text-center max-w-2xl mx-auto space-y-4 pt-4 pb-2">
-        <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">
-          Every tool you need to work with <span class="text-red-600">PDFs</span> in one place
+      <div class="text-center max-w-3xl mx-auto space-y-4 pt-4 pb-2">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold uppercase tracking-wider mb-2">
+          <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+          <span>Zero Server Uploads &bull; Free Forever</span>
+        </div>
+        <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+          Every tool you need to work with <span class="bg-gradient-to-r from-red-500 via-rose-500 to-purple-500 bg-clip-text text-transparent">PDFs</span> in one place
         </h1>
-        <p class="text-sm sm:text-base text-slate-500 dark:text-slate-400">
-          100% Free, client-side, and private. All operations run directly in your browser without uploading files to any external server.
+        <p class="text-sm sm:text-base text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
+          Private, fast, and in-browser. All processing runs directly on your machine with zero remote server limits.
         </p>
 
-        <!-- Search Bar -->
-        <div class="relative max-w-lg mx-auto pt-2">
-          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+        <!-- Search Bar with Glow -->
+        <div class="relative max-w-lg mx-auto pt-3">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
             <i data-lucide="search" class="w-4 h-4"></i>
           </div>
-          <input type="text" id="search-input" placeholder="Search 25+ PDF tools (e.g. merge, compress, sign, ocr)..." class="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm shadow-sm focus:ring-2 focus:ring-red-500 outline-none transition">
+          <input type="text" id="search-input" placeholder="Search 25+ PDF tools (merge, split, watermark, sign, ocr)..." class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur text-sm shadow-lg shadow-black/5 dark:shadow-black/20 focus:ring-2 focus:ring-red-500 outline-none transition">
         </div>
       </div>
 
-      <!-- Category Filter Tabs -->
-      <div class="flex items-center justify-start sm:justify-center gap-1.5 overflow-x-auto pb-2 scrollbar-none text-xs font-semibold">
-        <button class="cat-filter-btn px-3.5 py-1.5 rounded-full bg-red-600 text-white shadow-sm transition whitespace-nowrap" data-category="all">All Tools</button>
-        <button class="cat-filter-btn px-3.5 py-1.5 rounded-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition whitespace-nowrap" data-category="organize">Organize</button>
-        <button class="cat-filter-btn px-3.5 py-1.5 rounded-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition whitespace-nowrap" data-category="optimize">Optimize</button>
-        <button class="cat-filter-btn px-3.5 py-1.5 rounded-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition whitespace-nowrap" data-category="convert-to">Convert To</button>
-        <button class="cat-filter-btn px-3.5 py-1.5 rounded-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition whitespace-nowrap" data-category="convert-from">Convert From</button>
-        <button class="cat-filter-btn px-3.5 py-1.5 rounded-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition whitespace-nowrap" data-category="edit">Edit PDF</button>
-        <button class="cat-filter-btn px-3.5 py-1.5 rounded-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition whitespace-nowrap" data-category="security">Security</button>
-        <button class="cat-filter-btn px-3.5 py-1.5 rounded-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition whitespace-nowrap" data-category="intelligence">Intelligence</button>
+      <!-- Category Filter Tabs with Sliding Pill Animation -->
+      <div class="flex justify-center">
+        <div class="inline-flex items-center gap-1.5 p-1.5 rounded-2xl bg-white/70 dark:bg-slate-900/70 backdrop-blur border border-slate-200 dark:border-slate-800/80 shadow-md overflow-x-auto max-w-full scrollbar-none text-xs font-bold">
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition whitespace-nowrap active" data-category="all">All Tools</button>
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition whitespace-nowrap" data-category="organize">Organize</button>
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition whitespace-nowrap" data-category="optimize">Optimize</button>
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition whitespace-nowrap" data-category="convert-to">Convert To</button>
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition whitespace-nowrap" data-category="convert-from">Convert From</button>
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition whitespace-nowrap" data-category="edit">Edit PDF</button>
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition whitespace-nowrap" data-category="security">Security</button>
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition whitespace-nowrap" data-category="intelligence">Intelligence</button>
+        </div>
       </div>
 
       <!-- Tools Grid -->
-      <div id="tools-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div id="tools-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-2">
         <!-- Rendered dynamically by app.js -->
       </div>
     </div>
@@ -119,22 +129,22 @@
     <!-- TOOL WORKSPACE VIEW (Hidden initially) -->
     <div id="tool-workspace-view" class="space-y-6 hidden">
       <!-- Breadcrumb Bar -->
-      <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800/80">
         <div class="flex items-center gap-3">
-          <button id="tool-back-btn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold transition">
+          <button id="tool-back-btn" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/80 text-xs font-bold transition">
             <i data-lucide="arrow-left" class="w-4 h-4"></i>
             <span>All Tools</span>
           </button>
-          <div class="h-4 w-px bg-slate-200 dark:bg-slate-800"></div>
-          <span id="workspace-tool-category" class="text-xs font-bold uppercase tracking-wider text-slate-400">CATEGORY</span>
+          <div class="h-4 w-px bg-slate-200 dark:border-slate-800"></div>
+          <span id="workspace-tool-category" class="text-xs font-extrabold uppercase tracking-wider text-slate-400">CATEGORY</span>
           <span class="text-slate-300 dark:text-slate-700">/</span>
           <span id="workspace-tool-title" class="text-sm font-bold text-slate-800 dark:text-slate-100">Tool Name</span>
         </div>
 
         <div class="flex items-center gap-2">
-          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Zero Server Uploads
+            100% In-Browser Memory
           </span>
         </div>
       </div>
@@ -148,17 +158,17 @@
   </main>
 
   <!-- Footer -->
-  <footer class="border-t border-slate-200 dark:border-slate-800 py-8 bg-white dark:bg-slate-900 transition-colors">
+  <footer class="border-t border-slate-200 dark:border-slate-800/80 py-8 bg-white/80 dark:bg-slate-900/60 backdrop-blur transition-colors mt-auto">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
       <div class="flex items-center gap-2">
         <img src="assets/favicon.svg" alt="PDF Suite" class="w-5 h-5">
         <span class="font-bold text-slate-700 dark:text-slate-300">PDF Suite</span>
-        <span>— Free & Open Source Web Application</span>
+        <span>&bull; Ready for GitHub Pages &bull; Open Source</span>
       </div>
       <div class="flex items-center gap-6">
-        <span>Runs 100% locally in your browser</span>
-        <span>•</span>
-        <a href="https://github.com" target="_blank" class="hover:text-red-600 transition flex items-center gap-1">
+        <span>100% Client-Side Privacy</span>
+        <span>&bull;</span>
+        <a href="https://github.com" target="_blank" class="hover:text-red-500 transition flex items-center gap-1">
           <i data-lucide="github" class="w-3.5 h-3.5"></i>
           <span>GitHub Repository</span>
         </a>
@@ -167,20 +177,87 @@
   </footer>
 
   <!-- Progress Modal -->
-  <div id="progress-modal" class="fixed inset-0 z-50 modal-backdrop bg-slate-900/60 items-center justify-center hidden">
-    <div class="modal-content bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-sm text-center space-y-4">
-      <div class="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950/40 text-red-600 mx-auto flex items-center justify-center">
-        <svg class="animate-spin h-6 w-6" fill="none" viewBox="0 0 24 24">
+  <div id="progress-modal" class="fixed inset-0 z-50 modal-backdrop bg-slate-950/70 backdrop-blur-md items-center justify-center hidden">
+    <div class="modal-content bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-sm text-center space-y-4">
+      <div class="w-14 h-14 rounded-2xl bg-red-500/10 text-red-500 mx-auto flex items-center justify-center">
+        <svg class="animate-spin h-7 w-7" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
         </svg>
       </div>
       <div>
-        <h4 id="progress-text" class="font-bold text-sm text-slate-800 dark:text-slate-100">Processing Document...</h4>
-        <p id="progress-percentage" class="text-xs text-slate-400 mt-1">0%</p>
+        <h4 id="progress-text" class="font-bold text-base text-slate-800 dark:text-slate-100">Processing Document...</h4>
+        <p id="progress-percentage" class="text-xs font-mono text-slate-400 mt-1">0%</p>
       </div>
-      <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
-        <div id="progress-bar" class="bg-red-600 h-full rounded-full transition-all duration-200" style="width: 0%"></div>
+      <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+        <div id="progress-bar" class="bg-gradient-to-r from-red-600 to-rose-600 h-full rounded-full transition-all duration-200" style="width: 0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unified Result Preview & Download Modal (Review Before Download) -->
+  <div id="result-preview-modal" class="fixed inset-0 z-50 modal-backdrop bg-slate-950/75 backdrop-blur-md hidden items-center justify-center p-4 sm:p-6 overflow-y-auto">
+    <div class="modal-content relative w-full max-w-4xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+            <i data-lucide="check-circle" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 id="res-modal-title" class="text-base font-bold text-slate-800 dark:text-slate-100">Document Ready</h3>
+            <p id="res-modal-subtitle" class="text-xs text-slate-500 dark:text-slate-400">Review your pages below before saving</p>
+          </div>
+        </div>
+        <button id="res-modal-close" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Main Body: High-Fidelity Page Preview Canvas with Navigation -->
+      <div class="flex-1 overflow-auto p-6 flex flex-col items-center justify-center bg-slate-100/60 dark:bg-slate-950/60 min-h-[380px]">
+        <!-- Page navigation bar -->
+        <div class="flex items-center gap-3 mb-4 bg-white/90 dark:bg-slate-800/90 backdrop-blur px-4 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm text-xs font-semibold">
+          <button id="res-prev-page" class="p-1 hover:text-red-500 disabled:opacity-30 transition" title="Previous Page">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          </button>
+          <span id="res-page-info">Page 1 of 1</span>
+          <button id="res-next-page" class="p-1 hover:text-red-500 disabled:opacity-30 transition" title="Next Page">
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+          <div class="h-3 w-px bg-slate-300 dark:bg-slate-600 mx-1"></div>
+          <button id="res-zoom-out" class="p-1 hover:text-red-500 transition" title="Zoom Out">
+            <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
+          </button>
+          <span id="res-zoom-val" class="text-[11px] font-mono text-slate-500">100%</span>
+          <button id="res-zoom-in" class="p-1 hover:text-red-500 transition" title="Zoom In">
+            <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+        <!-- Rendered Canvas -->
+        <div class="overflow-auto max-w-full max-h-[50vh] p-2 flex items-center justify-center">
+          <canvas id="res-preview-canvas" class="pdf-paper-preview shadow-2xl block"></canvas>
+        </div>
+      </div>
+
+      <!-- Footer Action Toolbar -->
+      <div class="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <span id="res-file-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">0 KB</span>
+          <span id="res-savings-badge" class="hidden px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">Saved 40%</span>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button id="res-open-tab-btn" class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition flex items-center gap-2">
+            <i data-lucide="external-link" class="w-4 h-4"></i>
+            <span>Open in Tab</span>
+          </button>
+          <button id="res-download-btn" class="btn-shimmer px-6 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white text-xs font-bold shadow-lg shadow-red-600/25 transition flex items-center gap-2">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span id="res-download-label">Download PDF</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -201,4 +278,3 @@
   <script src="js/app.js"></script>
 </body>
 </html>
-

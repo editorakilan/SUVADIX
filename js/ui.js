@@ -202,6 +202,214 @@ const UI = {
       containerEl.innerHTML = `<div class="col-span-full p-6 text-center text-red-500">Failed to render thumbnails: ${err.message}</div>`;
       throw err;
     }
+  },
+
+  // --- High-Fidelity Result Preview Modal (Inspect Before Download) ---
+  async showResultPreview({
+    title = 'Document Ready',
+    subtitle = 'Review your pages below before saving',
+    blob,
+    filename = 'document.pdf',
+    originalSize = null,
+    onDownload = null
+  }) {
+    const modal = document.getElementById('result-preview-modal');
+    if (!modal) {
+      window.pdfEngine.downloadBlob(blob, filename);
+      return;
+    }
+
+    const titleEl = document.getElementById('res-modal-title');
+    const subtitleEl = document.getElementById('res-modal-subtitle');
+    const closeBtn = document.getElementById('res-modal-close');
+    const prevBtn = document.getElementById('res-prev-page');
+    const nextBtn = document.getElementById('res-next-page');
+    const pageInfoEl = document.getElementById('res-page-info');
+    const zoomInBtn = document.getElementById('res-zoom-in');
+    const zoomOutBtn = document.getElementById('res-zoom-out');
+    const zoomValEl = document.getElementById('res-zoom-val');
+    const canvas = document.getElementById('res-preview-canvas');
+    const fileBadge = document.getElementById('res-file-badge');
+    const savingsBadge = document.getElementById('res-savings-badge');
+    const openTabBtn = document.getElementById('res-open-tab-btn');
+    const downloadBtn = document.getElementById('res-download-btn');
+    const downloadLabel = document.getElementById('res-download-label');
+
+    if (titleEl) titleEl.textContent = title;
+    if (subtitleEl) subtitleEl.textContent = subtitle;
+    if (fileBadge) fileBadge.textContent = window.pdfEngine.formatBytes(blob.size || 0);
+
+    if (savingsBadge) {
+      if (originalSize && originalSize > blob.size) {
+        const savedPct = Math.round(((originalSize - blob.size) / originalSize) * 100);
+        savingsBadge.textContent = `Saved ${savedPct}%`;
+        savingsBadge.classList.remove('hidden');
+      } else {
+        savingsBadge.classList.add('hidden');
+      }
+    }
+
+    if (downloadLabel) {
+      const ext = filename.split('.').pop().toUpperCase();
+      downloadLabel.textContent = `Download ${ext || 'File'}`;
+    }
+
+    const blobUrl = URL.createObjectURL(blob);
+
+    if (openTabBtn) {
+      openTabBtn.onclick = () => {
+        window.open(blobUrl, '_blank');
+      };
+    }
+
+    if (downloadBtn) {
+      downloadBtn.onclick = () => {
+        if (onDownload) {
+          onDownload();
+        } else {
+          window.pdfEngine.downloadBlob(blob, filename);
+        }
+        UI.celebrate();
+        UI.showToast(`Saved ${filename}!`, 'success');
+      };
+    }
+
+    const closeModal = () => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+    };
+
+    if (closeBtn) closeBtn.onclick = closeModal;
+    modal.onclick = (e) => {
+      if (e.target === modal) closeModal();
+    };
+
+    let pdfDoc = null;
+    let currentPage = 1;
+    let totalPages = 1;
+    let zoomLevel = 1.0;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    if (window.lucide) window.lucide.createIcons();
+
+    const isPdf = (blob.type === 'application/pdf' || filename.toLowerCase().endsWith('.pdf'));
+
+    if (isPdf && canvas) {
+      canvas.style.display = 'block';
+      const navBar = prevBtn?.parentElement;
+      if (navBar) navBar.style.display = 'flex';
+
+      try {
+        const buffer = await blob.arrayBuffer();
+        pdfDoc = await window.pdfEngine.getPdfJsDoc(buffer);
+        totalPages = pdfDoc.numPages;
+        currentPage = 1;
+
+        const renderPage = async () => {
+          if (!pdfDoc || !canvas) return;
+          const page = await pdfDoc.getPage(currentPage);
+          const baseViewport = page.getViewport({ scale: 1.0 });
+          const targetWidth = Math.min(750, Math.max(380, baseViewport.width)) * zoomLevel;
+          const scale = targetWidth / baseViewport.width;
+          const viewport = page.getViewport({ scale });
+
+          const outputScale = window.devicePixelRatio || 1;
+          canvas.width = Math.floor(viewport.width * outputScale);
+          canvas.height = Math.floor(viewport.height * outputScale);
+          canvas.style.width = Math.floor(viewport.width) + 'px';
+          canvas.style.height = Math.floor(viewport.height) + 'px';
+
+          const ctx = canvas.getContext('2d');
+          ctx.setTransform(outputScale, 0, 0, outputScale, 0, 0);
+
+          await page.render({
+            canvasContext: ctx,
+            viewport: viewport
+          }).promise;
+
+          if (pageInfoEl) pageInfoEl.textContent = `Page ${currentPage} of ${totalPages}`;
+          if (prevBtn) prevBtn.disabled = currentPage <= 1;
+          if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+          if (zoomValEl) zoomValEl.textContent = `${Math.round(zoomLevel * 100)}%`;
+        };
+
+        if (prevBtn) {
+          prevBtn.onclick = () => {
+            if (currentPage > 1) {
+              currentPage--;
+              renderPage();
+            }
+          };
+        }
+
+        if (nextBtn) {
+          nextBtn.onclick = () => {
+            if (currentPage < totalPages) {
+              currentPage++;
+              renderPage();
+            }
+          };
+        }
+
+        if (zoomInBtn) {
+          zoomInBtn.onclick = () => {
+            if (zoomLevel < 2.0) {
+              zoomLevel = Math.min(2.0, +(zoomLevel + 0.2).toFixed(1));
+              renderPage();
+            }
+          };
+        }
+
+        if (zoomOutBtn) {
+          zoomOutBtn.onclick = () => {
+            if (zoomLevel > 0.6) {
+              zoomLevel = Math.max(0.6, +(zoomLevel - 0.2).toFixed(1));
+              renderPage();
+            }
+          };
+        }
+
+        await renderPage();
+      } catch (err) {
+        console.error('Result preview render error:', err);
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          canvas.width = 400;
+          canvas.height = 200;
+          canvas.style.width = '400px';
+          canvas.style.height = '200px';
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(0, 0, 400, 200);
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '14px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('Ready to download (' + filename + ')', 200, 105);
+        }
+      }
+    } else {
+      const navBar = prevBtn?.parentElement;
+      if (navBar) navBar.style.display = 'none';
+      if (canvas) {
+        canvas.style.display = 'block';
+        const ctx = canvas.getContext('2d');
+        canvas.width = 480;
+        canvas.height = 220;
+        canvas.style.width = '480px';
+        canvas.style.height = '220px';
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, 480, 220);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(filename, 240, 95);
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '13px sans-serif';
+        ctx.fillText('Ready for export (' + window.pdfEngine.formatBytes(blob.size || 0) + ')', 240, 125);
+        ctx.fillText('Click Download button below to save', 240, 150);
+      }
+    }
   }
 };
 

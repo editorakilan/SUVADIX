@@ -304,8 +304,8 @@ class App {
   }
 
   initTheme() {
-    const isDark = localStorage.getItem('pdf_suite_theme') === 'dark' || 
-      (!localStorage.getItem('pdf_suite_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const saved = localStorage.getItem('pdf_suite_theme');
+    const isDark = saved === 'dark' || saved === null; // Default to rich dark SaaS aesthetic
     document.documentElement.classList.toggle('dark', isDark);
 
     const themeBtn = document.getElementById('theme-toggle-btn');
@@ -332,16 +332,25 @@ class App {
     const categoryBtns = document.querySelectorAll('.cat-filter-btn');
     categoryBtns.forEach(btn => {
       btn.addEventListener('click', () => {
-        categoryBtns.forEach(b => {
-          b.classList.remove('bg-red-600', 'text-white', 'shadow-sm');
-          b.classList.add('text-slate-600', 'dark:text-slate-400', 'hover:bg-slate-100', 'dark:hover:bg-slate-800');
-        });
-        btn.classList.add('bg-red-600', 'text-white', 'shadow-sm');
-        btn.classList.remove('text-slate-600', 'dark:text-slate-400', 'hover:bg-slate-100', 'dark:hover:bg-slate-800');
+        categoryBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
 
         this.currentCategory = btn.dataset.category;
         this.renderDashboard();
       });
+    });
+
+    // Keyboard ESC to close modal or workspace
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const previewModal = document.getElementById('result-preview-modal');
+        if (previewModal && !previewModal.classList.contains('hidden')) {
+          previewModal.classList.add('hidden');
+          previewModal.classList.remove('flex');
+        } else if (this.activeTool) {
+          this.closeToolWorkspace();
+        }
+      }
     });
 
     // Back to dashboard

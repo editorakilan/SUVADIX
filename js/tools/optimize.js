@@ -186,6 +186,14 @@ const OptimizeTools = {
         UI.hideProgress();
         UI.celebrate();
         UI.showToast(`Optimization complete! Saved ${savedPct}% size.`, 'success');
+
+        UI.showResultPreview({
+          title: 'Optimized PDF Ready',
+          subtitle: `Size reduced by ${savedPct}% (${window.pdfEngine.formatBytes(origSize)} → ${window.pdfEngine.formatBytes(newSize)}). Inspect quality below`,
+          blob: compressedBlob,
+          filename: `${currentFile.name.replace(/\.pdf$/i, '')}_compressed.pdf`,
+          originalSize: origSize
+        });
       } catch (err) {
         UI.hideProgress();
         UI.showToast(`Error: ${err.message}`, 'error');
@@ -194,7 +202,13 @@ const OptimizeTools = {
 
     downloadBtn.addEventListener('click', () => {
       if (compressedBlob) {
-        window.pdfEngine.downloadBlob(compressedBlob, `${currentFile.name.replace(/\.pdf$/i, '')}_compressed.pdf`);
+        UI.showResultPreview({
+          title: 'Optimized PDF Ready',
+          subtitle: `Size reduced by ${Math.round(((currentFile.size - compressedBlob.size) / currentFile.size) * 100)}%. Inspect quality below`,
+          blob: compressedBlob,
+          filename: `${currentFile.name.replace(/\.pdf$/i, '')}_compressed.pdf`,
+          originalSize: currentFile.size
+        });
       }
     });
   },
@@ -269,7 +283,12 @@ const OptimizeTools = {
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('PDF repaired successfully!', 'success');
-        window.pdfEngine.downloadBlob(repairedBlob, `${currentFile.name.replace(/\.pdf$/i, '')}_repaired.pdf`);
+        UI.showResultPreview({
+          title: 'Repaired PDF Ready',
+          subtitle: 'Reconstructed xref tables and page index. Inspect before downloading',
+          blob: repairedBlob,
+          filename: `${currentFile.name.replace(/\.pdf$/i, '')}_repaired.pdf`
+        });
       } catch (err) {
         UI.hideProgress();
         UI.showToast(`Could not repair PDF: ${err.message}`, 'error');

@@ -145,7 +145,12 @@ const OrganizeTools = {
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('PDF files merged successfully!', 'success');
-        window.pdfEngine.downloadBlob(mergedBlob, 'merged_document.pdf');
+        UI.showResultPreview({
+          title: 'PDF Files Merged Successfully',
+          subtitle: `${files.length} documents combined with 100% vector & digital text preserved`,
+          blob: mergedBlob,
+          filename: 'merged_document.pdf'
+        });
       } catch (err) {
         UI.hideProgress();
         UI.showToast(`Error merging PDFs: ${err.message}`, 'error');
@@ -249,17 +254,28 @@ const OrganizeTools = {
           UI.showProgress(pct, status);
         });
 
-        if (results.length === 1) {
-          window.pdfEngine.downloadBlob(results[0].blob, results[0].name);
-        } else if (results.length > 1) {
-          UI.showProgress(0.9, 'Packaging split files into ZIP archive...');
-          const zipBlob = await window.pdfEngine.createZip(results);
-          window.pdfEngine.downloadBlob(zipBlob, `${currentFile.name.replace(/\.pdf$/i, '')}_split.zip`);
-        }
-
         UI.hideProgress();
         UI.celebrate();
         UI.showToast(`Successfully generated ${results.length} split PDF(s)!`, 'success');
+
+        if (results.length === 1) {
+          UI.showResultPreview({
+            title: 'Split Page Ready',
+            subtitle: 'Extracted page is ready for inspection before download',
+            blob: results[0].blob,
+            filename: results[0].name
+          });
+        } else if (results.length > 1) {
+          UI.showProgress(0.9, 'Packaging split files into ZIP archive...');
+          const zipBlob = await window.pdfEngine.createZip(results);
+          UI.hideProgress();
+          UI.showResultPreview({
+            title: 'Split Documents Ready',
+            subtitle: `${results.length} split PDF files packaged in ZIP archive`,
+            blob: zipBlob,
+            filename: `${currentFile.name.replace(/\.pdf$/i, '')}_split.zip`
+          });
+        }
       } catch (err) {
         UI.hideProgress();
         UI.showToast(`Error: ${err.message}`, 'error');
@@ -341,7 +357,12 @@ const OrganizeTools = {
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('Pages removed successfully!', 'success');
-        window.pdfEngine.downloadBlob(resultBlob, 'cleaned_document.pdf');
+        UI.showResultPreview({
+          title: 'Pages Removed Successfully',
+          subtitle: `Removed ${toRemove.length} page(s). Inspect remaining pages before saving`,
+          blob: resultBlob,
+          filename: `${currentFile ? currentFile.name.replace(/\.pdf$/i, '') : 'document'}_cleaned.pdf`
+        });
       } catch (err) {
         UI.hideProgress();
         UI.showToast(err.message, 'error');
@@ -423,7 +444,12 @@ const OrganizeTools = {
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('Pages extracted successfully!', 'success');
-        window.pdfEngine.downloadBlob(resultBlob, 'extracted_pages.pdf');
+        UI.showResultPreview({
+          title: 'Pages Extracted Successfully',
+          subtitle: `${toExtract.length} page(s) extracted into new document`,
+          blob: resultBlob,
+          filename: `${currentFile ? currentFile.name.replace(/\.pdf$/i, '') : 'document'}_extracted.pdf`
+        });
       } catch (err) {
         UI.hideProgress();
         UI.showToast(err.message, 'error');
@@ -503,7 +529,12 @@ const OrganizeTools = {
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('Organized PDF ready!', 'success');
-        window.pdfEngine.downloadBlob(resultBlob, 'organized_document.pdf');
+        UI.showResultPreview({
+          title: 'Organized PDF Ready',
+          subtitle: 'Pages reordered and rotated as specified. Preview before saving',
+          blob: resultBlob,
+          filename: `${currentFile ? currentFile.name.replace(/\.pdf$/i, '') : 'document'}_organized.pdf`
+        });
       } catch (err) {
         UI.hideProgress();
         UI.showToast(err.message, 'error');
@@ -643,7 +674,12 @@ const OrganizeTools = {
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('Scanned PDF created!', 'success');
-        window.pdfEngine.downloadBlob(pdfBlob, 'scanned_document.pdf');
+        UI.showResultPreview({
+          title: 'Scanned Document Ready',
+          subtitle: `${capturedImages.length} scanned pages compiled into PDF`,
+          blob: pdfBlob,
+          filename: 'scanned_document.pdf'
+        });
       } catch (err) {
         UI.hideProgress();
         UI.showToast(err.message, 'error');

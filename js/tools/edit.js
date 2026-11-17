@@ -95,7 +95,12 @@ const EditTools = {
         UI.hideProgress();
         UI.celebrate();
         UI.showToast(`Rotated PDF by ${selectedAngle}°!`, 'success');
-        window.pdfEngine.downloadBlob(rotatedBlob, `${currentFile.name.replace(/\.pdf$/i, '')}_rotated.pdf`);
+        UI.showResultPreview({
+          title: 'Rotated PDF Ready',
+          subtitle: `Pages rotated by ${selectedAngle}°. Preview below before downloading`,
+          blob: rotatedBlob,
+          filename: `${currentFile.name.replace(/\.pdf$/i, '')}_rotated.pdf`
+        });
       } catch (err) {
         UI.hideProgress();
         UI.showToast(err.message, 'error');
@@ -192,7 +197,12 @@ const EditTools = {
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('Page numbers applied!', 'success');
-        window.pdfEngine.downloadBlob(numberedBlob, `${currentFile.name.replace(/\.pdf$/i, '')}_numbered.pdf`);
+        UI.showResultPreview({
+          title: 'Numbered PDF Ready',
+          subtitle: 'Page numbers placed successfully. Inspect below before downloading',
+          blob: numberedBlob,
+          filename: `${currentFile.name.replace(/\.pdf$/i, '')}_numbered.pdf`
+        });
       } catch (err) {
         UI.hideProgress();
         UI.showToast(err.message, 'error');
@@ -647,7 +657,12 @@ const EditTools = {
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('Watermark added successfully!', 'success');
-        window.pdfEngine.downloadBlob(watermarkedBlob, `${currentFile.name.replace(/\.pdf$/i, '')}_watermarked.pdf`);
+        UI.showResultPreview({
+          title: 'Watermarked PDF Ready',
+          subtitle: 'Watermark applied across selected pages. Inspect before saving',
+          blob: watermarkedBlob,
+          filename: `${currentFile.name.replace(/\.pdf$/i, '')}_watermarked.pdf`
+        });
       } catch (err) {
         UI.hideProgress();
         UI.showToast(err.message, 'error');
@@ -1140,7 +1155,12 @@ const EditTools = {
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('Document signed successfully!', 'success');
-        window.pdfEngine.downloadBlob(signedBlob, `${currentFile.name.replace(/\.pdf$/i, '')}_signed.pdf`);
+        UI.showResultPreview({
+          title: 'Signed Document Ready',
+          subtitle: 'Signature embedded with exact coordinate positioning. Inspect before saving',
+          blob: signedBlob,
+          filename: `${currentFile.name.replace(/\.pdf$/i, '')}_signed.pdf`
+        });
       } catch (err) {
         UI.hideProgress();
         UI.showToast(err.message, 'error');

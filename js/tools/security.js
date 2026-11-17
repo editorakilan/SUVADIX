@@ -96,7 +96,12 @@ const SecurityTools = {
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('PDF encrypted successfully!', 'success');
-        window.pdfEngine.downloadBlob(encryptedBlob, `${currentFile.name.replace(/\.pdf$/i, '')}_protected.pdf`);
+        UI.showResultPreview({
+          title: 'Protected PDF Ready',
+          subtitle: 'Security flags and encryption applied. Inspect before saving',
+          blob: encryptedBlob,
+          filename: `${currentFile.name.replace(/\.pdf$/i, '')}_protected.pdf`
+        });
       } catch (err) {
         UI.hideProgress();
         UI.showToast(err.message, 'error');
@@ -175,7 +180,12 @@ const SecurityTools = {
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('PDF unlocked successfully!', 'success');
-        window.pdfEngine.downloadBlob(unlockedBlob, `${currentFile.name.replace(/\.pdf$/i, '')}_unlocked.pdf`);
+        UI.showResultPreview({
+          title: 'Unlocked PDF Ready',
+          subtitle: 'Document restrictions removed. Inspect before saving',
+          blob: unlockedBlob,
+          filename: `${currentFile.name.replace(/\.pdf$/i, '')}_unlocked.pdf`
+        });
       } catch (err) {
         UI.hideProgress();
         UI.showToast(`Failed to unlock: ${err.message}`, 'error');
@@ -444,7 +454,12 @@ const SecurityTools = {
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('Redactions burned in permanently!', 'success');
-        window.pdfEngine.downloadBlob(redactedBlob, `${currentFile.name.replace(/\.pdf$/i, '')}_redacted.pdf`);
+        UI.showResultPreview({
+          title: 'Redacted PDF Ready',
+          subtitle: `${redactions.length} blacked-out area(s) burned in permanently. Inspect before saving`,
+          blob: redactedBlob,
+          filename: `${currentFile.name.replace(/\.pdf$/i, '')}_redacted.pdf`
+        });
       } catch (err) {
         UI.hideProgress();
         UI.showToast(err.message, 'error');
