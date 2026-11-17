@@ -527,49 +527,93 @@ const OrganizeTools = {
     });
   },
 
-  // 5. ORGANIZE PDF
+  // 5. ORGANIZE PDF (Swap, Reorder, Rotate & Remove Pages)
   renderOrganize(container) {
     let currentBuffer = null;
     let currentFile = null;
-    let pageStates = [];
+    let pageItems = []; // Array of { originalIndex, originalPageNumber, rotation, deleted, canvasEl }
 
     container.innerHTML = `
-      <div class="max-w-4xl mx-auto space-y-6">
+      <div class="max-w-5xl mx-auto space-y-6">
         <div class="text-center space-y-2">
-          <h2 class="text-2xl font-bold tracking-tight">Organize PDF Pages</h2>
-          <p class="text-sm text-slate-500">Rotate, delete, and re-order pages in your PDF document.</p>
+          <h2 class="text-2xl font-bold tracking-tight">Organize PDF & Swap Pages</h2>
+          <p class="text-sm text-slate-500">Swap, drag & drop to reorder, rotate, or delete pages in your PDF document.</p>
         </div>
 
-        <div id="org-dropzone" class="dropzone p-8 rounded-2xl text-center cursor-pointer hover:border-red-500 transition">
+        <div id="org-dropzone" class="dropzone p-8 rounded-2xl text-center cursor-pointer hover:border-orange-500 transition">
           <input type="file" id="org-file-input" accept="application/pdf" class="hidden">
           <div class="flex flex-col items-center gap-3">
-            <div class="w-16 h-16 rounded-full bg-red-50 dark:bg-red-950/40 text-red-600 flex items-center justify-center">
+            <div class="w-16 h-16 rounded-full bg-orange-50 dark:bg-orange-950/40 text-orange-600 flex items-center justify-center">
               <i data-lucide="layout-grid" class="w-8 h-8"></i>
             </div>
-            <p class="font-semibold text-slate-700 dark:text-slate-200">Upload PDF to reorganize</p>
+            <div>
+              <p class="font-semibold text-slate-700 dark:text-slate-200">Upload PDF to reorganize or swap pages</p>
+              <p class="text-xs text-slate-400 mt-1" id="org-file-status">Drag & drop or select a PDF</p>
+            </div>
           </div>
         </div>
 
         <div id="org-workspace" class="space-y-4 hidden">
-          <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
-            <span class="text-sm font-medium text-slate-700">Use the controls on each card to rotate or delete</span>
-            <div class="flex items-center gap-3">
-              <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1">
-                <span>Zoom:</span>
-                <button id="org-scale-down" class="p-1 hover:text-red-600 font-bold" title="Smaller Thumbnails">A-</button>
-                <button id="org-scale-up" class="p-1 hover:text-red-600 font-bold" title="Larger Thumbnails">A+</button>
-              </div>
-              <button id="org-close-btn" class="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm font-medium transition flex items-center gap-1.5" title="Close Preview & choose another file">
-                <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
-                <span>Close Preview</span>
+          <!-- Main Action & Swap Toolbar -->
+          <div class="flex flex-wrap items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm gap-4">
+            
+            <!-- Quick Page Swapper Bar -->
+            <div class="flex items-center gap-2 p-2 bg-orange-50/70 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-xl">
+              <span class="text-xs font-bold text-orange-800 dark:text-orange-300 flex items-center gap-1.5 whitespace-nowrap">
+                <i data-lucide="arrow-left-right" class="w-4 h-4 text-orange-600"></i>
+                Swap:
+              </span>
+              <select id="org-swap-from" class="text-xs font-bold p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none">
+              </select>
+              <span class="text-xs font-bold text-orange-600">⇄</span>
+              <select id="org-swap-to" class="text-xs font-bold p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none">
+              </select>
+              <button id="org-swap-btn" class="px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold shadow-sm transition flex items-center gap-1">
+                <span>Swap</span>
               </button>
-              <button id="org-run-btn" class="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium text-sm shadow transition flex items-center gap-2">
+            </div>
+
+            <!-- Page Quick Actions -->
+            <div class="flex items-center gap-2">
+              <button id="org-reverse-btn" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center gap-1.5" title="Reverse the entire page order">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-slate-500"></i>
+                <span>Reverse Order</span>
+              </button>
+              <button id="org-reset-btn" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center gap-1.5" title="Reset back to original order">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
+                <span>Reset Order</span>
+              </button>
+            </div>
+
+            <!-- Zoom & Controls -->
+            <div class="flex items-center gap-2.5">
+              <div class="flex items-center gap-1.5 text-xs font-semibold text-slate-500 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1">
+                <span>Zoom:</span>
+                <button id="org-scale-down" class="p-1 hover:text-orange-600 font-bold" title="Smaller Thumbnails">A-</button>
+                <button id="org-scale-up" class="p-1 hover:text-orange-600 font-bold" title="Larger Thumbnails">A+</button>
+              </div>
+              <button id="org-close-btn" class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 hover:bg-slate-100 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center gap-1" title="Close Preview">
+                <i data-lucide="x" class="w-3.5 h-3.5 text-slate-500"></i>
+                <span>Close</span>
+              </button>
+              <button id="org-run-btn" class="px-5 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md shadow-orange-600/20 transition flex items-center gap-2">
                 <i data-lucide="save" class="w-4 h-4"></i>
-                <span>Save Organized PDF</span>
+                <span>Save PDF</span>
               </button>
             </div>
           </div>
-          <div id="org-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+
+          <!-- Instructions Hint -->
+          <div class="flex items-center justify-between text-xs text-slate-500 px-1">
+            <span class="flex items-center gap-1.5">
+              <i data-lucide="info" class="w-3.5 h-3.5 text-orange-500"></i>
+              Drag any card to reorder, or use the <strong>← / →</strong> buttons on cards to swap with adjacent pages.
+            </span>
+            <span id="org-page-count-badge" class="font-bold text-slate-700 dark:text-slate-300">0 Pages</span>
+          </div>
+
+          <!-- Interactive Thumbnails Grid -->
+          <div id="org-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
         </div>
       </div>
     `;
@@ -578,12 +622,19 @@ const OrganizeTools = {
 
     const dropzone = container.querySelector('#org-dropzone');
     const input = container.querySelector('#org-file-input');
+    const statusEl = container.querySelector('#org-file-status');
     const workspace = container.querySelector('#org-workspace');
     const grid = container.querySelector('#org-grid');
     const runBtn = container.querySelector('#org-run-btn');
     const orgCloseBtn = container.querySelector('#org-close-btn');
     const scaleUp = container.querySelector('#org-scale-up');
     const scaleDown = container.querySelector('#org-scale-down');
+    const swapFrom = container.querySelector('#org-swap-from');
+    const swapTo = container.querySelector('#org-swap-to');
+    const swapBtn = container.querySelector('#org-swap-btn');
+    const reverseBtn = container.querySelector('#org-reverse-btn');
+    const resetBtn = container.querySelector('#org-reset-btn');
+    const countBadge = container.querySelector('#org-page-count-badge');
 
     if (scaleUp && scaleDown) {
       scaleUp.addEventListener('click', () => {
@@ -598,7 +649,7 @@ const OrganizeTools = {
       orgCloseBtn.addEventListener('click', () => {
         currentBuffer = null;
         currentFile = null;
-        pageStates = [];
+        pageItems = [];
         workspace.classList.add('hidden');
         dropzone.classList.remove('hidden');
         grid.innerHTML = '';
@@ -606,37 +657,288 @@ const OrganizeTools = {
       });
     }
 
+    // Update Swap Dropdowns
+    const updateSwapDropdowns = () => {
+      const activePages = pageItems.map((item, idx) => ({ idx, pos: idx + 1, orig: item.originalPageNumber, deleted: item.deleted }));
+      swapFrom.innerHTML = '';
+      swapTo.innerHTML = '';
+
+      activePages.forEach(({ idx, pos, orig, deleted }) => {
+        if (deleted) return;
+        const optFrom = document.createElement('option');
+        optFrom.value = idx;
+        optFrom.innerText = `Page ${pos} (Orig #${orig})`;
+        swapFrom.appendChild(optFrom);
+
+        const optTo = document.createElement('option');
+        optTo.value = idx;
+        optTo.innerText = `Page ${pos} (Orig #${orig})`;
+        swapTo.appendChild(optTo);
+      });
+
+      // Default second dropdown to second page if available
+      if (swapTo.options.length > 1) {
+        swapTo.selectedIndex = 1;
+      }
+    };
+
+    // Render Grid Cards with Full Drag-and-Drop & Arrow Swapping
+    const renderGrid = () => {
+      grid.innerHTML = '';
+      const totalActive = pageItems.filter(p => !p.deleted).length;
+      countBadge.innerText = `${totalActive} Active Pages (${pageItems.length} Total)`;
+
+      let dragSourceIdx = null;
+
+      pageItems.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.draggable = !item.deleted;
+        card.dataset.index = index;
+        card.className = `page-thumb-card group relative bg-white dark:bg-slate-800 rounded-xl p-3 shadow-sm border ${
+          item.deleted ? 'border-red-300 dark:border-red-900 opacity-40 bg-red-50/20' : 'border-slate-200 dark:border-slate-700 hover:border-orange-400 hover:shadow-md'
+        } flex flex-col items-center transition-all duration-150`;
+
+        // Card Header: Badge & Move Controls
+        const header = document.createElement('div');
+        header.className = 'w-full flex items-center justify-between mb-2 text-xs font-bold text-slate-700 dark:text-slate-300';
+        
+        const isMoved = item.originalIndex !== index;
+        header.innerHTML = `
+          <div class="flex items-center gap-1.5 cursor-grab active:cursor-grabbing" title="Drag to reorder/swap">
+            <span class="w-5 h-5 rounded-md bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 flex items-center justify-center text-[11px] font-extrabold">
+              ${index + 1}
+            </span>
+            ${isMoved ? `<span class="text-[10px] text-slate-400 font-medium">(#${item.originalPageNumber})</span>` : ''}
+          </div>
+          <div class="flex items-center gap-0.5">
+            <button class="move-left-btn p-1 hover:bg-orange-50 text-slate-400 hover:text-orange-600 rounded transition ${index === 0 ? 'opacity-25 pointer-events-none' : ''}" title="Swap with previous page (←)">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <button class="move-right-btn p-1 hover:bg-orange-50 text-slate-400 hover:text-orange-600 rounded transition ${index === pageItems.length - 1 ? 'opacity-25 pointer-events-none' : ''}" title="Swap with next page (→)">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        `;
+
+        card.appendChild(header);
+
+        // Canvas container
+        const canvasWrapper = document.createElement('div');
+        canvasWrapper.className = 'w-full flex items-center justify-center overflow-hidden rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-1 min-h-[160px] cursor-grab';
+        
+        if (item.canvasEl) {
+          item.canvasEl.style.transform = `rotate(${item.rotation}deg)`;
+          canvasWrapper.appendChild(item.canvasEl);
+        }
+        card.appendChild(canvasWrapper);
+
+        // Card Footer: Rotate & Delete Actions
+        const footer = document.createElement('div');
+        footer.className = 'w-full flex items-center justify-between mt-2 pt-1 border-t border-slate-100 dark:border-slate-700/60 text-xs';
+        footer.innerHTML = `
+          <button class="rot-btn p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded transition flex items-center gap-1" title="Rotate 90° Clockwise">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <span class="text-[10px] font-semibold">${item.rotation > 0 ? `${item.rotation}°` : 'Rotate'}</span>
+          </button>
+          <button class="del-btn p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition flex items-center gap-1" title="${item.deleted ? 'Restore Page' : 'Remove Page'}">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            <span class="text-[10px] font-semibold">${item.deleted ? 'Restore' : 'Delete'}</span>
+          </button>
+        `;
+
+        card.appendChild(footer);
+
+        // Move Left Click
+        card.querySelector('.move-left-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (index > 0) {
+            const temp = pageItems[index];
+            pageItems[index] = pageItems[index - 1];
+            pageItems[index - 1] = temp;
+            renderGrid();
+            updateSwapDropdowns();
+            UI.showToast(`Swapped Page ${index + 1} with Page ${index}`, 'info');
+          }
+        });
+
+        // Move Right Click
+        card.querySelector('.move-right-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (index < pageItems.length - 1) {
+            const temp = pageItems[index];
+            pageItems[index] = pageItems[index + 1];
+            pageItems[index + 1] = temp;
+            renderGrid();
+            updateSwapDropdowns();
+            UI.showToast(`Swapped Page ${index + 1} with Page ${index + 2}`, 'info');
+          }
+        });
+
+        // Rotate Click
+        card.querySelector('.rot-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          item.rotation = (item.rotation + 90) % 360;
+          if (item.canvasEl) {
+            item.canvasEl.style.transform = `rotate(${item.rotation}deg)`;
+          }
+          renderGrid();
+        });
+
+        // Delete / Restore Click
+        card.querySelector('.del-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          item.deleted = !item.deleted;
+          renderGrid();
+          updateSwapDropdowns();
+        });
+
+        // HTML5 Drag and Drop Events
+        card.addEventListener('dragstart', (e) => {
+          dragSourceIdx = index;
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', index);
+          card.classList.add('opacity-40', 'scale-95');
+        });
+
+        card.addEventListener('dragend', () => {
+          card.classList.remove('opacity-40', 'scale-95');
+          dragSourceIdx = null;
+        });
+
+        card.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          card.classList.add('border-orange-500', 'ring-2', 'ring-orange-400');
+        });
+
+        card.addEventListener('dragleave', () => {
+          card.classList.remove('border-orange-500', 'ring-2', 'ring-orange-400');
+        });
+
+        card.addEventListener('drop', (e) => {
+          e.preventDefault();
+          card.classList.remove('border-orange-500', 'ring-2', 'ring-orange-400');
+          const fromIdx = dragSourceIdx !== null ? dragSourceIdx : parseInt(e.dataTransfer.getData('text/plain'), 10);
+          const toIdx = index;
+
+          if (fromIdx !== null && !isNaN(fromIdx) && fromIdx !== toIdx) {
+            // Move item to new position
+            const moved = pageItems.splice(fromIdx, 1)[0];
+            pageItems.splice(toIdx, 0, moved);
+            renderGrid();
+            updateSwapDropdowns();
+            UI.showToast(`Moved Page ${fromIdx + 1} to position ${toIdx + 1}`, 'info');
+          }
+        });
+
+        grid.appendChild(card);
+      });
+    };
+
+    // Swap Two Chosen Pages via Toolbar
+    swapBtn.addEventListener('click', () => {
+      const fromIdx = parseInt(swapFrom.value, 10);
+      const toIdx = parseInt(swapTo.value, 10);
+
+      if (isNaN(fromIdx) || isNaN(toIdx)) return;
+      if (fromIdx === toIdx) {
+        UI.showToast('Please select two different pages to swap.', 'warning');
+        return;
+      }
+
+      const temp = pageItems[fromIdx];
+      pageItems[fromIdx] = pageItems[toIdx];
+      pageItems[toIdx] = temp;
+
+      renderGrid();
+      updateSwapDropdowns();
+      UI.celebrate();
+      UI.showToast(`Swapped Page ${fromIdx + 1} with Page ${toIdx + 1}!`, 'success');
+    });
+
+    // Reverse Order
+    reverseBtn.addEventListener('click', () => {
+      pageItems.reverse();
+      renderGrid();
+      updateSwapDropdowns();
+      UI.showToast('Reversed all page positions!', 'info');
+    });
+
+    // Reset Order
+    resetBtn.addEventListener('click', () => {
+      pageItems.sort((a, b) => a.originalIndex - b.originalIndex);
+      pageItems.forEach(p => { p.rotation = 0; p.deleted = false; });
+      renderGrid();
+      updateSwapDropdowns();
+      UI.showToast('Reset back to original page order.', 'info');
+    });
+
+    // File Upload Handler
     UI.setupDropzone(dropzone, input, async (files) => {
       if (files.length === 0) return;
       currentFile = files[0];
+      statusEl.innerText = `${currentFile.name} (${window.pdfEngine.formatBytes(currentFile.size)})`;
       currentBuffer = await window.pdfEngine.readFileAsArrayBuffer(currentFile);
       workspace.classList.remove('hidden');
-      pageStates = await UI.renderPdfThumbnails(window.pdfEngine.cloneBuffer(currentBuffer), grid, {
-        rotatable: true,
-        deletable: true,
-        onSelectionChange: (states) => {
-          pageStates = states;
+
+      grid.innerHTML = `
+        <div class="col-span-full flex items-center justify-center py-12 text-slate-400">
+          <svg class="animate-spin -ml-1 mr-3 h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          <span class="text-sm font-semibold">Generating high-fidelity page previews...</span>
+        </div>
+      `;
+
+      try {
+        const pdfDoc = await window.pdfEngine.getPdfJsDoc(window.pdfEngine.cloneBuffer(currentBuffer));
+        const totalPages = pdfDoc.numPages;
+        pageItems = [];
+
+        for (let i = 1; i <= totalPages; i++) {
+          const canvas = document.createElement('canvas');
+          canvas.className = 'max-w-full h-auto transition-transform duration-200 pointer-events-none';
+          
+          pageItems.push({
+            originalIndex: i - 1,
+            originalPageNumber: i,
+            rotation: 0,
+            deleted: false,
+            canvasEl: canvas
+          });
+
+          // Render canvas in background with HiDPI clarity
+          window.pdfEngine.renderPageToCanvas(pdfDoc, i, canvas, 200);
         }
-      });
+
+        renderGrid();
+        updateSwapDropdowns();
+      } catch (err) {
+        grid.innerHTML = `<div class="col-span-full p-6 text-center text-red-500 font-semibold">Failed to load PDF pages: ${err.message}</div>`;
+      }
     });
 
+    // Save Organized PDF
     runBtn.addEventListener('click', async () => {
-      const activeConfigs = pageStates.filter(s => !s.deleted);
+      const activeConfigs = pageItems.filter(s => !s.deleted);
       if (activeConfigs.length === 0) {
         UI.showToast('You cannot delete all pages.', 'error');
         return;
       }
 
       try {
-        UI.showProgress(0.3, 'Saving reorganized PDF...');
-        const bufferToUse = currentBuffer.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
+        UI.showProgress(0.3, 'Saving reorganized & swapped pages...');
+        const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
         const resultBlob = await window.pdfEngine.organizePages(window.pdfEngine.cloneBuffer(bufferToUse), activeConfigs);
+        
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('Organized PDF ready!', 'success');
+        
         UI.showResultPreview({
           title: 'Organized PDF Ready',
-          subtitle: 'Pages reordered and rotated as specified. Preview before saving',
+          subtitle: `Saved ${activeConfigs.length} pages in your custom order. Inspect preview before downloading:`,
           blob: resultBlob,
           filename: `${currentFile ? currentFile.name.replace(/\.pdf$/i, '') : 'document'}_organized.pdf`
         });

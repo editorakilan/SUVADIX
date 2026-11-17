@@ -50,7 +50,7 @@ const TOOLS_CONFIG = [
     name: 'Organize PDF',
     category: 'organize',
     categoryLabel: 'ORGANIZE PDF',
-    desc: 'Sort, rotate, and delete pages visually on an interactive page canvas.',
+    desc: 'Swap, reorder, sort, rotate, and delete pages visually with drag & drop or instant page swap.',
     icon: 'layout-grid',
     color: 'text-orange-600 bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-900',
     handler: (c) => OrganizeTools.renderOrganize(c)
