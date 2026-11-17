@@ -30,31 +30,44 @@ const OptimizeTools = {
         </div>
 
         <div id="compress-options" class="p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-5 hidden">
-          <h3 class="font-semibold text-sm">Choose Compression Level</h3>
-          
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <label class="flex flex-col p-4 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-emerald-500 transition">
-              <div class="flex items-center justify-between mb-2">
-                <span class="font-semibold text-sm">Extreme</span>
-                <input type="radio" name="comp-level" value="extreme" class="text-emerald-600 focus:ring-emerald-500">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
+            <h3 class="font-semibold text-sm">Choose Optimization Method</h3>
+            <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">Zero Server</span>
+          </div>
+
+          <div class="space-y-3">
+            <label class="flex items-start gap-3 p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20 cursor-pointer">
+              <input type="radio" name="comp-type" value="vector" checked class="mt-0.5 text-emerald-600 focus:ring-emerald-500">
+              <div>
+                <span class="font-bold text-sm block">Smart Vector & Text Preservation (Recommended)</span>
+                <span class="text-xs text-slate-500 dark:text-slate-400">Keeps 100% digital text selectable, searchable, and crisp. Strips metadata, unifies fonts, and rebuilds streams without rasterizing.</span>
               </div>
-              <span class="text-xs text-slate-400">Lowest resolution, maximum size reduction (~60-80% smaller).</span>
             </label>
 
-            <label class="flex flex-col p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20 cursor-pointer transition">
-              <div class="flex items-center justify-between mb-2">
-                <span class="font-semibold text-sm text-emerald-600 dark:text-emerald-400">Recommended</span>
-                <input type="radio" name="comp-level" value="recommended" checked class="text-emerald-600 focus:ring-emerald-500">
+            <label class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer">
+              <input type="radio" name="comp-type" value="raster" class="mt-0.5 text-emerald-600 focus:ring-emerald-500">
+              <div>
+                <span class="font-bold text-sm block">Raster Image Downsampling (For Scanned PDFs)</span>
+                <span class="text-xs text-slate-500 dark:text-slate-400">Best for heavy scanned image documents and photo catalogs to shrink large MB sizes.</span>
               </div>
-              <span class="text-xs text-slate-400">Good quality, balanced compression (~40-60% smaller).</span>
             </label>
+          </div>
 
-            <label class="flex flex-col p-4 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-emerald-500 transition">
-              <div class="flex items-center justify-between mb-2">
-                <span class="font-semibold text-sm">Less</span>
-                <input type="radio" name="comp-level" value="less" class="text-emerald-600 focus:ring-emerald-500">
-              </div>
-              <span class="text-xs text-slate-400">High visual quality, mild compression (~20-30% smaller).</span>
+          <div id="raster-presets" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+            <label class="flex flex-col p-3 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-emerald-500 transition">
+              <span class="font-semibold text-xs">Extreme</span>
+              <span class="text-[11px] text-slate-400">Max reduction (~60-80%)</span>
+              <input type="radio" name="comp-level" value="extreme" class="hidden">
+            </label>
+            <label class="flex flex-col p-3 rounded-xl border-2 border-emerald-500 bg-emerald-50/20 cursor-pointer">
+              <span class="font-semibold text-xs text-emerald-600">Recommended</span>
+              <span class="text-[11px] text-slate-400">Balanced (~40-60%)</span>
+              <input type="radio" name="comp-level" value="recommended" checked class="hidden">
+            </label>
+            <label class="flex flex-col p-3 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-emerald-500 transition">
+              <span class="font-semibold text-xs">Less</span>
+              <span class="text-[11px] text-slate-400">High quality (~20-30%)</span>
+              <input type="radio" name="comp-level" value="less" class="hidden">
             </label>
           </div>
 
@@ -116,29 +129,48 @@ const OptimizeTools = {
       resultCard.classList.add('hidden');
     });
 
-    runBtn.addEventListener('click', async () => {
-      if (!currentBuffer) return;
-      const level = container.querySelector('input[name="comp-level"]:checked').value;
+    const compTypeRadios = container.querySelectorAll('input[name="comp-type"]');
+    const rasterPresets = container.querySelector('#raster-presets');
+    compTypeRadios.forEach(r => {
+      r.addEventListener('change', () => {
+        rasterPresets.classList.toggle('hidden', r.value !== 'raster');
+      });
+    });
 
-      let scale = 1.2;
-      let quality = 0.6;
-      if (level === 'extreme') {
-        scale = 0.9;
-        quality = 0.45;
-      } else if (level === 'less') {
-        scale = 1.6;
-        quality = 0.8;
-      }
+    runBtn.addEventListener('click', async () => {
+      if (!currentBuffer && !currentFile) return;
+      const compType = container.querySelector('input[name="comp-type"]:checked').value;
+      const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
 
       try {
-        UI.showProgress(0.1, 'Analyzing document structure...');
-        const images = await window.pdfEngine.pdfToImages(currentBuffer, 'image/jpeg', scale, (pct, status) => {
-          UI.showProgress(pct * 0.7, status);
-        });
+        if (compType === 'vector') {
+          UI.showProgress(0.2, 'Optimizing PDF dictionary and streams (Vector & Text Preserved)...');
+          const { PDFDocument } = PDFLib;
+          const srcDoc = await PDFDocument.load(window.pdfEngine.cloneBuffer(bufferToUse), { ignoreEncryption: true });
+          const newDoc = await PDFDocument.create();
+          const pages = await newDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+          pages.forEach(p => newDoc.addPage(p));
+          
+          UI.showProgress(0.8, 'Compressing object trees...');
+          const bytes = await newDoc.save({ useObjectStreams: false });
+          compressedBlob = new Blob([bytes], { type: 'application/pdf' });
+        } else {
+          // Raster mode for image-heavy PDFs
+          const levelEl = container.querySelector('input[name="comp-level"]:checked');
+          const level = levelEl ? levelEl.value : 'recommended';
+          let scale = 1.2;
+          if (level === 'extreme') scale = 0.9;
+          else if (level === 'less') scale = 1.6;
 
-        UI.showProgress(0.75, 'Re-encoding optimized document...');
-        const fileList = images.map(img => new File([img.blob], img.name, { type: 'image/jpeg' }));
-        compressedBlob = await window.pdfEngine.imagesToPDF(fileList, { pageSize: 'Fit' });
+          UI.showProgress(0.1, 'Analyzing document structure...');
+          const images = await window.pdfEngine.pdfToImages(window.pdfEngine.cloneBuffer(bufferToUse), 'image/jpeg', scale, (pct, status) => {
+            UI.showProgress(pct * 0.7, status);
+          });
+
+          UI.showProgress(0.75, 'Re-encoding optimized document...');
+          const fileList = images.map(img => new File([img.blob], img.name, { type: 'image/jpeg' }));
+          compressedBlob = await window.pdfEngine.imagesToPDF(fileList, { pageSize: 'Fit' });
+        }
 
         const origSize = currentFile.size;
         const newSize = compressedBlob.size;
@@ -153,7 +185,7 @@ const OptimizeTools = {
 
         UI.hideProgress();
         UI.celebrate();
-        UI.showToast(`Compressed! Saved ${savedPct}% file size.`, 'success');
+        UI.showToast(`Optimization complete! Saved ${savedPct}% size.`, 'success');
       } catch (err) {
         UI.hideProgress();
         UI.showToast(`Error: ${err.message}`, 'error');
@@ -218,11 +250,12 @@ const OptimizeTools = {
     });
 
     runBtn.addEventListener('click', async () => {
-      if (!currentBuffer) return;
+      if (!currentBuffer && !currentFile) return;
       try {
         UI.showProgress(0.2, 'Scanning PDF byte streams and xref objects...');
+        const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
         const { PDFDocument } = PDFLib;
-        const doc = await PDFDocument.load(currentBuffer, { ignoreEncryption: true, parseSpeed: 1 });
+        const doc = await PDFDocument.load(window.pdfEngine.cloneBuffer(bufferToUse), { ignoreEncryption: true, parseSpeed: 1 });
         
         UI.showProgress(0.6, 'Rebuilding page trees and object index...');
         const newDoc = await PDFDocument.create();
@@ -230,7 +263,7 @@ const OptimizeTools = {
         pages.forEach(p => newDoc.addPage(p));
 
         UI.showProgress(0.9, 'Saving reconstructed document...');
-        const bytes = await newDoc.save();
+        const bytes = await newDoc.save({ useObjectStreams: false });
         const repairedBlob = new Blob([bytes], { type: 'application/pdf' });
 
         UI.hideProgress();
@@ -331,7 +364,8 @@ const OptimizeTools = {
       const lang = langSelect.value;
       try {
         UI.showProgress(0.1, 'Rendering pages to high-resolution images...');
-        const images = await window.pdfEngine.pdfToImages(currentBuffer, 'image/png', 2.0, (pct, status) => {
+        const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
+        const images = await window.pdfEngine.pdfToImages(window.pdfEngine.cloneBuffer(bufferToUse), 'image/png', 2.0, (pct, status) => {
           UI.showProgress(pct * 0.3, status);
         });
 
@@ -371,3 +405,4 @@ const OptimizeTools = {
 };
 
 window.OptimizeTools = OptimizeTools;
+

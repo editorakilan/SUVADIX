@@ -13,6 +13,10 @@ const OrganizeTools = {
         <div class="text-center space-y-2">
           <h2 class="text-2xl font-bold tracking-tight">Merge PDF Files</h2>
           <p class="text-sm text-slate-500">Combine multiple PDF files into a single document in any order with zero quality loss.</p>
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-full text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+            <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>100% Vector & Digital Text Preserved (No OCR or downsampling)</span>
+          </div>
         </div>
 
         <div id="merge-dropzone" class="dropzone p-8 rounded-2xl text-center cursor-pointer hover:border-red-500 transition">
@@ -240,7 +244,8 @@ const OrganizeTools = {
 
       try {
         UI.showProgress(0.1, 'Splitting PDF pages...');
-        const results = await window.pdfEngine.splitPDF(currentBuffer, rangeStr, (pct, status) => {
+        const bufferToUse = currentBuffer.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
+        const results = await window.pdfEngine.splitPDF(window.pdfEngine.cloneBuffer(bufferToUse), rangeStr, (pct, status) => {
           UI.showProgress(pct, status);
         });
 
@@ -265,6 +270,7 @@ const OrganizeTools = {
   // 3. REMOVE PAGES
   renderRemovePages(container) {
     let currentBuffer = null;
+    let currentFile = null;
     let pageStates = [];
 
     container.innerHTML = `
@@ -308,9 +314,10 @@ const OrganizeTools = {
 
     UI.setupDropzone(dropzone, input, async (files) => {
       if (files.length === 0) return;
-      currentBuffer = await window.pdfEngine.readFileAsArrayBuffer(files[0]);
+      currentFile = files[0];
+      currentBuffer = await window.pdfEngine.readFileAsArrayBuffer(currentFile);
       workspace.classList.remove('hidden');
-      pageStates = await UI.renderPdfThumbnails(currentBuffer, grid, {
+      pageStates = await UI.renderPdfThumbnails(window.pdfEngine.cloneBuffer(currentBuffer), grid, {
         selectable: true,
         onSelectionChange: (states) => {
           pageStates = states;
@@ -329,7 +336,8 @@ const OrganizeTools = {
 
       try {
         UI.showProgress(0.3, 'Removing pages...');
-        const resultBlob = await window.pdfEngine.removePages(currentBuffer, toRemove);
+        const bufferToUse = currentBuffer.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
+        const resultBlob = await window.pdfEngine.removePages(window.pdfEngine.cloneBuffer(bufferToUse), toRemove);
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('Pages removed successfully!', 'success');
@@ -344,6 +352,7 @@ const OrganizeTools = {
   // 4. EXTRACT PAGES
   renderExtractPages(container) {
     let currentBuffer = null;
+    let currentFile = null;
     let pageStates = [];
 
     container.innerHTML = `
@@ -387,9 +396,10 @@ const OrganizeTools = {
 
     UI.setupDropzone(dropzone, input, async (files) => {
       if (files.length === 0) return;
-      currentBuffer = await window.pdfEngine.readFileAsArrayBuffer(files[0]);
+      currentFile = files[0];
+      currentBuffer = await window.pdfEngine.readFileAsArrayBuffer(currentFile);
       workspace.classList.remove('hidden');
-      pageStates = await UI.renderPdfThumbnails(currentBuffer, grid, {
+      pageStates = await UI.renderPdfThumbnails(window.pdfEngine.cloneBuffer(currentBuffer), grid, {
         selectable: true,
         onSelectionChange: (states) => {
           pageStates = states;
@@ -408,7 +418,8 @@ const OrganizeTools = {
 
       try {
         UI.showProgress(0.3, 'Extracting selected pages...');
-        const resultBlob = await window.pdfEngine.extractPages(currentBuffer, toExtract);
+        const bufferToUse = currentBuffer.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
+        const resultBlob = await window.pdfEngine.extractPages(window.pdfEngine.cloneBuffer(bufferToUse), toExtract);
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('Pages extracted successfully!', 'success');
@@ -423,6 +434,7 @@ const OrganizeTools = {
   // 5. ORGANIZE PDF
   renderOrganize(container) {
     let currentBuffer = null;
+    let currentFile = null;
     let pageStates = [];
 
     container.innerHTML = `
@@ -465,9 +477,10 @@ const OrganizeTools = {
 
     UI.setupDropzone(dropzone, input, async (files) => {
       if (files.length === 0) return;
-      currentBuffer = await window.pdfEngine.readFileAsArrayBuffer(files[0]);
+      currentFile = files[0];
+      currentBuffer = await window.pdfEngine.readFileAsArrayBuffer(currentFile);
       workspace.classList.remove('hidden');
-      pageStates = await UI.renderPdfThumbnails(currentBuffer, grid, {
+      pageStates = await UI.renderPdfThumbnails(window.pdfEngine.cloneBuffer(currentBuffer), grid, {
         rotatable: true,
         deletable: true,
         onSelectionChange: (states) => {
@@ -485,7 +498,8 @@ const OrganizeTools = {
 
       try {
         UI.showProgress(0.3, 'Saving reorganized PDF...');
-        const resultBlob = await window.pdfEngine.organizePages(currentBuffer, activeConfigs);
+        const bufferToUse = currentBuffer.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
+        const resultBlob = await window.pdfEngine.organizePages(window.pdfEngine.cloneBuffer(bufferToUse), activeConfigs);
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('Organized PDF ready!', 'success');
@@ -639,3 +653,4 @@ const OrganizeTools = {
 };
 
 window.OrganizeTools = OrganizeTools;
+

@@ -17,6 +17,18 @@ class PDFEngine {
     }
   }
 
+  // --- Safe Buffer Cloning (Prevents Detached ArrayBuffer Errors) ---
+  cloneBuffer(buffer) {
+    if (!buffer) return null;
+    if (buffer instanceof ArrayBuffer) {
+      return buffer.slice(0);
+    }
+    if (buffer.buffer instanceof ArrayBuffer) {
+      return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    }
+    return buffer;
+  }
+
   // --- File I/O Helpers ---
   readFileAsArrayBuffer(file) {
     return new Promise((resolve, reject) => {
@@ -59,7 +71,7 @@ class PDFEngine {
   }
 
   formatBytes(bytes, decimals = 2) {
-    if (bytes === 0) return '0 Bytes';
+    if (!bytes || bytes === 0) return '0 Bytes';
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -70,7 +82,7 @@ class PDFEngine {
   // --- PDF-Lib Core Manipulations ---
 
   /**
-   * Lossless Merge of multiple PDFs
+   * Lossless Merge of multiple PDFs (100% Vector & Text Stream Preserving)
    */
   async mergePDFs(arrayBuffers, onProgress) {
     const { PDFDocument } = PDFLib;
@@ -79,14 +91,17 @@ class PDFEngine {
     const total = arrayBuffers.length;
     for (let i = 0; i < total; i++) {
       if (onProgress) onProgress((i / total) * 0.9, `Merging file ${i + 1} of ${total}...`);
-      const srcDoc = await PDFDocument.load(arrayBuffers[i], { ignoreEncryption: true });
+      // Clone buffer to prevent detaching
+      const safeBuffer = this.cloneBuffer(arrayBuffers[i]);
+      const srcDoc = await PDFDocument.load(safeBuffer, { ignoreEncryption: true });
       const indices = srcDoc.getPageIndices();
       const copiedPages = await mergedDoc.copyPages(srcDoc, indices);
       copiedPages.forEach(p => mergedDoc.addPage(p));
     }
 
     if (onProgress) onProgress(0.95, 'Finalizing merged document...');
-    const pdfBytes = await mergedDoc.save();
+    // useObjectStreams: false ensures standard compatibility with all text search and viewers
+    const pdfBytes = await mergedDoc.save({ useObjectStreams: false });
     if (onProgress) onProgress(1.0, 'Done!');
     return new Blob([pdfBytes], { type: 'application/pdf' });
   }
@@ -96,7 +111,8 @@ class PDFEngine {
    */
   async splitPDF(arrayBuffer, rangeStr, onProgress) {
     const { PDFDocument } = PDFLib;
-    const srcDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+    const safeBuffer = this.cloneBuffer(arrayBuffer);
+    const srcDoc = await PDFDocument.load(safeBuffer, { ignoreEncryption: true });
     const totalPages = srcDoc.getPageCount();
 
     // Mode A: Split each page individually
@@ -107,7 +123,7 @@ class PDFEngine {
         const subDoc = await PDFDocument.create();
         const [copied] = await subDoc.copyPages(srcDoc, [i]);
         subDoc.addPage(copied);
-        const bytes = await subDoc.save();
+        const bytes = await subDoc.save({ useObjectStreams: false });
         results.push({
           name: `page_${i + 1}.pdf`,
           blob: new Blob([bytes], { type: 'application/pdf' })
@@ -141,7 +157,7 @@ class PDFEngine {
         const subDoc = await PDFDocument.create();
         const copied = await subDoc.copyPages(srcDoc, pageIndices);
         copied.forEach(p => subDoc.addPage(p));
-        const bytes = await subDoc.save();
+        const bytes = await subDoc.save({ useObjectStreams: false });
         results.push({
           name: `pages_${part.replace(/\s+/g, '')}.pdf`,
           blob: new Blob([bytes], { type: 'application/pdf' })
@@ -156,7 +172,8 @@ class PDFEngine {
    */
   async removePages(arrayBuffer, pageIndicesToRemove) {
     const { PDFDocument } = PDFLib;
-    const srcDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+    const safeBuffer = this.cloneBuffer(arrayBuffer);
+    const srcDoc = await PDFDocument.load(safeBuffer, { ignoreEncryption: true });
     const totalPages = srcDoc.getPageCount();
     const removeSet = new Set(pageIndicesToRemove);
 
@@ -172,7 +189,7 @@ class PDFEngine {
     const newDoc = await PDFDocument.create();
     const copiedPages = await newDoc.copyPages(srcDoc, pagesToKeep);
     copiedPages.forEach(p => newDoc.addPage(p));
-    const bytes = await newDoc.save();
+    const bytes = await newDoc.save({ useObjectStreams: false });
     return new Blob([bytes], { type: 'application/pdf' });
   }
 
@@ -181,14 +198,15 @@ class PDFEngine {
    */
   async extractPages(arrayBuffer, pageIndicesToExtract) {
     const { PDFDocument } = PDFLib;
-    const srcDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+    const safeBuffer = this.cloneBuffer(arrayBuffer);
+    const srcDoc = await PDFDocument.load(safeBuffer, { ignoreEncryption: true });
     if (!pageIndicesToExtract || pageIndicesToExtract.length === 0) {
       throw new Error('Please select at least one page to extract.');
     }
     const newDoc = await PDFDocument.create();
     const copiedPages = await newDoc.copyPages(srcDoc, pageIndicesToExtract);
     copiedPages.forEach(p => newDoc.addPage(p));
-    const bytes = await newDoc.save();
+    const bytes = await newDoc.save({ useObjectStreams: false });
     return new Blob([bytes], { type: 'application/pdf' });
   }
 
@@ -196,9 +214,9 @@ class PDFEngine {
    * Reorganize pages (order, rotation, removals)
    */
   async organizePages(arrayBuffer, pageConfigList) {
-    // pageConfigList: array of { originalIndex, rotation }
     const { PDFDocument, degrees } = PDFLib;
-    const srcDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+    const safeBuffer = this.cloneBuffer(arrayBuffer);
+    const srcDoc = await PDFDocument.load(safeBuffer, { ignoreEncryption: true });
     const newDoc = await PDFDocument.create();
 
     const originalIndices = pageConfigList.map(c => c.originalIndex);
@@ -213,7 +231,7 @@ class PDFEngine {
       newDoc.addPage(page);
     });
 
-    const bytes = await newDoc.save();
+    const bytes = await newDoc.save({ useObjectStreams: false });
     return new Blob([bytes], { type: 'application/pdf' });
   }
 
@@ -222,7 +240,8 @@ class PDFEngine {
    */
   async rotatePages(arrayBuffer, rotationAngle, targetIndices = null) {
     const { PDFDocument, degrees } = PDFLib;
-    const doc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+    const safeBuffer = this.cloneBuffer(arrayBuffer);
+    const doc = await PDFDocument.load(safeBuffer, { ignoreEncryption: true });
     const pages = doc.getPages();
 
     pages.forEach((page, idx) => {
@@ -232,7 +251,7 @@ class PDFEngine {
       }
     });
 
-    const bytes = await doc.save();
+    const bytes = await doc.save({ useObjectStreams: false });
     return new Blob([bytes], { type: 'application/pdf' });
   }
 
@@ -249,7 +268,8 @@ class PDFEngine {
     } = options;
 
     const { PDFDocument, StandardFonts, rgb } = PDFLib;
-    const doc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+    const safeBuffer = this.cloneBuffer(arrayBuffer);
+    const doc = await PDFDocument.load(safeBuffer, { ignoreEncryption: true });
     const font = await doc.embedFont(StandardFonts.Helvetica);
     const pages = doc.getPages();
     const total = pages.length;
@@ -287,70 +307,212 @@ class PDFEngine {
       });
     });
 
-    const bytes = await doc.save();
+    const bytes = await doc.save({ useObjectStreams: false });
     return new Blob([bytes], { type: 'application/pdf' });
   }
 
   /**
-   * Add Text Watermark
+   * Comprehensive Watermark Tool (Text & Image with Alignment, Position, Angle, Opacity)
    */
   async addWatermark(arrayBuffer, options = {}) {
     const {
+      type = 'text', // 'text' | 'image'
+      // Text options
       text = 'CONFIDENTIAL',
       fontSize = 48,
+      fontFamily = 'HelveticaBold',
       opacity = 0.25,
       angle = -45,
       colorHex = '#EF4444',
-      repeat = false
+      position = 'center-diag', // 'center-diag' | 'center' | 'top-left' | 'top-center' | 'top-right' | 'middle-left' | 'middle-right' | 'bottom-left' | 'bottom-center' | 'bottom-right' | 'repeat'
+      offsetX = 0,
+      offsetY = 0,
+      // Image options
+      imageBuffer = null,
+      imageType = 'png',
+      imageScale = 0.5,
+      // Target pages
+      targetPages = null // null for all, or array of page indices
     } = options;
 
     const { PDFDocument, StandardFonts, degrees, rgb } = PDFLib;
-    const doc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-    const font = await doc.embedFont(StandardFonts.HelveticaBold);
+    const safeBuffer = this.cloneBuffer(arrayBuffer);
+    const doc = await PDFDocument.load(safeBuffer, { ignoreEncryption: true });
     const pages = doc.getPages();
 
-    // Parse hex color
-    const hex = colorHex.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16) / 255 || 0.8;
-    const g = parseInt(hex.substring(2, 4), 16) / 255 || 0.1;
-    const b = parseInt(hex.substring(4, 6), 16) / 255 || 0.1;
+    // Prepare font if text watermark
+    let font = null;
+    let r = 0.8, g = 0.1, b = 0.1;
+    if (type === 'text') {
+      const fontMap = {
+        'HelveticaBold': StandardFonts.HelveticaBold,
+        'Helvetica': StandardFonts.Helvetica,
+        'TimesRomanBold': StandardFonts.TimesRomanBold,
+        'CourierBold': StandardFonts.CourierBold
+      };
+      font = await doc.embedFont(fontMap[fontFamily] || StandardFonts.HelveticaBold);
+      const hex = colorHex.replace('#', '');
+      r = parseInt(hex.substring(0, 2), 16) / 255 || 0.8;
+      g = parseInt(hex.substring(2, 4), 16) / 255 || 0.1;
+      b = parseInt(hex.substring(4, 6), 16) / 255 || 0.1;
+    }
 
-    pages.forEach(page => {
-      const { width, height } = page.getSize();
-      const textWidth = font.widthOfTextAtSize(text, fontSize);
-
-      if (repeat) {
-        // Repeated grid pattern
-        const stepX = textWidth + 120;
-        const stepY = 160;
-        for (let x = -50; x < width + 100; x += stepX) {
-          for (let y = -50; y < height + 100; y += stepY) {
-            page.drawText(text, {
-              x,
-              y,
-              size: fontSize * 0.7,
-              font,
-              color: rgb(r, g, b),
-              opacity,
-              rotate: degrees(angle)
-            });
-          }
-        }
+    // Prepare image if image watermark
+    let embeddedImg = null;
+    if (type === 'image' && imageBuffer) {
+      const safeImgBuf = this.cloneBuffer(imageBuffer);
+      if (imageType.includes('png')) {
+        embeddedImg = await doc.embedPng(safeImgBuf);
       } else {
-        // Single centered watermark
-        page.drawText(text, {
-          x: width / 2 - textWidth / 2,
-          y: height / 2,
-          size: fontSize,
-          font,
-          color: rgb(r, g, b),
+        embeddedImg = await doc.embedJpg(safeImgBuf);
+      }
+    }
+
+    pages.forEach((page, pIdx) => {
+      if (targetPages && !targetPages.includes(pIdx)) return;
+
+      const { width, height } = page.getSize();
+
+      if (type === 'text') {
+        const textWidth = font.widthOfTextAtSize(text, fontSize);
+        const textHeight = font.heightAtSize(fontSize);
+
+        if (position === 'repeat') {
+          // Repeated diagonal grid
+          const stepX = Math.max(160, textWidth + 80);
+          const stepY = 160;
+          for (let x = -80; x < width + 120; x += stepX) {
+            for (let y = -80; y < height + 120; y += stepY) {
+              page.drawText(text, {
+                x: x + offsetX,
+                y: y + offsetY,
+                size: fontSize * 0.7,
+                font,
+                color: rgb(r, g, b),
+                opacity,
+                rotate: degrees(angle)
+              });
+            }
+          }
+        } else {
+          // Calculate 9-point anchor coordinate
+          let cx = (width - textWidth) / 2;
+          let cy = (height - textHeight) / 2;
+          let rot = angle;
+
+          if (position === 'center-diag') {
+            rot = -45;
+            cx = (width - textWidth) / 2;
+            cy = (height - textHeight) / 2;
+          } else if (position === 'center') {
+            cx = (width - textWidth) / 2;
+            cy = (height - textHeight) / 2;
+          } else if (position === 'top-left') {
+            cx = 40;
+            cy = height - textHeight - 40;
+          } else if (position === 'top-center') {
+            cx = (width - textWidth) / 2;
+            cy = height - textHeight - 40;
+          } else if (position === 'top-right') {
+            cx = width - textWidth - 40;
+            cy = height - textHeight - 40;
+          } else if (position === 'middle-left') {
+            cx = 40;
+            cy = (height - textHeight) / 2;
+          } else if (position === 'middle-right') {
+            cx = width - textWidth - 40;
+            cy = (height - textHeight) / 2;
+          } else if (position === 'bottom-left') {
+            cx = 40;
+            cy = 40;
+          } else if (position === 'bottom-center') {
+            cx = (width - textWidth) / 2;
+            cy = 40;
+          } else if (position === 'bottom-right') {
+            cx = width - textWidth - 40;
+            cy = 40;
+          }
+
+          page.drawText(text, {
+            x: cx + offsetX,
+            y: cy + offsetY,
+            size: fontSize,
+            font,
+            color: rgb(r, g, b),
+            opacity,
+            rotate: degrees(rot)
+          });
+        }
+      } else if (type === 'image' && embeddedImg) {
+        // Image watermark
+        const imgW = embeddedImg.width * imageScale;
+        const imgH = embeddedImg.height * imageScale;
+
+        let cx = (width - imgW) / 2;
+        let cy = (height - imgH) / 2;
+
+        if (position === 'top-left') {
+          cx = 40;
+          cy = height - imgH - 40;
+        } else if (position === 'top-center') {
+          cx = (width - imgW) / 2;
+          cy = height - imgH - 40;
+        } else if (position === 'top-right') {
+          cx = width - imgW - 40;
+          cy = height - imgH - 40;
+        } else if (position === 'bottom-left') {
+          cx = 40;
+          cy = 40;
+        } else if (position === 'bottom-center') {
+          cx = (width - imgW) / 2;
+          cy = 40;
+        } else if (position === 'bottom-right') {
+          cx = width - imgW - 40;
+          cy = 40;
+        }
+
+        page.drawImage(embeddedImg, {
+          x: cx + offsetX,
+          y: cy + offsetY,
+          width: imgW,
+          height: imgH,
           opacity,
           rotate: degrees(angle)
         });
       }
     });
 
-    const bytes = await doc.save();
+    const bytes = await doc.save({ useObjectStreams: false });
+    return new Blob([bytes], { type: 'application/pdf' });
+  }
+
+  /**
+   * Apply digital signature onto PDF with custom placement on any chosen page(s)
+   */
+  async applySignature(arrayBuffer, signaturesList) {
+    // signaturesList: array of { pageIndex, signatureDataUrl, x, y, width, height }
+    const { PDFDocument } = PDFLib;
+    const safeBuffer = this.cloneBuffer(arrayBuffer);
+    const doc = await PDFDocument.load(safeBuffer, { ignoreEncryption: true });
+    const pages = doc.getPages();
+
+    for (const item of signaturesList) {
+      const page = pages[item.pageIndex];
+      if (!page) continue;
+
+      const base64Data = item.signatureDataUrl.split(',')[1];
+      const sigBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+      const sigImg = await doc.embedPng(sigBytes);
+
+      page.drawImage(sigImg, {
+        x: item.x,
+        y: item.y,
+        width: item.width,
+        height: item.height
+      });
+    }
+
+    const bytes = await doc.save({ useObjectStreams: false });
     return new Blob([bytes], { type: 'application/pdf' });
   }
 
@@ -360,7 +522,8 @@ class PDFEngine {
   async cropPages(arrayBuffer, margins) {
     const { top = 20, bottom = 20, left = 20, right = 20 } = margins;
     const { PDFDocument } = PDFLib;
-    const doc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+    const safeBuffer = this.cloneBuffer(arrayBuffer);
+    const doc = await PDFDocument.load(safeBuffer, { ignoreEncryption: true });
     const pages = doc.getPages();
 
     pages.forEach(page => {
@@ -370,7 +533,7 @@ class PDFEngine {
       page.setCropBox(left, bottom, newWidth, newHeight);
     });
 
-    const bytes = await doc.save();
+    const bytes = await doc.save({ useObjectStreams: false });
     return new Blob([bytes], { type: 'application/pdf' });
   }
 
@@ -395,7 +558,6 @@ class PDFEngine {
       if (type.includes('png')) {
         image = await doc.embedPng(arrayBuffer);
       } else {
-        // Default to JPG embed
         image = await doc.embedJpg(arrayBuffer);
       }
 
@@ -413,7 +575,6 @@ class PDFEngine {
       const availWidth = pageWidth - margin * 2;
       const availHeight = pageHeight - margin * 2;
 
-      // Fit aspect ratio
       const imgRatio = image.width / image.height;
       const pageRatio = availWidth / availHeight;
 
@@ -437,38 +598,7 @@ class PDFEngine {
       });
     }
 
-    const bytes = await doc.save();
-    return new Blob([bytes], { type: 'application/pdf' });
-  }
-
-  /**
-   * Apply digital signature onto PDF
-   */
-  async applySignature(arrayBuffer, pageIndex, signaturePngDataUrl, rect) {
-    const { PDFDocument } = PDFLib;
-    const doc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-    const pages = doc.getPages();
-    const page = pages[pageIndex] || pages[0];
-
-    const base64Data = signaturePngDataUrl.split(',')[1];
-    const signatureBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-    const signatureImage = await doc.embedPng(signatureBytes);
-
-    const { width: pWidth, height: pHeight } = page.getSize();
-    // Default or user rect: { x, y, width, height }
-    const sigWidth = rect?.width || 150;
-    const sigHeight = rect?.height || 60;
-    const sigX = rect?.x || (pWidth - sigWidth - 40);
-    const sigY = rect?.y || 40;
-
-    page.drawImage(signatureImage, {
-      x: sigX,
-      y: sigY,
-      width: sigWidth,
-      height: sigHeight
-    });
-
-    const bytes = await doc.save();
+    const bytes = await doc.save({ useObjectStreams: false });
     return new Blob([bytes], { type: 'application/pdf' });
   }
 
@@ -476,9 +606,9 @@ class PDFEngine {
    * Apply Redactions (blackout boxes) permanently
    */
   async applyRedactions(arrayBuffer, redactionsList) {
-    // redactionsList: [{ pageIndex, x, y, width, height }]
     const { PDFDocument, rgb } = PDFLib;
-    const doc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+    const safeBuffer = this.cloneBuffer(arrayBuffer);
+    const doc = await PDFDocument.load(safeBuffer, { ignoreEncryption: true });
     const pages = doc.getPages();
 
     redactionsList.forEach(red => {
@@ -495,7 +625,7 @@ class PDFEngine {
       }
     });
 
-    const bytes = await doc.save();
+    const bytes = await doc.save({ useObjectStreams: false });
     return new Blob([bytes], { type: 'application/pdf' });
   }
 
@@ -503,7 +633,9 @@ class PDFEngine {
 
   async getPdfJsDoc(arrayBuffer) {
     this.initPdfJs();
-    const loadingTask = window.pdfjsLib.getDocument({ data: arrayBuffer });
+    // CLONE the buffer so PDF.js worker transfer NEVER detaches the original ArrayBuffer!
+    const clonedData = this.cloneBuffer(arrayBuffer);
+    const loadingTask = window.pdfjsLib.getDocument({ data: clonedData });
     return await loadingTask.promise;
   }
 
@@ -539,7 +671,6 @@ class PDFEngine {
       canvas.height = viewport.height;
       const ctx = canvas.getContext('2d');
 
-      // Fill white background for JPEG
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 

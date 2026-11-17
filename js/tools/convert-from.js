@@ -88,12 +88,13 @@ const ConvertFromTools = {
     });
 
     runBtn.addEventListener('click', async () => {
-      if (!currentBuffer) return;
+      if (!currentBuffer && !currentFile) return;
       const scale = parseFloat(qualitySelect.value);
 
       try {
         UI.showProgress(0.1, `Converting PDF to ${formatLabel}...`);
-        generatedImages = await window.pdfEngine.pdfToImages(currentBuffer, mimeType, scale, (pct, status) => {
+        const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
+        generatedImages = await window.pdfEngine.pdfToImages(window.pdfEngine.cloneBuffer(bufferToUse), mimeType, scale, (pct, status) => {
           UI.showProgress(pct, status);
         });
 
@@ -198,7 +199,8 @@ const ConvertFromTools = {
 
       try {
         UI.showProgress(0.2, 'Extracting text streams...');
-        const text = await window.pdfEngine.extractText(currentBuffer, (pct, status) => {
+        const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
+        const text = await window.pdfEngine.extractText(window.pdfEngine.cloneBuffer(bufferToUse), (pct, status) => {
           UI.showProgress(pct, status);
         });
         output.value = text;
@@ -224,3 +226,4 @@ const ConvertFromTools = {
 };
 
 window.ConvertFromTools = ConvertFromTools;
+

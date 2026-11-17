@@ -85,11 +85,12 @@ const SecurityTools = {
 
       try {
         UI.showProgress(0.3, 'Encrypting PDF document...');
+        const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
         const { PDFDocument } = PDFLib;
-        const doc = await PDFDocument.load(currentBuffer, { ignoreEncryption: true });
+        const doc = await PDFDocument.load(window.pdfEngine.cloneBuffer(bufferToUse), { ignoreEncryption: true });
         
         // In PDF-lib, metadata and encryption
-        const bytes = await doc.save();
+        const bytes = await doc.save({ useObjectStreams: false });
         const encryptedBlob = new Blob([bytes], { type: 'application/pdf' });
 
         UI.hideProgress();
@@ -165,9 +166,10 @@ const SecurityTools = {
       const pass = passInput.value;
       try {
         UI.showProgress(0.3, 'Decrypting and removing protection...');
+        const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
         const { PDFDocument } = PDFLib;
-        const doc = await PDFDocument.load(currentBuffer, { ignoreEncryption: true });
-        const bytes = await doc.save();
+        const doc = await PDFDocument.load(window.pdfEngine.cloneBuffer(bufferToUse), { ignoreEncryption: true });
+        const bytes = await doc.save({ useObjectStreams: false });
         const unlockedBlob = new Blob([bytes], { type: 'application/pdf' });
 
         UI.hideProgress();
@@ -425,6 +427,7 @@ const SecurityTools = {
 
       try {
         UI.showProgress(0.3, 'Applying permanent redaction boxes...');
+        const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
         const page = await pdfDoc.getPage(1);
         const viewport = page.getViewport({ scale: 1.0 });
         const scale = pageCanvas.width / viewport.width;
@@ -437,7 +440,7 @@ const SecurityTools = {
           height: r.canvasH / scale
         }));
 
-        const redactedBlob = await window.pdfEngine.applyRedactions(currentBuffer, pdfRedactions);
+        const redactedBlob = await window.pdfEngine.applyRedactions(window.pdfEngine.cloneBuffer(bufferToUse), pdfRedactions);
         UI.hideProgress();
         UI.celebrate();
         UI.showToast('Redactions burned in permanently!', 'success');
@@ -451,3 +454,4 @@ const SecurityTools = {
 };
 
 window.SecurityTools = SecurityTools;
+

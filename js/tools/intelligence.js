@@ -78,10 +78,11 @@ const IntelligenceTools = {
     });
 
     runBtn.addEventListener('click', async () => {
-      if (!currentBuffer) return;
+      if (!currentBuffer && !currentFile) return;
       try {
         UI.showProgress(0.2, 'Extracting text content from document...');
-        extractedText = await window.pdfEngine.extractText(currentBuffer, (pct, status) => {
+        const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
+        extractedText = await window.pdfEngine.extractText(window.pdfEngine.cloneBuffer(bufferToUse), (pct, status) => {
           UI.showProgress(pct * 0.5, status);
         });
 
@@ -223,7 +224,8 @@ const IntelligenceTools = {
       currentBuffer = await window.pdfEngine.readFileAsArrayBuffer(currentFile);
 
       UI.showProgress(0.3, 'Extracting text...');
-      const text = await window.pdfEngine.extractText(currentBuffer);
+      const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
+      const text = await window.pdfEngine.extractText(window.pdfEngine.cloneBuffer(bufferToUse));
       origText.value = text;
       workspace.classList.remove('hidden');
       UI.hideProgress();
@@ -316,7 +318,8 @@ const IntelligenceTools = {
 
       try {
         UI.showProgress(0.3, 'Extracting text and structural blocks...');
-        const rawText = await window.pdfEngine.extractText(currentBuffer);
+        const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
+        const rawText = await window.pdfEngine.extractText(window.pdfEngine.cloneBuffer(bufferToUse));
 
         // Convert text to Markdown structure
         const lines = rawText.split('\n');
@@ -361,3 +364,4 @@ const IntelligenceTools = {
 };
 
 window.IntelligenceTools = IntelligenceTools;
+
