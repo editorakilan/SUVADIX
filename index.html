@@ -1,299 +1,422 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PDFNova - Your PDFs. Your Tools. One Platform.</title>
-  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <title>PDFNova — Free Online PDF Tools (100% Private, In-Browser)</title>
+  <meta name="description" content="Every tool you need to work with PDFs in one place. Merge, split, compress, convert, edit, sign, OCR, protect and watermark PDF files 100% free with zero server uploads.">
+  <meta name="keywords" content="pdf tools, free pdf editor, merge pdf, split pdf, compress pdf, ocr pdf, sign pdf, pdf to word, word to pdf, excel to pdf, convert pdf, smallpdf alternative, ilovepdf alternative, private pdf tools">
+  <meta name="author" content="editorakilan">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <link rel="canonical" href="https://editorakilan.github.io/PDFNova/">
+  <meta name="theme-color" content="#4f46e5">
+
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://editorakilan.github.io/PDFNova/">
+  <meta property="og:title" content="PDFNova — Free Online PDF Tools (100% Private, In-Browser)">
+  <meta property="og:description" content="Merge, split, compress, convert, edit, sign, OCR, protect and watermark PDF files in seconds. 100% free and client-side private.">
+  <meta property="og:site_name" content="PDFNova">
+
+  <!-- Twitter Cards -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="PDFNova — Free Online PDF Tools">
+  <meta name="twitter:description" content="The privacy-first PDF toolkit with 37+ professional tools. 100% in-browser, no upload limits, free forever.">
+
+  <!-- PWA Manifest -->
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="apple-touch-icon" href="assets/pdfnova-icon.png">
+  <link rel="manifest" href="manifest.json">
 
-  <!-- Tailwind CSS via CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#fef2f2',
-              100: '#fee2e2',
-              500: '#ef4444',
-              600: '#dc2626',
-              700: '#b91c1c'
-            }
-          }
-        }
-      }
-    };
-  </script>
-
-  <!-- Cursive Signature Google Fonts -->
+  <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Dancing+Script:wght@600;700&family=Great+Vibes&family=Playfair+Display:ital,wght@1,600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
 
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <!-- PDF Engine Libraries (Real ISO 32000 AES-256 PDF Encryption Supported) -->
-  <script src="https://cdn.jsdelivr.net/npm/pdf-lib-plus-encrypt@1.1.0/dist/pdf-lib-plus-encrypt.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-
-  <!-- Custom Styles -->
-  <link rel="stylesheet" href="css/styles.css">
+  <!-- JSON-LD Structured Data (Production SEO) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "@id": "https://editorakilan.github.io/PDFNova/#webapp",
+        "name": "PDFNova",
+        "url": "https://editorakilan.github.io/PDFNova/",
+        "description": "Every tool you need to work with PDFs in one place. 100% private, client-side, zero-server processing.",
+        "applicationCategory": "UtilityApplication",
+        "operatingSystem": "All modern browsers (Chrome, Firefox, Safari, Edge)",
+        "browserRequirements": "Requires JavaScript. HTML5 & WebAssembly supported.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "editorakilan"
+        },
+        "featureList": [
+          "Merge PDF", "Split PDF", "Compress PDF", "OCR PDF", "Sign PDF", "Edit PDF", "Redact PDF",
+          "PDF to Word", "Word to PDF", "Excel to PDF", "PDF to Excel", "Scan to PDF", "AI PDF Summarizer"
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://editorakilan.github.io/PDFNova/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Is PDFNova really free?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes, every tool on PDFNova is completely free with no usage limits, no registration required, and no hidden premium paywalls."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Are my files uploaded to a server?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. PDFNova executes all processing locally inside your browser using client-side JavaScript. Your documents never leave your computer or phone."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does PDFNova compare to iLovePDF and Smallpdf?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "PDFNova includes all the major features of iLovePDF and Smallpdf (merge, split, compress, convert to/from Office, OCR, eSign, edit, protect, repair, etc.) while guaranteeing 100% client-side confidentiality with zero ads, zero watermark stamps, and zero server storage."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
-<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900 antialiased selection:bg-indigo-500 selection:text-white">
+<body>
 
-  <!-- Top Clean Navigation -->
-  <header class="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm transition-colors duration-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3 cursor-pointer group" onclick="window.app && window.app.closeToolWorkspace()">
-        <img src="assets/pdfnova-icon.png" alt="PDFNova Logo" class="w-10 h-10 object-contain rounded-xl shadow-sm group-hover:scale-105 transition-transform duration-300">
-        <div class="flex flex-col">
-          <div class="flex items-center gap-2">
-            <span class="font-extrabold text-2xl tracking-tight text-slate-900 leading-none">PDF<span class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">Nova</span></span>
-            <span class="hidden sm:inline-block px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-full">Private & Fast</span>
-          </div>
-          <span class="text-[9px] font-bold tracking-wider text-slate-400 uppercase mt-0.5 hidden sm:block">YOUR PDFS. YOUR TOOLS. ONE PLATFORM.</span>
-        </div>
-      </div>
+  <!-- ================= Header ================= -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="brand" id="brand-logo" style="display:flex;align-items:center;gap:10px;">
+        <img src="assets/pdfnova-logo.png" alt="PDFNova" style="height:36px;width:auto;object-fit:contain;display:block;">
+      </a>
 
-      <div class="flex items-center gap-3">
-        <!-- Privacy Badge -->
-        <div class="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold shadow-sm">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>100% In-Browser Memory</span>
+      <nav class="main-nav" id="main-nav" aria-label="Main navigation">
+        <div class="nav-drop">
+          <button type="button">All Tools <i class="fa-solid fa-chevron-down" style="font-size:11px"></i></button>
+          <div class="nav-drop-menu" id="nav-tools-menu"></div>
         </div>
+        <a href="tool.html?t=merge">Merge</a>
+        <a href="tool.html?t=split">Split</a>
+        <a href="tool.html?t=compress">Compress</a>
+        <a href="tool.html?t=pdf-to-word">PDF to Word</a>
+        <a href="tool.html?t=sign">Sign</a>
+        <a href="tool.html?t=ocr">OCR</a>
+        <a href="index.html#features">Why PDFNova</a>
+      </nav>
+
+      <div class="header-cta">
+        <a href="index.html#tools" class="btn btn-ghost">Explore tools</a>
+        <a href="tool.html?t=merge" class="btn btn-primary"><i class="fa-solid fa-bolt"></i> Start now</a>
+        <button class="hamburger" id="hamburger" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
       </div>
     </div>
   </header>
 
-  <!-- Main Viewport -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    
-    <!-- DASHBOARD VIEW -->
-    <div id="dashboard-view" class="space-y-8">
-      <!-- Hero Header -->
-      <div class="text-center max-w-3xl mx-auto space-y-4 pt-4 pb-2">
-        <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight text-slate-900">
-          Every tool you need to work with <span class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">PDFs</span> in one place
-        </h1>
-        <p class="text-sm sm:text-base text-slate-600 max-w-xl mx-auto">
-          Private, fast, and 100% in-browser. All processing runs directly on your machine with zero remote server limits.
-        </p>
+  <!-- ================= Hero ================= -->
+  <section class="hero" id="hero-section">
+    <div class="container">
+      <div class="hero-badge">
+        <span class="pulse-indicator"></span> 100% Private Client-Side • Zero Server Uploads
+      </div>
+      <h1>Every tool you need to work with PDFs, <span class="grad-text">in one place</span></h1>
+      <p class="sub">Merge, split, compress, convert, edit, sign, OCR, protect and repair PDFs in seconds. 37+ professional tools, completely free, no signup, no watermark ads — processed right in your browser.</p>
 
-        <!-- Search Bar with Glow -->
-        <div class="relative max-w-lg mx-auto pt-3">
-          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-            <i data-lucide="search" class="w-4 h-4"></i>
+      <div class="hero-search-wrap">
+        <div class="hero-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="tool-search" placeholder="Search any tool… e.g. merge, compress, sign, OCR, word" autocomplete="off" aria-label="Search tools">
+          <kbd class="search-kbd">⌘K</kbd>
+        </div>
+        <div class="quick-tags">
+          <span>Trending:</span>
+          <a href="tool.html?t=merge">Merge</a>
+          <a href="tool.html?t=compress">Compress</a>
+          <a href="tool.html?t=sign">Sign</a>
+          <a href="tool.html?t=ocr">OCR</a>
+          <a href="tool.html?t=pdf-to-word">PDF to Word</a>
+          <a href="tool.html?t=split">Split</a>
+        </div>
+      <      <!-- Flagship All-In-One Studio Banner -->
+      <div class="all-in-one-banner" style="margin-top:32px;background:linear-gradient(135deg, rgba(79,70,229,0.08) 0%, rgba(124,58,237,0.12) 100%);border:2px solid rgba(124,58,237,0.3);border-radius:20px;padding:22px 28px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px;box-shadow:0 12px 30px -8px rgba(124,58,237,0.15);">
+        <div style="flex:1;min-width:280px;">
+          <div style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#7c3aed;background:#f5f3ff;padding:4px 12px;border-radius:999px;margin-bottom:8px;">
+            <i class="fa-solid fa-sparkles"></i> FLAGSHIP UNIFIED WORKBENCH
           </div>
-          <input type="text" id="search-input" placeholder="Search 25+ PDF tools (merge, split, watermark, sign, ocr)..." class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 bg-white text-sm shadow-sm focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition">
+          <h3 style="font-size:22px;font-weight:800;color:var(--ink);margin:0 0 6px 0;">PDFNova All-In-One Studio</h3>
+          <p style="font-size:14px;color:var(--slate);margin:0;line-height:1.5;">Organize & swap pages, place Dr. Vijayapriya Aki digital signatures, add text & image watermarks, edit sentences, zoom up to 250% without drift, target-size compress, and encrypt in one continuous workspace.</p>
         </div>
+        <a href="tool.html?t=all-in-one" class="btn btn-primary btn-lg" style="box-shadow:0 10px 24px -4px rgba(124,58,237,0.45);padding:14px 28px;font-size:15px;font-weight:700;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Launch All-In-One Studio
+        </a>
       </div>
+/div>
 
-      <!-- Category Filter Tabs with Sliding Pill Animation -->
-      <div class="flex justify-center">
-        <div class="inline-flex items-center gap-1.5 p-1.5 rounded-2xl bg-white border border-slate-200 shadow-sm overflow-x-auto max-w-full scrollbar-none text-xs font-bold">
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap active" data-category="all">All Tools</button>
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap" data-category="organize">Organize</button>
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap" data-category="optimize">Optimize</button>
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap" data-category="convert-to">Convert To</button>
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap" data-category="convert-from">Convert From</button>
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap" data-category="edit">Edit PDF</button>
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap" data-category="security">Security</button>
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap" data-category="intelligence">Intelligence</button>
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-indigo-600 font-bold hover:text-indigo-800 transition whitespace-nowrap" data-category="all-in-one">All-In-One</button>
-        </div>
-      </div>
-
-      <!-- Tools Grid -->
-      <div id="tools-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-2">
-        <!-- Rendered dynamically by app.js -->
-      </div>
-
-      <!-- Featured Bottom All-In-One Studio Banner -->
-      <div class="mt-8 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-xl shadow-indigo-600/15 flex flex-col md:flex-row items-center justify-between gap-6 cursor-pointer hover:shadow-2xl transition group" onclick="window.app && window.app.openTool('all-in-one')">
-        <div class="space-y-2 text-center md:text-left">
-          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-extrabold bg-white/20 backdrop-blur-md text-white border border-white/20">
-            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-            <span>All-In-One Unified Workbench</span>
-          </div>
-          <h2 class="text-2xl sm:text-3xl font-black tracking-tight">Need multiple operations at once?</h2>
-          <p class="text-xs sm:text-sm text-indigo-100 max-w-xl">
-            Swap pages, rotate, edit text, whiteout errors, sign, watermark, redact, protect, and compress — all combined in one seamless studio without switching tools.
-          </p>
-        </div>
-        <button class="px-7 py-3.5 rounded-2xl bg-white text-indigo-700 hover:bg-indigo-50 font-black text-sm shadow-lg group-hover:scale-105 transition-all flex items-center gap-2.5 whitespace-nowrap">
-          <i data-lucide="layers" class="w-5 h-5 text-indigo-600"></i>
-          <span>Launch All-In-One Studio</span>
-        </button>
+      <div class="hero-trust">
+        <span><i class="fa-solid fa-shield-halved"></i> 100% Private (No Uploads)</span>
+        <span><i class="fa-solid fa-infinity"></i> Unlimited Free Use</span>
+        <span><i class="fa-solid fa-bolt"></i> Instant In-Browser</span>
+        <span><i class="fa-solid fa-wand-magic-sparkles"></i> 38+ Tools</span>
       </div>
     </div>
+  </section>
 
-    <!-- TOOL WORKSPACE VIEW (Hidden initially) -->
-    <div id="tool-workspace-view" class="space-y-6 hidden">
-      <!-- Breadcrumb Bar -->
-      <div class="flex items-center justify-between pb-4 border-b border-slate-200">
-        <div class="flex items-center gap-3">
-          <button id="tool-back-btn" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-xs font-bold transition shadow-sm">
-            <i data-lucide="arrow-left" class="w-4 h-4"></i>
-            <span>All Tools</span>
-          </button>
-          <div class="h-4 w-px bg-slate-200"></div>
-          <span id="workspace-tool-category" class="text-xs font-extrabold uppercase tracking-wider text-slate-400">CATEGORY</span>
-          <span class="text-slate-300">/</span>
-          <span id="workspace-tool-title" class="text-sm font-bold text-slate-800">Tool Name</span>
-        </div>
+  <!-- ================= Tools grid ================= -->
+  <section class="section" id="tools">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">The Complete Toolkit</span>
+        <h2>All PDF tools, beautifully simple</h2>
+        <p>Pick a tool below — every tool from iLovePDF &amp; Smallpdf combined into one fast, private suite.</p>
+      </div>
 
-        <div class="flex items-center gap-3">
-          <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            100% In-Browser Memory
-          </span>
-          <button id="tool-close-btn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition shadow-sm" onclick="window.app && window.app.closeToolWorkspace()" title="Close Tool and return to dashboard">
-            <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
-            <span>Close Tool</span>
-          </button>
+      <div class="tool-filters-wrap">
+        <div class="tool-filters" id="tool-filters" role="tablist">
+          <button class="active" data-filter="all"><i class="fa-solid fa-layer-group"></i> All tools <span class="filter-count">38</span></button>
+          <button data-filter="organize"><i class="fa-solid fa-folder-tree"></i> Organize <span class="filter-count">8</span></button>
+          <button data-filter="optimize"><i class="fa-solid fa-gauge-high"></i> Optimize &amp; Repair <span class="filter-count">3</span></button>
+          <button data-filter="convert"><i class="fa-solid fa-repeat"></i> Convert <span class="filter-count">14</span></button>
+          <button data-filter="edit"><i class="fa-solid fa-shield-halved"></i> Edit &amp; Security <span class="filter-count">12</span></button>
         </div>
       </div>
 
-      <!-- Tool Workspace Container -->
-      <div id="tool-content-container" class="py-4">
-        <!-- Injected dynamically by tool handlers -->
+      <div class="tools-grid" id="tools-grid"></div>
+    </div>
+  </section>
+
+  <!-- ================= Stats (Frosted Luxury Cards) ================= -->
+  <section class="stats-band">
+    <div class="container stats-grid">
+      <div class="stat-card">
+        <div class="stat-num"><span data-count="38">38</span>+</div>
+        <div class="stat-label">Professional tools</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num"><span data-count="100">100</span>%</div>
+        <div class="stat-label">Client-side &amp; Free</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num"><span data-count="0">0</span></div>
+        <div class="stat-label">Files stored on servers</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">&lt;<span data-count="15">15</span>s</div>
+        <div class="stat-label">Average task time</div>
       </div>
     </div>
+  </section>
 
-  </main>
-
-  <!-- Footer -->
-  <footer class="border-t border-slate-200 py-6 bg-white mt-auto">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-      <div class="flex items-center gap-2.5">
-        <img src="assets/pdfnova-icon.png" alt="PDFNova" class="w-6 h-6 object-contain rounded-md">
-        <div class="flex items-center gap-2">
-          <span class="font-extrabold text-slate-900 text-sm">PDF<span class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">Nova</span></span>
-          <span class="text-slate-300">|</span>
-          <span class="text-[10px] text-slate-500 font-bold tracking-wider uppercase">YOUR PDFS. YOUR TOOLS. ONE PLATFORM.</span>
+  <!-- ================= Features ================= -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Why PDFNova</span>
+        <h2>Built for privacy, speed and polish</h2>
+        <p>Unlike traditional PDF sites, PDFNova never uploads your confidential documents to external servers.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="f-icon"><i class="fa-solid fa-shield-halved"></i></div>
+          <h3>Private by design</h3>
+          <p>All processing happens locally in your browser using modern WebAssembly &amp; JavaScript. Your contracts, invoices and IDs never touch a server.</p>
+        </div>
+        <div class="feature-card">
+          <div class="f-icon"><i class="fa-solid fa-bolt"></i></div>
+          <h3>Blazing fast</h3>
+          <p>No upload or download queues. Files are processed instantly on your own device — even large documents finish in seconds.</p>
+        </div>
+        <div class="feature-card">
+          <div class="f-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+          <h3>Free, no limits</h3>
+          <p>No accounts, no daily quotas, no premium paywalls, no watermarks slapped on your output. Every tool, unlimited, forever.</p>
+        </div>
+        <div class="feature-card">
+          <div class="f-icon"><i class="fa-solid fa-mobile-screen-button"></i></div>
+          <h3>Any device</h3>
+          <p>Fully responsive design that works beautifully on desktop, tablet and phone — no app installation required.</p>
+        </div>
+        <div class="feature-card">
+          <div class="f-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+          <h3>Professional results</h3>
+          <p>Precise page handling, high-resolution conversion, eSignatures, OCR, and clean typography options that keep your documents looking sharp.</p>
+        </div>
+        <div class="feature-card">
+          <div class="f-icon"><i class="fa-solid fa-universal-access"></i></div>
+          <h3>Simple for everyone</h3>
+          <p>Drag, drop, done. Clear steps and friendly guidance make even complex PDF jobs effortless for non-technical users.</p>
         </div>
       </div>
-      <div>
-        <span>All processing runs privately in your local browser</span>
+    </div>
+  </section>
+
+  <!-- ================= How it works ================= -->
+  <section class="section" id="how-it-works" style="background:#fff;border-block:1px solid var(--line)">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">How it works</span>
+        <h2>Three steps. That's it.</h2>
+      </div>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <h3>Choose a tool</h3>
+          <p>Pick from 37+ professional tools — merge, split, compress, convert, sign, edit and more.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <h3>Drop your files</h3>
+          <p>Drag &amp; drop or browse. Adjust options like page ranges, quality, signature, or password.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <h3>Download instantly</h3>
+          <p>Your new file is ready in seconds — processed privately on your own device.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FAQ ================= -->
+  <section class="section" id="faq">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">FAQ</span>
+        <h2>Frequently asked questions</h2>
+      </div>
+      <div class="faq-list">
+        <details class="faq-item">
+          <summary>Is PDFNova really free?</summary>
+          <div class="faq-body">Yes — every tool is completely free with no usage limits, no signup and no hidden premium tiers.</div>
+        </details>
+        <details class="faq-item">
+          <summary>Are my files uploaded to a server?</summary>
+          <div class="faq-body">No. PDFNova processes everything locally in your browser using modern client-side libraries. Your files never leave your device, which makes it ideal for confidential documents, tax forms, and NDAs.</div>
+        </details>
+        <details class="faq-item">
+          <summary>Is there a file size limit?</summary>
+          <div class="faq-body">There is no artificial limit. Practical limits depend on your device's memory — most documents up to a few hundred megabytes work seamlessly on a modern computer or phone.</div>
+        </details>
+        <details class="faq-item">
+          <summary>Which formats can I convert?</summary>
+          <div class="faq-body">You can convert PDF to Word (.docx), Excel (.csv/.xlsx), PowerPoint (.pptx), JPG, PNG, and Text. You can also convert Word, Excel, PowerPoint, JPG, PNG, HTML, and camera scans into PDF!</div>
+        </details>
+        <details class="faq-item">
+          <summary>Does it work on my phone?</summary>
+          <div class="faq-body">Absolutely. The whole site is responsive and touch-friendly — you can sign, merge, compress, or scan a document straight from your phone's browser.</div>
+        </details>
+        <details class="faq-item">
+          <summary>How does the OCR tool work?</summary>
+          <div class="faq-body">Our OCR (Optical Character Recognition) runs directly in your browser using WebAssembly technology. It inspects scanned PDFs and photos, identifies characters, and produces selectable, copyable text with zero data sent across the internet.</div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CTA ================= -->
+  <section class="section">
+    <div class="container">
+      <div class="cta-band">
+        <h2>Ready to master your PDFs?</h2>
+        <p>Jump into our most-used tools, or browse the complete 37+ tool suite above.</p>
+        <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap">
+          <a href="tool.html?t=merge" class="btn btn-white btn-lg"><i class="fa-solid fa-object-group"></i> Merge PDFs</a>
+          <a href="tool.html?t=sign" class="btn btn-white btn-lg"><i class="fa-solid fa-signature"></i> Sign PDF</a>
+          <a href="tool.html?t=ocr" class="btn btn-white btn-lg"><i class="fa-solid fa-wand-magic-sparkles"></i> OCR PDF</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Footer ================= -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-about">
+          <a href="index.html" class="brand" style="color:#fff">
+            <span class="brand-mark"><i class="fa-solid fa-file-pdf"></i></span>
+            <span>PDF<em style="color:#a5b4fc">Nova</em></span>
+          </a>
+          <p>The professional, privacy-first PDF toolkit. Free forever, processed entirely in your browser with zero server uploads.</p>
+          <div class="developer-showcase">
+            <div class="dev-badge-luxury">
+              <span class="dev-sparkle"><i class="fa-solid fa-sparkles"></i></span>
+              <span class="dev-text">
+                Engineered with <i class="fa-solid fa-heart dev-heart"></i> by <strong class="dev-name">editorakilan</strong>
+              </span>
+              <span class="dev-pill-tag">Creator</span>
+            </div>
+          </div>
+          <div class="footer-social" style="margin-top:14px">
+            <a href="#" aria-label="Twitter / X"><i class="fa-brands fa-x-twitter"></i></a>
+            <a href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+            <a href="#" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+          </div>
+        </div>
+        <div>
+          <h4>Organize</h4>
+          <a href="tool.html?t=merge">Merge PDF</a>
+          <a href="tool.html?t=split">Split PDF</a>
+          <a href="tool.html?t=organize">Organize PDF</a>
+          <a href="tool.html?t=crop">Crop PDF</a>
+          <a href="tool.html?t=flatten">Flatten PDF</a>
+          <a href="tool.html?t=extract">Extract pages</a>
+          <a href="tool.html?t=remove">Remove pages</a>
+        </div>
+        <div>
+          <h4>Convert</h4>
+          <a href="tool.html?t=pdf-to-word">PDF to Word</a>
+          <a href="tool.html?t=word-to-pdf">Word to PDF</a>
+          <a href="tool.html?t=pdf-to-excel">PDF to Excel</a>
+          <a href="tool.html?t=pdf-to-jpg">PDF to JPG</a>
+          <a href="tool.html?t=jpg-to-pdf">JPG to PDF</a>
+          <a href="tool.html?t=scan-to-pdf">Scan to PDF</a>
+          <a href="tool.html?t=pdf-to-pdfa">PDF to PDF/A</a>
+        </div>
+        <div>
+          <h4>Edit &amp; Security</h4>
+          <a href="tool.html?t=edit">Edit PDF</a>
+          <a href="tool.html?t=sign">Sign PDF</a>
+          <a href="tool.html?t=ocr">OCR PDF</a>
+          <a href="tool.html?t=compress">Compress PDF</a>
+          <a href="tool.html?t=protect">Protect PDF</a>
+          <a href="tool.html?t=unlock">Unlock PDF</a>
+          <a href="tool.html?t=compare">Compare PDF</a>
+          <a href="tool.html?t=ai-summarize">AI Summarizer</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 PDFNova. All rights reserved.</span>
+        <div class="developer-showcase">
+          <div class="dev-badge-luxury">
+            <span class="dev-sparkle"><i class="fa-solid fa-sparkles"></i></span>
+            <span class="dev-text">
+              Engineered with <i class="fa-solid fa-heart dev-heart"></i> by <strong class="dev-name">editorakilan</strong>
+            </span>
+            <span class="dev-pill-tag">Creator</span>
+          </div>
+        </div>
+        <span>Made with <i class="fa-solid fa-heart" style="color:#f43f5e"></i> for people who value privacy.</span>
       </div>
     </div>
   </footer>
 
-  <!-- Progress Modal -->
-  <div id="progress-modal" class="fixed inset-0 z-50 modal-backdrop bg-slate-900/50 backdrop-blur-sm items-center justify-center hidden">
-    <div class="modal-content bg-white p-6 rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm text-center space-y-4">
-      <div class="w-14 h-14 rounded-2xl bg-red-50 text-red-600 mx-auto flex items-center justify-center">
-        <svg class="animate-spin h-7 w-7" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-        </svg>
-      </div>
-      <div>
-        <h4 id="progress-text" class="font-bold text-base text-slate-800">Processing Document...</h4>
-        <p id="progress-percentage" class="text-xs font-mono text-slate-400 mt-1">0%</p>
-      </div>
-      <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-        <div id="progress-bar" class="bg-gradient-to-r from-red-600 to-rose-600 h-full rounded-full transition-all duration-200" style="width: 0%"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Unified Result Preview & Download Modal (Review Before Download) -->
-  <div id="result-preview-modal" class="fixed inset-0 z-50 modal-backdrop bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 sm:p-6 overflow-y-auto">
-    <div class="modal-content relative w-full max-w-4xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-      <!-- Modal Header -->
-      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center">
-            <i data-lucide="check-circle" class="w-6 h-6"></i>
-          </div>
-          <div>
-            <h3 id="res-modal-title" class="text-base font-bold text-slate-800">Document Ready</h3>
-            <p id="res-modal-subtitle" class="text-xs text-slate-500">Review your pages below before saving</p>
-          </div>
-        </div>
-        <!-- High-visibility Close Preview Button -->
-        <button id="res-modal-close" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-300 font-semibold text-xs shadow-sm transition" title="Close Preview">
-          <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
-          <span>Close Preview</span>
-        </button>
-      </div>
-
-      <!-- Main Body: High-Fidelity Page Preview Canvas with Navigation -->
-      <div class="flex-1 overflow-auto p-6 flex flex-col items-center justify-center bg-slate-100 min-h-[380px]">
-        <!-- Page navigation bar -->
-        <div class="flex items-center gap-3 mb-4 bg-white px-4 py-1.5 rounded-full border border-slate-200 shadow-sm text-xs font-semibold">
-          <button id="res-prev-page" class="p-1 hover:text-red-500 disabled:opacity-30 transition" title="Previous Page">
-            <i data-lucide="chevron-left" class="w-4 h-4"></i>
-          </button>
-          <span id="res-page-info">Page 1 of 1</span>
-          <button id="res-next-page" class="p-1 hover:text-red-500 disabled:opacity-30 transition" title="Next Page">
-            <i data-lucide="chevron-right" class="w-4 h-4"></i>
-          </button>
-          <div class="h-3 w-px bg-slate-300 mx-1"></div>
-          <button id="res-zoom-out" class="p-1 hover:text-red-500 transition" title="Zoom Out">
-            <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
-          </button>
-          <span id="res-zoom-val" class="text-[11px] font-mono text-slate-500">100%</span>
-          <button id="res-zoom-in" class="p-1 hover:text-red-500 transition" title="Zoom In">
-            <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
-          </button>
-        </div>
-
-        <!-- Rendered Canvas -->
-        <div class="overflow-auto max-w-full max-h-[50vh] p-2 flex items-center justify-center">
-          <canvas id="res-preview-canvas" class="pdf-paper-preview shadow-xl block"></canvas>
-        </div>
-      </div>
-
-      <!-- Footer Action Toolbar -->
-      <div class="px-6 py-4 border-t border-slate-200 bg-white flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <span id="res-file-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">0 KB</span>
-          <span id="res-savings-badge" class="hidden px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">Saved 40%</span>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <!-- Prominent Close Preview Button in Footer -->
-          <button id="res-footer-close-btn" class="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition flex items-center gap-1.5" title="Close Preview">
-            <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
-            <span>Close Preview</span>
-          </button>
-          <button id="res-open-tab-btn" class="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition flex items-center gap-2">
-            <i data-lucide="external-link" class="w-4 h-4"></i>
-            <span>Open in Tab</span>
-          </button>
-          <button id="res-download-btn" class="btn-shimmer px-6 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white text-xs font-bold shadow-md shadow-red-600/20 transition flex items-center gap-2">
-            <i data-lucide="download" class="w-4 h-4"></i>
-            <span id="res-download-label">Download PDF</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast Notification Container -->
-  <div id="toast-container" class="fixed bottom-6 right-6 flex flex-col gap-2.5"></div>
-
-  <!-- Application Scripts -->
-  <script src="js/pdf-engine.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/tools/organize.js"></script>
-  <script src="js/tools/optimize.js"></script>
-  <script src="js/tools/convert-to.js"></script>
-  <script src="js/tools/convert-from.js"></script>
-  <script src="js/tools/edit.js"></script>
-  <script src="js/tools/security.js"></script>
-  <script src="js/tools/intelligence.js"></script>
-  <script src="js/tools/all-in-one.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/tools-config.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>

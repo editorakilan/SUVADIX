@@ -5,166 +5,102 @@
 </p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-success.svg)](.github/workflows/deploy.yml)
+[![GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-success.svg)](https://editorakilan.github.io/PDFNova/)
 [![Zero Server](https://img.shields.io/badge/Privacy-100%25%20In--Browser-emerald.svg)](#privacy-guarantee)
-[![Zero Backend](https://img.shields.io/badge/Backend-Zero%20Required-brightgreen.svg)](#architecture)
+[![PWA Ready](https://img.shields.io/badge/PWA-Installable-purple.svg)](manifest.json)
+[![Tools](https://img.shields.io/badge/Tools-38%2B%20Complete%20Suite-indigo.svg)](#complete-feature-matrix-38-tools)
 
-> **A modern, private, 100% client-side web application suite for all your PDF workflows.**  
-> Inspired by iLovePDF and Stirling-PDF, designed to run completely inside your browser with **zero backend servers**, zero server uploads, and automated deployment on **GitHub Pages**.
+> **A high-performance, private, 100% client-side PDF suite.**  
+> Inspired by iLovePDF and Smallpdf, featuring **38+ complete tools** plus an **All-In-One Studio** running entirely inside your browser via WebAssembly and JavaScript (`pdf-lib`, `pdf.js`, `tesseract.js`, `jszip`). Zero files are ever uploaded to external servers — ensuring complete privacy, zero latency queues, and unlimited free use.
 
----
-
-## Highlights
-
-- **100% Client-Side Privacy**: Medical summaries, hospital bills, contracts, and financial records **never leave your computer**. All processing occurs in browser WebAssembly & memory.
-- **All-In-One Studio**: Complete unified workbench where you can swap pages, edit sentences, whiteout errors, sign, watermark, redact, protect, and compress in a single pipeline without switching tools.
-- **Dr. Vijayapriya Aki Digital Signature**: Draggable & resizable placement box right on the page canvas with realistic handwriting fonts, draw pad, or image stamp.
-- **Target Size Compression**: Compress PDFs to exact limits in **GB, MB, KB, or Bytes** for portal uploads and emails.
-- **Searchable OCR & Text JPG to PDF**: Converts images to digital text PDFs while preserving original clinic header logos and branding photos.
-- **Zero Hosting Costs**: Host for free on GitHub Pages, Cloudflare Pages, Netlify, or Vercel.
+🌐 **Live Website:** [https://editorakilan.github.io/PDFNova/](https://editorakilan.github.io/PDFNova/)
 
 ---
 
-## Directory Structure
+## 🌟 Flagship Highlight: All-In-One Studio
 
-```
-pdfnova/
-├── index.html                 # Main single-page application entry point
-├── assets/                    # Official PDFNova logos, favicons, and icons
-│   ├── favicon.png
-│   ├── favicon.svg
-│   ├── pdfnova-brand.jpg
-│   ├── pdfnova-icon.png
-│   └── pdfnova-logo.png
-├── css/
-│   └── styles.css             # Clean, modern, responsive styling
-├── js/
-│   ├── app.js                 # Application router, search & tool registration
-│   ├── pdf-engine.js          # Core PDF-Lib & PDF.js manipulation engine
-│   ├── ui.js                  # Shared UI components, notifications, modals
-│   └── tools/
-│       ├── all-in-one.js      # All-In-One Studio unified workspace
-│       ├── organize.js        # Merge, Split, Remove, Extract, Organize & Swap
-│       ├── optimize.js        # Target size compress, Repair, OCR
-│       ├── convert-to.js      # JPG to PDF, Word to PDF, HTML to PDF, MD to PDF
-│       ├── convert-from.js    # PDF to JPG, PNG, and Text
-│       ├── edit.js            # Rotate, Page Numbers, Watermark, Sign, Edit PDF
-│       ├── security.js        # Protect (AES-256), Unlock, Compare, Redact
-│       └── intelligence.js    # OCR Answer Tool, Summarizer, Translate, Markdown
-├── .github/workflows/
-│   └── deploy.yml             # Automated GitHub Pages CI/CD workflow
-├── LICENSE                    # MIT Open Source License
-├── README.md                  # Project documentation
-└── serve.py                   # Lightweight local development server
-```
+Located prominently at the top of PDFNova, the **All-In-One Studio** allows you to perform every operation in a continuous workspace:
+- **Organize & Instant Swap:** Visual page thumbnails, drag-and-drop reordering, and instant **Page A ⇄ Page B** swapping.
+- **Dr. Vijayapriya Aki Digital Signatures:** Authentic cursive font signatures, freehand pen drawing, or transparent PNG image upload with draggable and resizable placement boxes.
+- **Zero-Drift High-DPI Zoom Scaler:** Zoom in or out up to **250%** without losing resolution or misaligning signatures and watermarks (powered by normalized relative vector coordinates).
+- **Text & Image Watermarking:** Configurable angle, opacity, font size, and 9-position anchor alignment.
+- **Sentence Editing & Whiteouts:** Seamlessly redact, whiteout, or replace text across any document page.
+- **Smart Target File Size Compressor:** Compress directly to your desired file size in `GB`, `MB`, `KB`, or `Bytes` with live reduction feedback.
+- **AES-256 Encryption:** Protect sensitive documents with custom password protection.
 
 ---
 
-## Included PDF Tools & Features
+## Complete Feature Matrix (38+ Tools)
 
-### 1. All-In-One Studio
-* **Unified Pipeline**: Swap pages, rotate, edit sentences, whiteout typos, place signatures with corner resize handles, stamp text/image watermarks, redact data, compress to target file sizes, and encrypt with AES-256 passwords — all in one place.
-* **Live Scaler**: Zoom up to 250% without pixelation or coordinate drift.
+### 1. Organize
+| Tool | Dedicated URL | Description |
+|---|---|---|
+| **Merge PDF** | `tool.html?t=merge` | Combine multiple PDFs into a single file with custom ordering |
+| **Split PDF** | `tool.html?t=split` | Split by custom ranges (`1-3, 4-6`) or one file per page |
+| **Organize PDF** | `tool.html?t=organize` | Sort, reorder, rotate, delete pages with Instant Page Swap (`Page A ⇄ Page B`) |
+| **Extract Pages** | `tool.html?t=extract` | Pull specific page intervals into a new document |
+| **Remove Pages** | `tool.html?t=remove` | Delete selected pages permanently |
+| **Rotate PDF** | `tool.html?t=rotate` | Rotate individual or all pages (90°, 180°, 270°) |
+| **Crop PDF** | `tool.html?t=crop` | Trim margins or crop pages with custom margin bounds |
+| **Flatten PDF** | `tool.html?t=flatten` | Lock interactive form fields and annotations into static document layers |
 
-### 2. Organize PDF
-* **Merge PDF**: Combine multiple PDFs into a single document with zero quality loss.
-* **Split PDF**: Extract page ranges or burst pages into individual single-page documents bundled in a ZIP.
-* **Remove Pages**: Interactive visual page thumbnail grid to delete unwanted pages.
-* **Extract Pages**: Visually select specific pages and export them into a newly compiled document.
-* **Organize & Swap PDF**: Drag-and-drop page reorganization, instant `Page A ⇄ Page B` swap dropdown, adjacent `←` / `→` shift buttons, and 90° rotation.
-* **Scan to PDF**: Access device camera or webcam to take snapshots and compile into clean PDF files.
+### 2. Optimize & Repair
+| Tool | Dedicated URL | Description |
+|---|---|---|
+| **Compress PDF** | `tool.html?t=compress` | 3 quality presets + Target File Size mode (`GB`, `MB`, `KB`, `Bytes`) |
+| **OCR PDF** | `tool.html?t=ocr` | Client-side Optical Character Recognition via Tesseract.js |
+| **Repair PDF** | `tool.html?t=repair` | Reconstruct broken cross-reference tables and recover corrupted pages |
 
-### 3. Optimize PDF
-* **Compress PDF**: Compress by **Target File Size (GB/MB/KB/Bytes)** with live reduction calculations, or choose presets (Extreme ~75%, Recommended ~50%, Less ~25%).
-* **Repair PDF**: Fix damaged cross-reference (xref) tables and reconstruct broken page structures.
-* **OCR PDF**: Optical Character Recognition powered by **Tesseract.js** running in-browser.
+### 3. Convert to PDF
+| Tool | Dedicated URL | Description |
+|---|---|---|
+| **JPG to PDF** | `tool.html?t=jpg-to-pdf` | Convert images to PDF with A4, Letter, Fit, margins & orientation controls |
+| **PNG to PDF** | `tool.html?t=png-to-pdf` | Convert PNGs with alpha transparency support to PDF |
+| **Word to PDF** | `tool.html?t=word-to-pdf` | Typeset `.docx` documents into clean, paginated PDFs |
+| **Excel to PDF** | `tool.html?t=excel-to-pdf` | Convert `.xlsx` and `.csv` sheets into formatted PDF tables |
+| **PowerPoint to PDF** | `tool.html?t=ppt-to-pdf` | Transform `.pptx` slides into 16:9 presentation PDFs |
+| **Text to PDF** | `tool.html?t=text-to-pdf` | Convert raw notes and code into formatted PDF documents |
+| **HTML to PDF** | `tool.html?t=html-to-pdf` | Render HTML snippets and documents into clean PDF pages |
+| **Scan to PDF** | `tool.html?t=scan-to-pdf` | In-browser webcam/phone camera scanner with multi-page capture |
 
-### 4. Convert to PDF
-* **JPG to PDF**: 
-  * *Standard Image Mode*: Embeds photos in high resolution.
-  * *Searchable OCR Mode*: Adds an invisible selectable text layer (Ctrl+F enabled).
-  * *Digital Text Mode*: Crops and places clinic/company logos at the top while typesetting body text into selectable vector format.
-* **Word (.docx) to PDF**: Parse formatted Microsoft Word documents client-side.
-* **HTML to PDF**: Convert rich HTML/CSS templates into printable PDF files.
-* **Markdown to PDF**: Live split-view editor to generate formatted PDFs from Markdown.
+### 4. Convert from PDF
+| Tool | Dedicated URL | Description |
+|---|---|---|
+| **PDF to JPG** | `tool.html?t=pdf-to-jpg` | Convert PDF pages into high-resolution JPG images (+ ZIP archive) |
+| **PDF to PNG** | `tool.html?t=pdf-to-png` | Export lossless PNG images at 150 or 300 DPI |
+| **PDF to Text** | `tool.html?t=pdf-to-text` | Extract all selectable text into a clean `.txt` document |
+| **PDF to Word** | `tool.html?t=pdf-to-word` | Extract structured paragraphs and headings into editable `.docx` files |
+| **PDF to Excel** | `tool.html?t=pdf-to-excel` | Automatically detect and extract tabular data into `.csv` spreadsheets |
+| **PDF to PowerPoint** | `tool.html?t=pdf-to-ppt` | Export presentation slides into `.pptx` presentations |
+| **PDF to PDF/A** | `tool.html?t=pdf-to-pdfa` | Embed ISO 19005-1 archival standard metadata and color profiles |
 
-### 5. Convert from PDF
-* **PDF to JPG**: Render high-resolution JPG images (download individually or as ZIP).
-* **PDF to PNG**: Extract crisp PNG images preserving alpha channel transparency.
-* **PDF to Text**: Extract all text streams across all pages into `.txt`.
-
-### 6. Edit PDF
-* **Rotate PDF**: Rotate specific pages or entire documents 90°, 180°, or 270°.
-* **Add Page Numbers**: Add custom pagination (`Page {n} of {total}`) in headers, footers, or corners.
-* **Add Watermark**: Stamp custom text or image logos with opacity, rotation, and 9-grid position alignment.
-* **Sign PDF**: Place draggable, resizable signatures (typed cursive for Dr. Vijayapriya Aki, freehand drawing, or image upload).
-* **Edit PDF**: Find and replace sentences, whiteout errors, or insert replacement images.
-
-### 7. PDF Security
-* **Protect PDF**: Apply standard AES-256 password encryption.
-* **Unlock PDF**: Decrypt password-protected PDFs and remove security restrictions.
-* **Compare PDF**: Side-by-side visual difference comparison between two versions.
-* **Redact PDF**: Draw blackout redaction boxes over sensitive personal or medical info.
-
-### 8. PDF Intelligence
-* **OCR Answer Tool**: Upload scanned exam papers, questionnaires, or test sheets to extract questions via OCR, solve them step-by-step, and export answer sheets to PDF.
-* **AI Summarizer**: Client-side extractive NLP summarizer.
-* **Translate PDF**: Translate text content across multiple languages.
-* **PDF to Markdown**: Formats document text into GitHub-Flavored Markdown.
-
----
-
-## Quick Start (Run Locally)
-
-```bash
-# Clone the repository
-git clone https://github.com/<your-username>/pdfnova.git
-cd pdfnova
-
-# Launch the local development server
-python serve.py
-```
-Open `http://localhost:8080` in your web browser.
+### 5. Edit & Security
+| Tool | Dedicated URL | Description |
+|---|---|---|
+| **All-In-One Studio** | `tool.html?t=all-in-one` | Complete multi-step studio (organize, sign, watermark, edit, compress, protect) |
+| **Edit PDF** | `tool.html?t=edit` | Add text, highlights, shapes, and annotations onto PDF pages |
+| **Sign PDF** | `tool.html?t=sign` | Digital eSignatures: draw with pen, type cursive script, or upload signature |
+| **Watermark PDF** | `tool.html?t=watermark` | Add customized text or image watermarks with opacity, angle, and size controls |
+| **Page Numbers** | `tool.html?t=page-numbers` | Insert customizable page numbers (header/footer, left/center/right) |
+| **Redact PDF** | `tool.html?t=redact` | Permanently black-out sensitive areas, numbers, and private data |
+| **Protect PDF** | `tool.html?t=protect` | Password-protect and encrypt documents from unauthorized access |
+| **Unlock PDF** | `tool.html?t=unlock` | Remove passwords and permissions from secured PDF documents |
+| **PDF Metadata** | `tool.html?t=metadata` | View and edit Title, Author, Subject, and Keywords tags |
+| **Compare PDF** | `tool.html?t=compare` | Side-by-side comparison highlighting differences between two document revisions |
+| **PDF Reader** | `tool.html?t=reader` | Distraction-free in-browser PDF reader with zoom and navigation |
+| **AI PDF Summarizer** | `tool.html?t=ai-summarize` | Instant executive summaries, key takeaways, and reading metrics |
 
 ---
 
-## Deploying to GitHub Pages
-
-1. Create a new repository on [GitHub](https://github.com/new) named `pdfnova`.
-2. Push your code:
-   ```bash
-   git remote add origin https://github.com/<your-username>/pdfnova.git
-   git branch -M main
-   git push -u origin main
-   ```
-3. Enable GitHub Pages:
-   - Go to your repo on GitHub: **Settings** → **Pages**.
-   - Under **Build and deployment** → **Source**, select **GitHub Actions**.
-4. The workflow will automatically deploy your application to:
-   ```
-   https://<your-username>.github.io/pdfnova/
-   ```
+## 🔒 Privacy Guarantee
+- **Zero Server Uploads:** 100% of PDF processing happens locally in your browser's WebAssembly sandbox.
+- **Works Offline:** Once loaded, you can disconnect from the internet and continue processing files.
+- **PWA Installation:** Install PDFNova on Android, iOS, Windows, or macOS directly from your browser.
 
 ---
 
-## Privacy Guarantee
-
-Unlike commercial online PDF converters, **PDFNova does not upload your files to any remote server**. 
-
-```
-[Your Computer] ──(In-Memory ArrayBuffer)──> [PDF-Lib / WebAssembly] ──(Blob)──> [Your Computer]
-      │
-      └─── NO CLOUD SERVER ─── NO DATA LOGGING ─── 100% PRIVATE ───┘
-```
-
-Everything runs inside your browser sandbox via:
-- [PDF-Lib](https://pdf-lib.js.org/) for object-level PDF manipulation.
-- [PDF.js](https://mozilla.github.io/pdf.js/) (by Mozilla) for canvas rendering and rasterization.
-- [Tesseract.js](https://tesseract.projectnaptha.com/) for in-browser OCR processing.
-- [JSZip](https://stuk.github.io/jszip/) for client-side archive packaging.
-
----
-
-## License
-
-This project is open-source under the [MIT License](LICENSE).
+## 🚀 Deployment
+Deploy to GitHub Pages with automated continuous deployment via GitHub Actions:
+1. Push to the `main` branch.
+2. In repository **Settings** ➔ **Pages**, set **Source** to **GitHub Actions**.
+3. Your application updates automatically at `https://<username>.github.io/<repo-name>/`.

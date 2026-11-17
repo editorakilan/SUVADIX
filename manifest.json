@@ -1,0 +1,22 @@
+{
+  "name": "PDFNova — 100% Client-Side PDF Suite",
+  "short_name": "PDFNova",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "description": "Every tool you need to work with PDFs in one place. 100% free, private, in-browser PDF tools with zero server uploads.",
+  "icons": [
+    {
+      "src": "assets/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/pdfnova-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
