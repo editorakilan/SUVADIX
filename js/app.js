@@ -454,6 +454,10 @@ class App {
     });
   }
 
+  openTool(toolId) {
+    return this.openToolWorkspace(toolId);
+  }
+
   openToolWorkspace(toolId) {
     const tool = TOOLS_CONFIG.find(t => t.id === toolId);
     if (!tool) return;
