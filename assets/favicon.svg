@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EF4444" />
+      <stop offset="100%" stop-color="#DC2626" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect x="6" y="4" width="36" height="40" rx="6" fill="url(#grad)" filter="url(#shadow)"/>
+  <path d="M14 12H26L34 20V36C34 37.1 33.1 38 32 38H14C12.9 38 12 37.1 12 36V14C12 12.9 12.9 12 14 12Z" fill="white" fill-opacity="0.2"/>
+  <path d="M26 12V20H34" fill="white" fill-opacity="0.4"/>
+  <text x="24" y="32" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="900" fill="white" text-anchor="middle" letter-spacing="0.5">PDF</text>
+</svg>
