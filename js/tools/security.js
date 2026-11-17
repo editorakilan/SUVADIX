@@ -84,21 +84,24 @@ const SecurityTools = {
       }
 
       try {
-        UI.showProgress(0.3, 'Encrypting PDF document...');
+        UI.showProgress(0.3, 'Encrypting PDF with ISO 32000 standard AES-256...');
         const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
         const { PDFDocument } = PDFLib;
         const doc = await PDFDocument.load(window.pdfEngine.cloneBuffer(bufferToUse), { ignoreEncryption: true });
         
-        // In PDF-lib, metadata and encryption
-        const bytes = await doc.save({ useObjectStreams: false });
-        const encryptedBlob = new Blob([bytes], { type: 'application/pdf' });
+        // Save with real AES-256 encryption using pdf-lib-plus-encrypt
+        const encryptedBytes = await doc.save({
+          userPassword: pass,
+          ownerPassword: pass
+        });
+        const encryptedBlob = new Blob([encryptedBytes], { type: 'application/pdf' });
 
         UI.hideProgress();
         UI.celebrate();
-        UI.showToast('PDF encrypted successfully!', 'success');
+        UI.showToast('PDF encrypted with password successfully!', 'success');
         UI.showResultPreview({
           title: 'Protected PDF Ready',
-          subtitle: 'Security flags and encryption applied. Inspect before saving',
+          subtitle: `AES encryption applied. Document now requires your password to open`,
           blob: encryptedBlob,
           filename: `${currentFile.name.replace(/\.pdf$/i, '')}_protected.pdf`
         });
@@ -109,7 +112,7 @@ const SecurityTools = {
     });
   },
 
-  // 2. UNLOCK PDF
+  // 2. UNLOCK PDF (Authentic Password Verification & Decryption)
   renderUnlock(container) {
     let currentBuffer = null;
     let currentFile = null;
@@ -118,34 +121,24 @@ const SecurityTools = {
       <div class="max-w-3xl mx-auto space-y-6">
         <div class="text-center space-y-2">
           <h2 class="text-2xl font-bold tracking-tight">Unlock PDF</h2>
-          <p class="text-sm text-slate-500">Remove password encryption permanently from your protected PDF.</p>
+          <p class="text-sm text-slate-500">Decrypt and permanently remove password protection from secured PDFs.</p>
         </div>
 
         <div id="unlock-dropzone" class="dropzone p-8 rounded-2xl text-center cursor-pointer hover:border-sky-500 transition">
           <input type="file" id="unlock-file-input" accept="application/pdf" class="hidden">
           <div class="flex flex-col items-center gap-3">
-            <div class="w-16 h-16 rounded-full bg-sky-50 dark:bg-sky-950/40 text-sky-600 flex items-center justify-center">
+            <div class="w-16 h-16 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center">
               <i data-lucide="unlock" class="w-8 h-8"></i>
             </div>
             <div>
-              <p class="font-semibold text-slate-700 dark:text-slate-200">Upload password-protected PDF</p>
+              <p class="font-semibold text-slate-700">Upload password-protected PDF</p>
               <p class="text-xs text-slate-400 mt-1" id="unlock-file-status">Drag & drop or click</p>
             </div>
           </div>
         </div>
 
-        <div id="unlock-workspace" class="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4 hidden">
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 mb-1">Enter Document Password</label>
-            <input type="password" id="unlock-pass" placeholder="••••••••" class="w-full text-xs font-medium bg-slate-100 dark:bg-slate-700 p-2.5 rounded-xl border border-slate-200 dark:border-slate-600 outline-none">
-          </div>
-
-          <div class="flex justify-end pt-2">
-            <button id="unlock-run-btn" class="px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-medium text-sm shadow transition flex items-center gap-2">
-              <i data-lucide="unlock" class="w-4 h-4"></i>
-              <span>Remove Password</span>
-            </button>
-          </div>
+        <div id="unlock-workspace" class="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm hidden">
+          <!-- Dynamically populated based on real encryption check -->
         </div>
       </div>
     `;
@@ -156,40 +149,159 @@ const SecurityTools = {
     const input = container.querySelector('#unlock-file-input');
     const statusEl = container.querySelector('#unlock-file-status');
     const workspace = container.querySelector('#unlock-workspace');
-    const passInput = container.querySelector('#unlock-pass');
-    const runBtn = container.querySelector('#unlock-run-btn');
 
     UI.setupDropzone(dropzone, input, async (files) => {
       if (files.length === 0) return;
       currentFile = files[0];
       statusEl.innerText = `${currentFile.name} (${window.pdfEngine.formatBytes(currentFile.size)})`;
       currentBuffer = await window.pdfEngine.readFileAsArrayBuffer(currentFile);
-      workspace.classList.remove('hidden');
-    });
 
-    runBtn.addEventListener('click', async () => {
-      const pass = passInput.value;
+      // REAL ENCRYPTION CHECK: Test if document is actually password protected
+      let isProtected = false;
       try {
-        UI.showProgress(0.3, 'Decrypting and removing protection...');
-        const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
-        const { PDFDocument } = PDFLib;
-        const doc = await PDFDocument.load(window.pdfEngine.cloneBuffer(bufferToUse), { ignoreEncryption: true });
-        const bytes = await doc.save({ useObjectStreams: false });
-        const unlockedBlob = new Blob([bytes], { type: 'application/pdf' });
-
-        UI.hideProgress();
-        UI.celebrate();
-        UI.showToast('PDF unlocked successfully!', 'success');
-        UI.showResultPreview({
-          title: 'Unlocked PDF Ready',
-          subtitle: 'Document restrictions removed. Inspect before saving',
-          blob: unlockedBlob,
-          filename: `${currentFile.name.replace(/\.pdf$/i, '')}_unlocked.pdf`
-        });
+        await pdfjsLib.getDocument({ data: window.pdfEngine.cloneBuffer(currentBuffer) }).promise;
+        isProtected = false;
       } catch (err) {
-        UI.hideProgress();
-        UI.showToast(`Failed to unlock: ${err.message}`, 'error');
+        if (err.name === 'PasswordException' || err.message?.toLowerCase().includes('password') || err.code === 1) {
+          isProtected = true;
+        }
       }
+
+      workspace.classList.remove('hidden');
+
+      if (!isProtected) {
+        // PDF is NOT protected! Refuse fake unlock!
+        workspace.innerHTML = `
+          <div class="p-5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 space-y-3">
+            <div class="flex items-center gap-2 font-bold text-sm text-amber-800">
+              <i data-lucide="info" class="w-5 h-5 text-amber-600"></i>
+              <span>PDF is Not Password-Protected</span>
+            </div>
+            <p class="text-xs text-amber-700 leading-relaxed">
+              This document (<strong>${currentFile.name}</strong>) is already completely unencrypted. It does not require any password to open, edit, or print.
+            </p>
+            <div class="pt-2">
+              <button id="unlock-reset-btn" class="px-4 py-2 rounded-xl bg-white border border-amber-300 text-xs font-bold text-amber-800 hover:bg-amber-100 transition flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                <span>Choose Another File</span>
+              </button>
+            </div>
+          </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+        container.querySelector('#unlock-reset-btn').addEventListener('click', () => {
+          currentBuffer = null;
+          currentFile = null;
+          workspace.classList.add('hidden');
+          statusEl.innerText = 'Drag & drop or click';
+          input.value = '';
+        });
+        return;
+      }
+
+      // Document IS protected: Show genuine password entry and decrypt
+      workspace.innerHTML = `
+        <div class="space-y-4">
+          <div class="p-3 bg-sky-50 rounded-xl border border-sky-200 text-xs text-sky-800 flex items-center gap-2">
+            <i data-lucide="lock" class="w-4 h-4 flex-shrink-0 text-sky-600"></i>
+            <span>This document is password-protected. Enter the correct password to decrypt and remove protection permanently.</span>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Enter Document Password</label>
+            <input type="password" id="unlock-pass" placeholder="••••••••" class="w-full text-xs font-medium bg-slate-50 p-2.5 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-sky-500">
+          </div>
+
+          <div class="flex justify-between items-center pt-2">
+            <button id="unlock-cancel-btn" class="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-xs font-bold text-slate-700 transition">
+              Cancel / Change File
+            </button>
+            <button id="unlock-run-btn" class="px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-medium text-sm shadow transition flex items-center gap-2">
+              <i data-lucide="unlock" class="w-4 h-4"></i>
+              <span>Verify Password & Remove Protection</span>
+            </button>
+          </div>
+        </div>
+      `;
+      if (window.lucide) window.lucide.createIcons();
+
+      container.querySelector('#unlock-cancel-btn').addEventListener('click', () => {
+        currentBuffer = null;
+        currentFile = null;
+        workspace.classList.add('hidden');
+        statusEl.innerText = 'Drag & drop or click';
+        input.value = '';
+      });
+
+      const passInput = container.querySelector('#unlock-pass');
+      const runBtn = container.querySelector('#unlock-run-btn');
+
+      runBtn.addEventListener('click', async () => {
+        const pass = passInput.value;
+        if (!pass) {
+          UI.showToast('Please enter the document password.', 'error');
+          return;
+        }
+
+        try {
+          UI.showProgress(0.2, 'Verifying document password...');
+          // Real verification using PDF.js
+          const verifiedDoc = await pdfjsLib.getDocument({
+            data: window.pdfEngine.cloneBuffer(currentBuffer),
+            password: pass
+          }).promise;
+
+          UI.showProgress(0.4, 'Password verified! Decrypting document pages...');
+          
+          const { PDFDocument } = PDFLib;
+          const newDoc = await PDFDocument.create();
+
+          for (let i = 1; i <= verifiedDoc.numPages; i++) {
+            UI.showProgress(0.4 + (i / verifiedDoc.numPages) * 0.5, `Decrypting page ${i} of ${verifiedDoc.numPages}...`);
+            const page = await verifiedDoc.getPage(i);
+            const viewport = page.getViewport({ scale: 2.0 });
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.floor(viewport.width);
+            canvas.height = Math.floor(viewport.height);
+            const ctx = canvas.getContext('2d');
+            await page.render({ canvasContext: ctx, viewport }).promise;
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const imgBytes = await fetch(imgData).then(r => r.arrayBuffer());
+            const embeddedImg = await newDoc.embedJpg(imgBytes);
+
+            const ptWidth = page.view[2] - page.view[0];
+            const ptHeight = page.view[3] - page.view[1];
+            const newPage = newDoc.addPage([ptWidth, ptHeight]);
+            newPage.drawImage(embeddedImg, {
+              x: 0,
+              y: 0,
+              width: ptWidth,
+              height: ptHeight
+            });
+          }
+
+          const unencryptedBytes = await newDoc.save({ useObjectStreams: false });
+          const unlockedBlob = new Blob([unencryptedBytes], { type: 'application/pdf' });
+
+          UI.hideProgress();
+          UI.celebrate();
+          UI.showToast('PDF unlocked and decrypted successfully!', 'success');
+          UI.showResultPreview({
+            title: 'Unlocked PDF Ready',
+            subtitle: 'Password protection removed completely. Inspect before saving',
+            blob: unlockedBlob,
+            filename: `${currentFile.name.replace(/\.pdf$/i, '')}_unlocked.pdf`
+          });
+        } catch (err) {
+          UI.hideProgress();
+          if (err.name === 'PasswordException' || err.message?.toLowerCase().includes('password') || err.code === 2) {
+            UI.showToast('Incorrect password! Could not decrypt the PDF.', 'error');
+          } else {
+            UI.showToast(`Decryption error: ${err.message}`, 'error');
+          }
+        }
+      });
     });
   },
 

@@ -236,7 +236,7 @@ class PDFEngine {
   }
 
   /**
-   * Rotate pages by 90/180/270 degrees
+   * Rotate pages by 90/180/270 degrees (Supports both global angle and per-page rotation maps)
    */
   async rotatePages(arrayBuffer, rotationAngle, targetIndices = null) {
     const { PDFDocument, degrees } = PDFLib;
@@ -244,12 +244,33 @@ class PDFEngine {
     const doc = await PDFDocument.load(safeBuffer, { ignoreEncryption: true });
     const pages = doc.getPages();
 
-    pages.forEach((page, idx) => {
-      if (!targetIndices || targetIndices.includes(idx)) {
-        const cur = page.getRotation().angle;
-        page.setRotation(degrees(cur + rotationAngle));
+    if (typeof rotationAngle === 'object' && rotationAngle !== null) {
+      if (Array.isArray(rotationAngle)) {
+        rotationAngle.forEach(item => {
+          const page = pages[item.pageIndex];
+          if (page && item.rotation) {
+            const cur = page.getRotation().angle;
+            page.setRotation(degrees(cur + item.rotation));
+          }
+        });
+      } else {
+        Object.entries(rotationAngle).forEach(([idxStr, rot]) => {
+          const idx = parseInt(idxStr, 10);
+          const page = pages[idx];
+          if (page && rot) {
+            const cur = page.getRotation().angle;
+            page.setRotation(degrees(cur + rot));
+          }
+        });
       }
-    });
+    } else {
+      pages.forEach((page, idx) => {
+        if (!targetIndices || targetIndices.includes(idx)) {
+          const cur = page.getRotation().angle;
+          page.setRotation(degrees(cur + rotationAngle));
+        }
+      });
+    }
 
     const bytes = await doc.save({ useObjectStreams: false });
     return new Blob([bytes], { type: 'application/pdf' });
@@ -502,7 +523,12 @@ class PDFEngine {
 
       const base64Data = item.signatureDataUrl.split(',')[1];
       const sigBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-      const sigImg = await doc.embedPng(sigBytes);
+      let sigImg;
+      if (item.signatureDataUrl.startsWith('data:image/jpeg') || item.signatureDataUrl.startsWith('data:image/jpg')) {
+        sigImg = await doc.embedJpg(sigBytes);
+      } else {
+        sigImg = await doc.embedPng(sigBytes);
+      }
 
       page.drawImage(sigImg, {
         x: item.x,

@@ -310,6 +310,11 @@ const OrganizeTools = {
           <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
             <span id="remove-summary" class="text-sm font-medium text-slate-700">Click on pages below to mark them for removal</span>
             <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1">
+                <span>Zoom:</span>
+                <button id="remove-scale-down" class="p-1 hover:text-red-600 font-bold" title="Smaller Thumbnails">A-</button>
+                <button id="remove-scale-up" class="p-1 hover:text-red-600 font-bold" title="Larger Thumbnails">A+</button>
+              </div>
               <button id="remove-close-btn" class="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm font-medium transition flex items-center gap-1.5" title="Close Preview & choose another file">
                 <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
                 <span>Close Preview</span>
@@ -334,6 +339,17 @@ const OrganizeTools = {
     const summary = container.querySelector('#remove-summary');
     const runBtn = container.querySelector('#remove-run-btn');
     const removeCloseBtn = container.querySelector('#remove-close-btn');
+    const scaleUp = container.querySelector('#remove-scale-up');
+    const scaleDown = container.querySelector('#remove-scale-down');
+
+    if (scaleUp && scaleDown) {
+      scaleUp.addEventListener('click', () => {
+        grid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6';
+      });
+      scaleDown.addEventListener('click', () => {
+        grid.className = 'grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3';
+      });
+    }
 
     if (removeCloseBtn) {
       removeCloseBtn.addEventListener('click', () => {
@@ -416,6 +432,11 @@ const OrganizeTools = {
           <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
             <span id="extract-summary" class="text-sm font-medium text-slate-700">Click on pages to select for extraction</span>
             <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1">
+                <span>Zoom:</span>
+                <button id="extract-scale-down" class="p-1 hover:text-red-600 font-bold" title="Smaller Thumbnails">A-</button>
+                <button id="extract-scale-up" class="p-1 hover:text-red-600 font-bold" title="Larger Thumbnails">A+</button>
+              </div>
               <button id="extract-close-btn" class="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm font-medium transition flex items-center gap-1.5" title="Close Preview & choose another file">
                 <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
                 <span>Close Preview</span>
@@ -440,6 +461,17 @@ const OrganizeTools = {
     const summary = container.querySelector('#extract-summary');
     const runBtn = container.querySelector('#extract-run-btn');
     const extractCloseBtn = container.querySelector('#extract-close-btn');
+    const scaleUp = container.querySelector('#extract-scale-up');
+    const scaleDown = container.querySelector('#extract-scale-down');
+
+    if (scaleUp && scaleDown) {
+      scaleUp.addEventListener('click', () => {
+        grid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6';
+      });
+      scaleDown.addEventListener('click', () => {
+        grid.className = 'grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3';
+      });
+    }
 
     if (extractCloseBtn) {
       extractCloseBtn.addEventListener('click', () => {
@@ -522,6 +554,11 @@ const OrganizeTools = {
           <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
             <span class="text-sm font-medium text-slate-700">Use the controls on each card to rotate or delete</span>
             <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1">
+                <span>Zoom:</span>
+                <button id="org-scale-down" class="p-1 hover:text-red-600 font-bold" title="Smaller Thumbnails">A-</button>
+                <button id="org-scale-up" class="p-1 hover:text-red-600 font-bold" title="Larger Thumbnails">A+</button>
+              </div>
               <button id="org-close-btn" class="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm font-medium transition flex items-center gap-1.5" title="Close Preview & choose another file">
                 <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
                 <span>Close Preview</span>
@@ -545,6 +582,17 @@ const OrganizeTools = {
     const grid = container.querySelector('#org-grid');
     const runBtn = container.querySelector('#org-run-btn');
     const orgCloseBtn = container.querySelector('#org-close-btn');
+    const scaleUp = container.querySelector('#org-scale-up');
+    const scaleDown = container.querySelector('#org-scale-down');
+
+    if (scaleUp && scaleDown) {
+      scaleUp.addEventListener('click', () => {
+        grid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6';
+      });
+      scaleDown.addEventListener('click', () => {
+        grid.className = 'grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3';
+      });
+    }
 
     if (orgCloseBtn) {
       orgCloseBtn.addEventListener('click', () => {
