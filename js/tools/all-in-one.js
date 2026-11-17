@@ -13,16 +13,59 @@ const AllInOneTool = {
     let currentZoom = 1.0;
 
     // --- Studio Operational States ---
-    let pageItems = []; // Array of { originalIndex, originalPageNumber, rotation, deleted, canvasEl }
-    let signatures = []; // Array of { pageIndex, signatureDataUrl, xRatio, yRatio, wRatio, hRatio }
-    let textEdits = []; // Array of { pageIndex, type, x, y, width, height, text, newText, size, font, color, bgWhiteout }
-    let redactions = []; // Array of { pageIndex, xRatio, yRatio, wRatio, hRatio }
-    let watermarkConfig = null; // { type, text, fontSize, color, opacity, angle, position, imageBlob, applyAll }
-    let compressConfig = { enabled: false, mode: 'target', targetVal: 2, targetUnit: 'MB', level: 'recommended' };
-    let securityConfig = { enabled: false, password: '' };
+    // Page items: { originalIndex, originalPageNumber, rotation, deleted, canvasEl }
+    let pageItems = [];
+
+    // Signatures: array of { id, pageIndex, signatureDataUrl, xRatio, yRatio, wRatio, hRatio }
+    let signatures = [];
+
+    // Watermark Configuration: { enabled, type: 'text'|'image', text, fontSize, colorHex, opacity, angle, position, imageBuffer, imageType, imageScale, imageDataUrl }
+    let watermarkConfig = {
+      enabled: false,
+      type: 'text',
+      text: 'CONFIDENTIAL',
+      fontSize: 48,
+      colorHex: '#e11d48',
+      opacity: 0.25,
+      angle: -45,
+      position: 'center-diag',
+      imageBuffer: null,
+      imageType: 'image/png',
+      imageScale: 50,
+      imageDataUrl: null
+    };
+
+    // Text Edits & Whiteouts: array of { id, pageIndex, type: 'replace'|'whiteout', origText, newText, fontSize, fontColor, xRatio, yRatio, wRatio, hRatio }
+    let textEdits = [];
+
+    // Redactions: array of { id, pageIndex, xRatio, yRatio, wRatio, hRatio }
+    let redactions = [];
+
+    // Compression settings: { enabled, mode: 'target'|'raster', targetVal, targetUnit, level }
+    let compressConfig = {
+      enabled: false,
+      mode: 'target',
+      targetVal: 2,
+      targetUnit: 'MB',
+      level: 'recommended'
+    };
+
+    // Security settings: { enabled, password }
+    let securityConfig = {
+      enabled: false,
+      password: ''
+    };
 
     // Active tool tab: 'pages' | 'sign' | 'watermark' | 'edit' | 'compress' | 'security'
     let activeTab = 'pages';
+
+    // Signature Pad & Generator State
+    let currentSigMode = 'type'; // 'type' | 'draw' | 'upload'
+    let sigColor = '#1d4ed8';
+    let isDrawingSig = false;
+
+    // Edit tool mode: 'replace' | 'whiteout'
+    let currentEditMode = 'replace';
 
     container.innerHTML = `
       <div class="max-w-6xl mx-auto space-y-5">
@@ -33,7 +76,7 @@ const AllInOneTool = {
             <span>All-In-One Unified PDF Studio</span>
           </div>
           <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">All-In-One PDF Studio</h2>
-          <p class="text-xs sm:text-sm text-slate-500 max-w-2xl mx-auto">Perform all PDF operations right here in one place: swap pages, rotate, edit text, whiteout errors, sign, watermark, redact, protect, and compress.</p>
+          <p class="text-xs sm:text-sm text-slate-500 max-w-2xl mx-auto">Perform all operations in one place with full individual tool capabilities: pinpoint signature placement, text & image watermarks, live zoom scaler, sentence editing, page swapping, compression & security.</p>
         </div>
 
         <!-- Dropzone / Document Loader -->
@@ -55,7 +98,7 @@ const AllInOneTool = {
           <!-- Top Studio Bar: Document Info & Export -->
           <div class="flex flex-wrap items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm gap-3">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center">
+              <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center border border-indigo-200 dark:border-indigo-900">
                 <i data-lucide="file-text" class="w-5 h-5"></i>
               </div>
               <div>
@@ -89,22 +132,22 @@ const AllInOneTool = {
           <!-- Operation Modes Navigation Tabs -->
           <div class="flex items-center gap-1.5 p-1.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm overflow-x-auto scrollbar-none text-xs font-bold">
             <button class="aio-tab-btn px-4 py-2 rounded-xl text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 transition whitespace-nowrap active" data-tab="pages">
-              <i data-lucide="layout-grid" class="w-3.5 h-3.5 inline mr-1"></i> 1. Organize & Swap Pages
+              <i data-lucide="layout-grid" class="w-3.5 h-3.5 inline mr-1"></i> 1. Organize & Swap
             </button>
             <button class="aio-tab-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 transition whitespace-nowrap" data-tab="sign">
               <i data-lucide="pen-tool" class="w-3.5 h-3.5 inline mr-1"></i> 2. Sign PDF
             </button>
             <button class="aio-tab-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 transition whitespace-nowrap" data-tab="watermark">
-              <i data-lucide="stamp" class="w-3.5 h-3.5 inline mr-1"></i> 3. Watermark
+              <i data-lucide="stamp" class="w-3.5 h-3.5 inline mr-1"></i> 3. Watermark (Text/Image)
             </button>
             <button class="aio-tab-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 transition whitespace-nowrap" data-tab="edit">
-              <i data-lucide="edit-3" class="w-3.5 h-3.5 inline mr-1"></i> 4. Edit Text & Redact
+              <i data-lucide="edit-3" class="w-3.5 h-3.5 inline mr-1"></i> 4. Edit Text & Whiteout
             </button>
             <button class="aio-tab-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 transition whitespace-nowrap" data-tab="compress">
               <i data-lucide="minimize-2" class="w-3.5 h-3.5 inline mr-1"></i> 5. Compress PDF
             </button>
             <button class="aio-tab-btn px-4 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 transition whitespace-nowrap" data-tab="security">
-              <i data-lucide="lock" class="w-3.5 h-3.5 inline mr-1"></i> 6. Security
+              <i data-lucide="lock" class="w-3.5 h-3.5 inline mr-1"></i> 6. Security & Password
             </button>
           </div>
 
@@ -149,7 +192,6 @@ const AllInOneTool = {
                 </div>
               </div>
 
-              <!-- Page Grid Thumbnails for Drag & Drop and Instant Click -->
               <div>
                 <p class="text-xs text-slate-500 mb-2">Click any page to switch viewer, drag to reorder/swap, or use the <strong>← / →</strong> buttons on cards:</p>
                 <div id="aio-thumb-strip" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 max-h-60 overflow-y-auto p-1"></div>
@@ -163,145 +205,242 @@ const AllInOneTool = {
                   <span class="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
                   <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">Digital Signature (Dr. Vijayapriya Aki / Custom)</h3>
                 </div>
-                <span class="text-xs text-purple-600 font-semibold bg-purple-50 dark:bg-purple-950/40 px-2.5 py-0.5 rounded-full">Place on Any Page</span>
+                <span class="text-xs text-purple-600 font-semibold bg-purple-50 dark:bg-purple-950/40 px-2.5 py-0.5 rounded-full">Pinpoint Draggable Placement</span>
               </div>
 
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- Signature Type & Settings -->
-                <div class="space-y-3">
+              <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                <!-- Signature Controls -->
+                <div class="lg:col-span-5 space-y-3">
                   <div class="flex rounded-xl bg-slate-100 dark:bg-slate-700 p-1 text-xs font-bold">
-                    <button class="aio-sig-mode-btn flex-1 py-1.5 rounded-lg bg-white dark:bg-slate-800 text-purple-700 shadow-sm" data-mode="type">Type</button>
+                    <button class="aio-sig-mode-btn flex-1 py-1.5 rounded-lg bg-white dark:bg-slate-800 text-purple-700 shadow-sm" data-mode="type">Type Name</button>
                     <button class="aio-sig-mode-btn flex-1 py-1.5 rounded-lg text-slate-600 dark:text-slate-300" data-mode="draw">Draw</button>
-                    <button class="aio-sig-mode-btn flex-1 py-1.5 rounded-lg text-slate-600 dark:text-slate-300" data-mode="upload">Upload</button>
+                    <button class="aio-sig-mode-btn flex-1 py-1.5 rounded-lg text-slate-600 dark:text-slate-300" data-mode="upload">Upload Image</button>
                   </div>
 
+                  <!-- Type Name -->
                   <div id="aio-sig-type-sec" class="space-y-2">
-                    <label class="text-xs font-semibold text-slate-500">Signer Name / Text:</label>
-                    <input type="text" id="aio-sig-name" value="Dr. Vijayapriya Aki" class="w-full text-xs font-bold p-2 rounded-xl border border-slate-200 dark:border-slate-700 outline-none focus:border-purple-500">
-                    
-                    <label class="text-xs font-semibold text-slate-500 block pt-1">Font Style:</label>
-                    <select id="aio-sig-font" class="w-full text-xs font-medium p-2 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
-                      <option value="'Dancing Script', cursive">Dancing Script (Classic)</option>
-                      <option value="'Caveat', cursive">Caveat (Modern Casual)</option>
-                      <option value="'Great Vibes', cursive">Great Vibes (Formal Calligraphy)</option>
-                      <option value="'Playfair Display', serif">Playfair Display (Executive)</option>
-                    </select>
-                  </div>
-
-                  <div id="aio-sig-draw-sec" class="space-y-2 hidden">
-                    <div class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white">
-                      <canvas id="aio-sig-pad" width="300" height="100" class="w-full cursor-crosshair"></canvas>
+                    <div>
+                      <label class="text-xs font-semibold text-slate-500 block mb-1">Signer Name / Title:</label>
+                      <input type="text" id="aio-sig-name" value="Dr. Vijayapriya Aki" class="w-full text-xs font-bold p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 outline-none focus:border-purple-500">
                     </div>
-                    <button id="aio-sig-clear-pad" class="text-[11px] font-semibold text-red-600 hover:underline">Clear Canvas</button>
+                    <div>
+                      <label class="text-xs font-semibold text-slate-500 block mb-1">Font Style:</label>
+                      <select id="aio-sig-font" class="w-full text-xs font-medium p-2 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
+                        <option value="'Dancing Script', cursive">Dancing Script (Classic Cursive)</option>
+                        <option value="'Caveat', cursive">Caveat (Modern Casual)</option>
+                        <option value="'Great Vibes', cursive">Great Vibes (Formal Calligraphy)</option>
+                        <option value="'Playfair Display', serif">Playfair Display (Executive Serif)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <div class="flex justify-between text-xs font-semibold text-slate-500 mb-1">
+                        <span>Font Size:</span>
+                        <span id="aio-sig-size-val">36 pt</span>
+                      </div>
+                      <input type="range" id="aio-sig-size-slider" min="20" max="72" value="36" class="w-full accent-purple-600">
+                    </div>
                   </div>
 
+                  <!-- Draw Canvas -->
+                  <div id="aio-sig-draw-sec" class="space-y-2 hidden">
+                    <div class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-white shadow-inner">
+                      <canvas id="aio-sig-pad" width="360" height="120" class="w-full cursor-crosshair"></canvas>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                      <button id="aio-sig-clear-pad" class="text-red-600 font-semibold hover:underline">Clear Canvas</button>
+                      <span class="text-slate-400">Draw with mouse or touchscreen</span>
+                    </div>
+                  </div>
+
+                  <!-- Upload Image -->
                   <div id="aio-sig-upload-sec" class="space-y-2 hidden">
-                    <input type="file" id="aio-sig-file" accept="image/png,image/jpeg" class="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-purple-50 file:text-purple-700">
+                    <label class="text-xs font-semibold text-slate-500 block mb-1">Upload Signature Stamp (PNG / JPG):</label>
+                    <input type="file" id="aio-sig-file" accept="image/png,image/jpeg" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:bg-purple-50 file:text-purple-700">
                   </div>
 
+                  <!-- Color Selection -->
                   <div class="flex items-center justify-between pt-1">
                     <span class="text-xs font-semibold text-slate-500">Ink Color:</span>
-                    <div class="flex items-center gap-1.5">
-                      <button class="aio-sig-color w-6 h-6 rounded-full bg-blue-700 ring-2 ring-purple-600 ring-offset-1" data-color="#1d4ed8"></button>
-                      <button class="aio-sig-color w-6 h-6 rounded-full bg-slate-900" data-color="#0f172a"></button>
-                      <button class="aio-sig-color w-6 h-6 rounded-full bg-red-700" data-color="#b91c1c"></button>
+                    <div class="flex items-center gap-2">
+                      <button class="aio-sig-color w-7 h-7 rounded-full bg-blue-700 ring-2 ring-purple-600 ring-offset-2 transition" data-color="#1d4ed8" title="Royal Blue"></button>
+                      <button class="aio-sig-color w-7 h-7 rounded-full bg-slate-900 transition" data-color="#0f172a" title="Dark Navy"></button>
+                      <button class="aio-sig-color w-7 h-7 rounded-full bg-red-700 transition" data-color="#b91c1c" title="Crimson Red"></button>
                     </div>
                   </div>
                 </div>
 
-                <!-- Signature Preview Box -->
-                <div class="space-y-2 md:col-span-2 flex flex-col justify-between">
+                <!-- Preview & Placement Target -->
+                <div class="lg:col-span-7 flex flex-col justify-between space-y-3">
                   <div>
                     <label class="text-xs font-semibold text-slate-500 block mb-1">Signature Stamp Preview:</label>
-                    <div id="aio-sig-preview-box" class="h-28 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center p-3 overflow-hidden">
-                      <span id="aio-sig-preview-text" style="font-family: 'Dancing Script', cursive; font-size: 32px; color: #1d4ed8;">Dr. Vijayapriya Aki</span>
+                    <div id="aio-sig-preview-box" class="h-32 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center p-3 overflow-hidden shadow-inner">
+                      <span id="aio-sig-preview-text" style="font-family: 'Dancing Script', cursive; font-size: 36px; color: #1d4ed8;">Dr. Vijayapriya Aki</span>
                       <img id="aio-sig-preview-img" class="max-h-full object-contain hidden" alt="Signature">
                     </div>
                   </div>
 
-                  <div class="flex flex-wrap items-center justify-between pt-2 gap-2">
-                    <div class="flex items-center gap-2">
-                      <span class="text-xs text-slate-500">Stamp on Page:</span>
-                      <select id="aio-sig-target-page" class="text-xs font-bold p-1.5 rounded-lg border border-slate-200 outline-none"></select>
+                  <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-700">
+                    <div class="flex items-center gap-2 text-xs">
+                      <span class="font-semibold text-slate-600 dark:text-slate-300">Place on:</span>
+                      <select id="aio-sig-target-page" class="font-bold p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 outline-none"></select>
                     </div>
-                    <button id="aio-add-sig-btn" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition flex items-center gap-1.5">
-                      <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                      <span>Place Signature Box on Viewer</span>
+
+                    <button id="aio-add-sig-btn" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-600/20 transition flex items-center gap-2">
+                      <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                      <span>Place Draggable Signature on Page</span>
                     </button>
                   </div>
+
+                  <p class="text-[11px] text-slate-400">Once placed on the viewer canvas below, drag the box to position it precisely and drag the corner handle to resize it.</p>
                 </div>
               </div>
             </div>
 
-            <!-- PANEL 3: WATERMARK -->
+            <!-- PANEL 3: WATERMARK (TEXT & IMAGE OPTIONS) -->
             <div id="panel-watermark" class="aio-panel hidden space-y-4">
               <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700">
                 <div class="flex items-center gap-2">
                   <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
-                  <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">Stamp Confidential or Custom Watermark</h3>
+                  <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">Stamp Text or Image Watermark</h3>
                 </div>
-                <div class="flex items-center gap-2">
-                  <input type="checkbox" id="aio-wm-enabled" class="rounded text-indigo-600">
-                  <label for="aio-wm-enabled" class="text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">Enable Watermark</label>
+                <div class="flex items-center gap-3">
+                  <div class="flex items-center gap-2">
+                    <input type="checkbox" id="aio-wm-enabled" class="rounded text-indigo-600">
+                    <label for="aio-wm-enabled" class="text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">Enable Watermark</label>
+                  </div>
+                  <div class="flex rounded-lg bg-slate-100 p-0.5 text-xs font-bold">
+                    <button id="aio-wm-tab-text" class="px-3 py-1 rounded-md bg-white text-indigo-700 shadow-sm">Text Watermark</button>
+                    <button id="aio-wm-tab-img" class="px-3 py-1 rounded-md text-slate-500 hover:text-slate-800">Image Watermark</button>
+                  </div>
                 </div>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <!-- TEXT WATERMARK OPTIONS -->
+              <div id="aio-wm-sec-text" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                 <div>
                   <label class="font-semibold text-slate-500 block mb-1">Watermark Text:</label>
-                  <input type="text" id="aio-wm-text" value="CONFIDENTIAL" class="w-full font-bold p-2 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
+                  <input type="text" id="aio-wm-text" value="CONFIDENTIAL" class="w-full font-bold p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
                 </div>
                 <div>
-                  <label class="font-semibold text-slate-500 block mb-1">Position:</label>
-                  <select id="aio-wm-pos" class="w-full font-medium p-2 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
-                    <option value="center" selected>Center (Diagonal)</option>
-                    <option value="top-left">Top Left</option>
-                    <option value="top-right">Top Right</option>
-                    <option value="bottom-right">Bottom Right</option>
+                  <label class="font-semibold text-slate-500 block mb-1">Font Family:</label>
+                  <select id="aio-wm-font" class="w-full font-medium p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
+                    <option value="Helvetica">Helvetica (Standard Sans)</option>
+                    <option value="Times">Times New Roman (Serif)</option>
+                    <option value="Courier">Courier (Monospace)</option>
                   </select>
                 </div>
                 <div>
-                  <label class="font-semibold text-slate-500 block mb-1">Opacity (<span id="aio-wm-op-val">25%</span>):</label>
-                  <input type="range" id="aio-wm-opacity" min="0.05" max="0.9" step="0.05" value="0.25" class="w-full accent-indigo-600">
+                  <div class="flex justify-between font-semibold text-slate-500 mb-1">
+                    <span>Font Size:</span>
+                    <span id="aio-wm-size-val">48 pt</span>
+                  </div>
+                  <input type="range" id="aio-wm-size" min="16" max="100" value="48" class="w-full accent-indigo-600">
                 </div>
                 <div>
                   <label class="font-semibold text-slate-500 block mb-1">Color:</label>
-                  <input type="color" id="aio-wm-color" value="#e11d48" class="w-full h-9 rounded-xl border border-slate-200 dark:border-slate-700 p-0.5 cursor-pointer">
+                  <div class="flex items-center gap-2">
+                    <input type="color" id="aio-wm-color" value="#e11d48" class="w-10 h-9 rounded-xl border border-slate-200 p-0.5 cursor-pointer">
+                    <span id="aio-wm-color-hex" class="text-xs font-mono text-slate-500">#E11D48</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- IMAGE WATERMARK OPTIONS -->
+              <div id="aio-wm-sec-img" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs hidden">
+                <div>
+                  <label class="font-semibold text-slate-500 block mb-1">Upload Logo / Image (PNG / JPG):</label>
+                  <input type="file" id="aio-wm-img-input" accept="image/png,image/jpeg" class="w-full file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-50 file:text-indigo-700 font-medium">
+                </div>
+                <div>
+                  <div class="flex justify-between font-semibold text-slate-500 mb-1">
+                    <span>Image Scale / Size:</span>
+                    <span id="aio-wm-scale-val">50%</span>
+                  </div>
+                  <input type="range" id="aio-wm-scale" min="10" max="100" value="50" class="w-full accent-indigo-600">
+                </div>
+                <div class="flex items-center gap-3">
+                  <div id="aio-wm-img-thumb" class="w-14 h-14 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
+                    <span class="text-[10px] text-slate-400">No Image</span>
+                  </div>
+                  <span class="text-[11px] text-slate-400">Uploaded logo will be stamped cleanly across pages.</span>
+                </div>
+              </div>
+
+              <!-- COMMON POSITION, ANGLE & OPACITY -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100 dark:border-slate-700 text-xs">
+                <div>
+                  <label class="font-semibold text-slate-500 block mb-1">Position & Alignment:</label>
+                  <select id="aio-wm-pos" class="w-full font-medium p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
+                    <option value="center-diag" selected>Center (Diagonal)</option>
+                    <option value="center">Center (Horizontal)</option>
+                    <option value="top-left">Top Left</option>
+                    <option value="top-center">Top Center</option>
+                    <option value="top-right">Top Right</option>
+                    <option value="bottom-left">Bottom Left</option>
+                    <option value="bottom-center">Bottom Center</option>
+                    <option value="bottom-right">Bottom Right</option>
+                  </select>
+                </div>
+
+                <div>
+                  <div class="flex justify-between font-semibold text-slate-500 mb-1">
+                    <span>Opacity:</span>
+                    <span id="aio-wm-op-val">25%</span>
+                  </div>
+                  <input type="range" id="aio-wm-opacity" min="0.05" max="0.95" step="0.05" value="0.25" class="w-full accent-indigo-600">
+                </div>
+
+                <div>
+                  <div class="flex justify-between font-semibold text-slate-500 mb-1">
+                    <span>Rotation Angle:</span>
+                    <span id="aio-wm-ang-val">-45°</span>
+                  </div>
+                  <input type="range" id="aio-wm-angle" min="-180" max="180" step="5" value="-45" class="w-full accent-indigo-600">
                 </div>
               </div>
             </div>
 
-            <!-- PANEL 4: EDIT TEXT & REDACT -->
+            <!-- PANEL 4: EDIT TEXT & WHITEOUT -->
             <div id="panel-edit" class="aio-panel hidden space-y-4">
               <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700">
                 <div class="flex items-center gap-2">
                   <span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
-                  <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">Edit Sentences, Whiteout Errors & Redact</h3>
+                  <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">Edit Sentences, Whiteout Errors & Text Fixes</h3>
                 </div>
-                <div class="flex items-center gap-2 text-xs">
-                  <button id="aio-mode-edit-btn" class="px-3 py-1 rounded-lg bg-rose-50 text-rose-700 font-bold border border-rose-200">Sentence Replace</button>
-                  <button id="aio-mode-whiteout-btn" class="px-3 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 font-medium">Whiteout Box</button>
-                  <button id="aio-mode-redact-btn" class="px-3 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 font-medium">Blackout Redact</button>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                <div>
-                  <label class="font-semibold text-slate-500 block mb-1">Sentence / Text to Correct or Replace:</label>
-                  <input type="text" id="aio-edit-orig-text" placeholder="e.g. Diagnosis: Grade 1 or incorrect fee amount" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
-                </div>
-                <div>
-                  <label class="font-semibold text-slate-500 block mb-1">New Replacement Sentence:</label>
-                  <input type="text" id="aio-edit-new-text" placeholder="e.g. Diagnosis: Normal, Cleared for IVF" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
+                <div class="flex rounded-lg bg-slate-100 p-0.5 text-xs font-bold">
+                  <button id="aio-edit-tab-replace" class="px-3 py-1 rounded-md bg-white text-rose-700 shadow-sm">Replace Sentence</button>
+                  <button id="aio-edit-tab-whiteout" class="px-3 py-1 rounded-md text-slate-500 hover:text-slate-800">Whiteout Block</button>
                 </div>
               </div>
 
-              <div class="flex justify-end gap-2 pt-1">
-                <button id="aio-place-edit-box-btn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition flex items-center gap-1.5">
-                  <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                  <span>Place Correction Box on Active Page</span>
+              <!-- REPLACE SENTENCE SECTION -->
+              <div id="aio-edit-sec-replace" class="grid grid-cols-1 md:grid-cols-12 gap-4 text-xs">
+                <div class="md:col-span-5 space-y-1">
+                  <label class="font-semibold text-slate-500 block">Original Sentence / Text to Correct:</label>
+                  <input type="text" id="aio-edit-orig-text" placeholder="e.g. Total Amount: $450 or Patient: John Doe" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
+                </div>
+                <div class="md:col-span-5 space-y-1">
+                  <label class="font-semibold text-slate-500 block">New Replacement Sentence:</label>
+                  <input type="text" id="aio-edit-new-text" placeholder="e.g. Total Amount: $350 or Patient: Dr. Vijayapriya Aki" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
+                </div>
+                <div class="md:col-span-2 flex items-end">
+                  <button id="aio-place-edit-box-btn" class="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-rose-600/20">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                    <span>Place Box</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- WHITEOUT BLOCK SECTION -->
+              <div id="aio-edit-sec-whiteout" class="space-y-3 text-xs hidden">
+                <p class="text-slate-500">Places a clean, opaque whiteout block on the active page to erase unwanted text, typos, or stamps without altering the document structure.</p>
+                <button id="aio-place-whiteout-box-btn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs transition flex items-center gap-2">
+                  <i data-lucide="square" class="w-3.5 h-3.5"></i>
+                  <span>Place Whiteout Block on Active Page</span>
                 </button>
               </div>
+
+              <p class="text-[11px] text-slate-400">Position the placed box over the text on the viewer canvas below. It cleanly whites out the old text and draws the replacement in scalable typography.</p>
             </div>
 
             <!-- PANEL 5: COMPRESS PDF -->
@@ -319,38 +458,38 @@ const AllInOneTool = {
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 <!-- Target Limit -->
-                <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 space-y-2">
-                  <span class="font-bold text-slate-800 dark:text-slate-200 block">Target File Size (GB/MB/KB/Bytes):</span>
+                <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 space-y-2.5">
+                  <span class="font-bold text-slate-800 dark:text-slate-200 block">Target File Size Limit:</span>
                   <div class="flex items-center gap-2">
-                    <input type="number" id="aio-comp-target-val" value="2" step="any" min="0.01" class="w-full p-2 rounded-xl border border-slate-200 bg-white font-bold outline-none">
-                    <select id="aio-comp-target-unit" class="p-2 rounded-xl border border-slate-200 bg-white font-bold outline-none">
+                    <input type="number" id="aio-comp-target-val" value="2" step="any" min="0.01" class="w-full p-2.5 rounded-xl border border-slate-200 bg-white font-bold outline-none">
+                    <select id="aio-comp-target-unit" class="p-2.5 rounded-xl border border-slate-200 bg-white font-bold outline-none">
                       <option value="MB" selected>MB</option>
                       <option value="KB">KB</option>
                       <option value="Bytes">Bytes</option>
                       <option value="GB">GB</option>
                     </select>
                   </div>
-                  <div class="flex gap-1.5 pt-1">
-                    <button type="button" class="aio-comp-chip px-2 py-0.5 rounded border border-slate-200 bg-white text-[10px] font-semibold" data-val="500" data-unit="KB">500 KB</button>
-                    <button type="button" class="aio-comp-chip px-2 py-0.5 rounded border border-slate-200 bg-white text-[10px] font-semibold" data-val="1" data-unit="MB">1 MB</button>
-                    <button type="button" class="aio-comp-chip px-2 py-0.5 rounded border border-slate-200 bg-white text-[10px] font-semibold" data-val="2" data-unit="MB">2 MB</button>
-                    <button type="button" class="aio-comp-chip px-2 py-0.5 rounded border border-slate-200 bg-white text-[10px] font-semibold" data-val="5" data-unit="MB">5 MB</button>
+                  <div class="flex flex-wrap gap-1.5 pt-1">
+                    <button type="button" class="aio-comp-chip px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-medium hover:border-emerald-500" data-val="500" data-unit="KB">500 KB</button>
+                    <button type="button" class="aio-comp-chip px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-medium hover:border-emerald-500" data-val="1" data-unit="MB">1 MB</button>
+                    <button type="button" class="aio-comp-chip px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-medium hover:border-emerald-500" data-val="2" data-unit="MB">2 MB</button>
+                    <button type="button" class="aio-comp-chip px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-medium hover:border-emerald-500" data-val="5" data-unit="MB">5 MB</button>
                   </div>
                 </div>
 
                 <!-- Downsampling Presets -->
-                <div class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 space-y-2">
-                  <span class="font-bold text-slate-800 dark:text-slate-200 block">Preset Downsampling:</span>
+                <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 space-y-2.5">
+                  <span class="font-bold text-slate-800 dark:text-slate-200 block">Compression Presets:</span>
                   <div class="grid grid-cols-3 gap-2 text-center">
-                    <button type="button" class="aio-preset-btn p-2 rounded-lg border border-slate-200 bg-white text-[11px] font-bold" data-level="extreme">Extreme (~75%)</button>
-                    <button type="button" class="aio-preset-btn p-2 rounded-lg border-2 border-emerald-500 bg-emerald-50 text-emerald-800 text-[11px] font-bold" data-level="recommended">Recommended</button>
-                    <button type="button" class="aio-preset-btn p-2 rounded-lg border border-slate-200 bg-white text-[11px] font-bold" data-level="less">Less (~25%)</button>
+                    <button type="button" class="aio-preset-btn p-3 rounded-xl border border-slate-200 bg-white text-xs font-bold hover:border-emerald-500" data-level="extreme">Extreme (~75%)</button>
+                    <button type="button" class="aio-preset-btn p-3 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-800 text-xs font-bold" data-level="recommended">Recommended (~50%)</button>
+                    <button type="button" class="aio-preset-btn p-3 rounded-xl border border-slate-200 bg-white text-xs font-bold hover:border-emerald-500" data-level="less">Less (~25%)</button>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- PANEL 6: SECURITY -->
+            <!-- PANEL 6: SECURITY & PASSWORD -->
             <div id="panel-security" class="aio-panel hidden space-y-4">
               <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700">
                 <div class="flex items-center gap-2">
@@ -365,14 +504,19 @@ const AllInOneTool = {
 
               <div class="max-w-md space-y-2 text-xs">
                 <label class="font-semibold text-slate-500 block">Document Password:</label>
-                <input type="password" id="aio-sec-password" placeholder="Enter password to encrypt PDF" class="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
-                <p class="text-[11px] text-slate-400">Recipient must enter this password to view the exported PDF.</p>
+                <div class="relative">
+                  <input type="password" id="aio-sec-password" placeholder="Enter password to encrypt PDF" class="w-full p-2.5 pr-10 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
+                  <button type="button" id="aio-sec-toggle-pwd" class="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600">
+                    <i data-lucide="eye" class="w-4 h-4"></i>
+                  </button>
+                </div>
+                <p class="text-[11px] text-slate-400">Recipient must enter this password to view or print the exported PDF.</p>
               </div>
             </div>
 
           </div>
 
-          <!-- CENTRAL LIVE DOCUMENT VIEWER -->
+          <!-- CENTRAL LIVE DOCUMENT VIEWER WITH ZOOM SCALER -->
           <div class="p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
             <!-- Viewer Toolbar -->
             <div class="flex flex-wrap items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700 gap-3">
@@ -388,20 +532,25 @@ const AllInOneTool = {
                 </button>
               </div>
 
-              <!-- Zoom Controls -->
+              <!-- High-Fidelity Zoom Controls (Zero Quality Loss) -->
               <div class="flex items-center gap-2 text-xs">
-                <span class="text-slate-400 font-semibold">Zoom:</span>
-                <button id="aio-zoom-out" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 font-bold" title="Zoom Out">-</button>
-                <span id="aio-zoom-level" class="font-bold min-w-[45px] text-center">100%</span>
-                <button id="aio-zoom-in" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 font-bold" title="Zoom In">+</button>
-                <button id="aio-zoom-fit" class="px-2 py-1 rounded-lg border border-slate-200 hover:bg-slate-100 font-bold text-[11px]">Fit</button>
+                <span class="text-slate-400 font-semibold">Scaler:</span>
+                <button id="aio-zoom-out" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 font-bold" title="Zoom Out (-)">-</button>
+                <span id="aio-zoom-level" class="font-bold min-w-[50px] text-center text-slate-800 dark:text-slate-200">100%</span>
+                <button id="aio-zoom-in" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 font-bold" title="Zoom In (+)">+</button>
+                <button id="aio-zoom-fit" class="px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-100 font-bold text-[11px]">Fit</button>
               </div>
             </div>
 
-            <!-- Page Viewer Viewport with Interactive Overlays -->
-            <div class="relative w-full flex items-center justify-center p-4 bg-slate-100 dark:bg-slate-900/60 rounded-xl overflow-auto min-h-[460px]">
+            <!-- Page Viewer Viewport with Interactive Overlays & Watermark Canvas -->
+            <div class="relative w-full flex items-center justify-center p-4 bg-slate-100 dark:bg-slate-900/60 rounded-xl overflow-auto min-h-[480px]">
               <div id="aio-canvas-container" class="relative shadow-xl rounded overflow-visible bg-white">
+                <!-- Base PDF Page Canvas -->
                 <canvas id="aio-main-canvas" class="block max-w-none"></canvas>
+                
+                <!-- Live Watermark Preview Canvas -->
+                <canvas id="aio-watermark-canvas" class="absolute inset-0 pointer-events-none"></canvas>
+                
                 <!-- Interactive Overlays Layer for Draggable Signature, Edit Boxes, and Redactions -->
                 <div id="aio-overlays-layer" class="absolute inset-0 pointer-events-none"></div>
               </div>
@@ -433,6 +582,7 @@ const AllInOneTool = {
 
     // Viewer
     const mainCanvas = container.querySelector('#aio-main-canvas');
+    const watermarkCanvas = container.querySelector('#aio-watermark-canvas');
     const canvasContainer = container.querySelector('#aio-canvas-container');
     const overlaysLayer = container.querySelector('#aio-overlays-layer');
     const viewerCurrPage = container.querySelector('#aio-viewer-curr-page');
@@ -445,7 +595,7 @@ const AllInOneTool = {
     const zoomLevelEl = container.querySelector('#aio-zoom-level');
     const thumbStrip = container.querySelector('#aio-thumb-strip');
 
-    // Operations Elements
+    // Organize Elements
     const swapFrom = container.querySelector('#aio-swap-from');
     const swapTo = container.querySelector('#aio-swap-to');
     const swapBtn = container.querySelector('#aio-swap-btn');
@@ -457,6 +607,8 @@ const AllInOneTool = {
     // Sign Elements
     const sigNameInput = container.querySelector('#aio-sig-name');
     const sigFontSelect = container.querySelector('#aio-sig-font');
+    const sigSizeSlider = container.querySelector('#aio-sig-size-slider');
+    const sigSizeVal = container.querySelector('#aio-sig-size-val');
     const sigPreviewText = container.querySelector('#aio-sig-preview-text');
     const sigPreviewImg = container.querySelector('#aio-sig-preview-img');
     const sigPadCanvas = container.querySelector('#aio-sig-pad');
@@ -467,16 +619,35 @@ const AllInOneTool = {
 
     // Watermark Elements
     const wmEnabled = container.querySelector('#aio-wm-enabled');
+    const wmTabText = container.querySelector('#aio-wm-tab-text');
+    const wmTabImg = container.querySelector('#aio-wm-tab-img');
+    const wmSecText = container.querySelector('#aio-wm-sec-text');
+    const wmSecImg = container.querySelector('#aio-wm-sec-img');
     const wmText = container.querySelector('#aio-wm-text');
+    const wmFont = container.querySelector('#aio-wm-font');
+    const wmSize = container.querySelector('#aio-wm-size');
+    const wmSizeVal = container.querySelector('#aio-wm-size-val');
+    const wmColor = container.querySelector('#aio-wm-color');
+    const wmColorHex = container.querySelector('#aio-wm-color-hex');
+    const wmImgInput = container.querySelector('#aio-wm-img-input');
+    const wmScale = container.querySelector('#aio-wm-scale');
+    const wmScaleVal = container.querySelector('#aio-wm-scale-val');
+    const wmImgThumb = container.querySelector('#aio-wm-img-thumb');
     const wmPos = container.querySelector('#aio-wm-pos');
     const wmOpacity = container.querySelector('#aio-wm-opacity');
     const wmOpVal = container.querySelector('#aio-wm-op-val');
-    const wmColor = container.querySelector('#aio-wm-color');
+    const wmAngle = container.querySelector('#aio-wm-angle');
+    const wmAngVal = container.querySelector('#aio-wm-ang-val');
 
     // Edit Elements
+    const editTabReplace = container.querySelector('#aio-edit-tab-replace');
+    const editTabWhiteout = container.querySelector('#aio-edit-tab-whiteout');
+    const editSecReplace = container.querySelector('#aio-edit-sec-replace');
+    const editSecWhiteout = container.querySelector('#aio-edit-sec-whiteout');
     const editOrigText = container.querySelector('#aio-edit-orig-text');
     const editNewText = container.querySelector('#aio-edit-new-text');
     const placeEditBoxBtn = container.querySelector('#aio-place-edit-box-btn');
+    const placeWhiteoutBoxBtn = container.querySelector('#aio-place-whiteout-box-btn');
 
     // Compress Elements
     const compEnabled = container.querySelector('#aio-comp-enabled');
@@ -486,14 +657,11 @@ const AllInOneTool = {
     // Security Elements
     const secEnabled = container.querySelector('#aio-sec-enabled');
     const secPassword = container.querySelector('#aio-sec-password');
+    const secTogglePwd = container.querySelector('#aio-sec-toggle-pwd');
 
-    // Signature Pad Drawing State
     let sigPadCtx = sigPadCanvas ? sigPadCanvas.getContext('2d') : null;
-    let isDrawingSig = false;
-    let sigColor = '#1d4ed8';
-    let currentSigMode = 'type'; // 'type' | 'draw' | 'upload'
 
-    // Update Pending Changes Badge
+    // --- Update Pending Changes Badge ---
     const updateChangesBadge = () => {
       let count = 0;
       if (pageItems.some((p, i) => p.originalIndex !== i || p.rotation !== 0 || p.deleted)) count++;
@@ -513,7 +681,7 @@ const AllInOneTool = {
       }
     };
 
-    // Tab Switching
+    // --- Tab Switching ---
     tabBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         const tab = btn.dataset.tab;
@@ -534,7 +702,7 @@ const AllInOneTool = {
       });
     });
 
-    // Render Current Active Page on Main Viewer
+    // --- Render Current Active Page on Main Viewer ---
     const renderActivePage = async () => {
       if (!pdfJsDoc || pageItems.length === 0) return;
       
@@ -547,21 +715,97 @@ const AllInOneTool = {
       nextPageBtn.disabled = currentPageNum >= pageItems.length;
 
       // Render via PDFEngine with HiDPI supersampling
-      const baseWidth = 550 * currentZoom;
+      const baseWidth = Math.round(620 * currentZoom);
       await window.pdfEngine.renderPageToCanvas(pdfJsDoc, activeItem.originalPageNumber, mainCanvas, baseWidth);
       
       // Apply active page rotation
       mainCanvas.style.transform = `rotate(${activeItem.rotation}deg)`;
 
-      // Match overlays layer dimensions
+      // Match canvas dimensions exactly for watermark & overlays
+      watermarkCanvas.width = mainCanvas.width;
+      watermarkCanvas.height = mainCanvas.height;
+      watermarkCanvas.style.width = mainCanvas.style.width;
+      watermarkCanvas.style.height = mainCanvas.style.height;
+
       overlaysLayer.style.width = mainCanvas.style.width;
       overlaysLayer.style.height = mainCanvas.style.height;
 
+      renderWatermarkPreview();
       renderOverlays();
       updateThumbStripHighlight();
     };
 
-    // Render Overlays for Current Page (Signatures, Edits, Redactions)
+    // --- Live Watermark Preview on Viewer ---
+    const renderWatermarkPreview = () => {
+      if (!watermarkCanvas || watermarkCanvas.width === 0) return;
+      const ctx = watermarkCanvas.getContext('2d');
+      ctx.clearRect(0, 0, watermarkCanvas.width, watermarkCanvas.height);
+
+      if (!wmEnabled.checked) return;
+
+      const width = watermarkCanvas.width;
+      const height = watermarkCanvas.height;
+      const opacity = parseFloat(wmOpacity.value) || 0.25;
+      const angleDeg = parseInt(wmAngle.value, 10) || 0;
+      const angleRad = (angleDeg * Math.PI) / 180;
+      const pos = wmPos.value;
+
+      ctx.save();
+      ctx.globalAlpha = opacity;
+
+      if (watermarkConfig.type === 'text') {
+        const text = wmText.value.trim() || 'CONFIDENTIAL';
+        const fontSize = (parseInt(wmSize.value, 10) || 48) * (width / 595);
+        ctx.font = `bold ${fontSize}px ${wmFont.value || 'Helvetica'}, sans-serif`;
+        ctx.fillStyle = wmColor.value || '#e11d48';
+
+        let cx = width / 2;
+        let cy = height / 2;
+
+        if (pos === 'top-left') { cx = width * 0.2; cy = height * 0.15; }
+        else if (pos === 'top-center') { cx = width * 0.5; cy = height * 0.15; }
+        else if (pos === 'top-right') { cx = width * 0.8; cy = height * 0.15; }
+        else if (pos === 'bottom-left') { cx = width * 0.2; cy = height * 0.85; }
+        else if (pos === 'bottom-center') { cx = width * 0.5; cy = height * 0.85; }
+        else if (pos === 'bottom-right') { cx = width * 0.8; cy = height * 0.85; }
+
+        ctx.translate(cx, cy);
+        ctx.rotate(angleRad);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, 0, 0);
+
+      } else if (watermarkConfig.type === 'image' && watermarkConfig.imageDataUrl) {
+        const img = new Image();
+        img.onload = () => {
+          ctx.save();
+          ctx.globalAlpha = opacity;
+          const scalePct = (parseInt(wmScale.value, 10) || 50) / 100;
+          const imgW = (width * 0.6) * scalePct;
+          const imgH = imgW * (img.height / img.width);
+
+          let cx = width / 2;
+          let cy = height / 2;
+
+          if (pos === 'top-left') { cx = imgW / 2 + 20; cy = imgH / 2 + 20; }
+          else if (pos === 'top-center') { cx = width / 2; cy = imgH / 2 + 20; }
+          else if (pos === 'top-right') { cx = width - imgW / 2 - 20; cy = imgH / 2 + 20; }
+          else if (pos === 'bottom-left') { cx = imgW / 2 + 20; cy = height - imgH / 2 - 20; }
+          else if (pos === 'bottom-center') { cx = width / 2; cy = height - imgH / 2 - 20; }
+          else if (pos === 'bottom-right') { cx = width - imgW / 2 - 20; cy = height - imgH / 2 - 20; }
+
+          ctx.translate(cx, cy);
+          ctx.rotate(angleRad);
+          ctx.drawImage(img, -imgW / 2, -imgH / 2, imgW, imgH);
+          ctx.restore();
+        };
+        img.src = watermarkConfig.imageDataUrl;
+      }
+
+      ctx.restore();
+    };
+
+    // --- Render Overlays for Current Page (Signatures, Edits, Whiteouts) ---
     const renderOverlays = () => {
       overlaysLayer.innerHTML = '';
       const pageIdx = currentPageNum - 1;
@@ -569,28 +813,27 @@ const AllInOneTool = {
       // 1. Render Signatures on this page
       signatures.filter(s => s.pageIndex === pageIdx).forEach((sig, sIdx) => {
         const box = document.createElement('div');
-        box.className = 'absolute border-2 border-purple-600 bg-purple-500/10 rounded cursor-move pointer-events-auto flex items-center justify-center group';
+        box.className = 'absolute border-2 border-purple-600 bg-purple-500/10 rounded cursor-move pointer-events-auto flex items-center justify-center group shadow-md';
         box.style.left = `${sig.xRatio * 100}%`;
         box.style.top = `${sig.yRatio * 100}%`;
         box.style.width = `${sig.wRatio * 100}%`;
         box.style.height = `${sig.hRatio * 100}%`;
 
         box.innerHTML = `
-          <img src="${sig.signatureDataUrl}" class="max-w-full max-h-full object-contain pointer-events-none">
-          <button class="aio-del-sig absolute -top-2 -right-2 w-4 h-4 rounded-full bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow">
+          <img src="${sig.signatureDataUrl}" class="max-w-full max-h-full object-contain pointer-events-none select-none">
+          <div class="aio-resize-handle absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-purple-600 rounded-full cursor-se-resize border-2 border-white shadow opacity-0 group-hover:opacity-100 transition"></div>
+          <button class="aio-del-sig absolute -top-2.5 -right-2.5 w-5 h-5 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow">
             &times;
           </button>
         `;
 
-        // Enable drag on viewer canvas
-        makeDraggable(box, (newXRatio, newYRatio) => {
-          sig.xRatio = newXRatio;
-          sig.yRatio = newYRatio;
-        });
+        // Enable Dragging & Resizing
+        attachDragAndResize(box, sig, () => updateChangesBadge());
 
         box.querySelector('.aio-del-sig').addEventListener('click', (e) => {
           e.stopPropagation();
-          signatures.splice(sIdx, 1);
+          const realIdx = signatures.indexOf(sig);
+          if (realIdx !== -1) signatures.splice(realIdx, 1);
           renderOverlays();
           updateChangesBadge();
         });
@@ -601,27 +844,27 @@ const AllInOneTool = {
       // 2. Render Text Edits & Whiteouts on this page
       textEdits.filter(t => t.pageIndex === pageIdx).forEach((edit, eIdx) => {
         const box = document.createElement('div');
-        box.className = 'absolute border border-dashed border-rose-500 bg-white/90 rounded pointer-events-auto flex items-center justify-center px-1 text-slate-800 text-xs font-semibold group';
+        const isWhiteout = edit.type === 'whiteout';
+        box.className = `absolute border-2 border-dashed ${isWhiteout ? 'border-slate-500 bg-white' : 'border-rose-500 bg-white/95'} rounded pointer-events-auto flex items-center justify-center px-1 text-slate-800 text-xs font-semibold group shadow-md`;
         box.style.left = `${edit.xRatio * 100}%`;
         box.style.top = `${edit.yRatio * 100}%`;
         box.style.width = `${edit.wRatio * 100}%`;
         box.style.height = `${edit.hRatio * 100}%`;
 
         box.innerHTML = `
-          <span class="truncate pointer-events-none">${edit.newText || edit.text || 'Whiteout'}</span>
-          <button class="aio-del-edit absolute -top-2 -right-2 w-4 h-4 rounded-full bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow">
+          <span class="truncate pointer-events-none select-none text-[11px]">${edit.newText || edit.origText || (isWhiteout ? 'Whiteout' : 'Correction')}</span>
+          <div class="aio-resize-handle absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 ${isWhiteout ? 'bg-slate-700' : 'bg-rose-600'} rounded-full cursor-se-resize border-2 border-white shadow opacity-0 group-hover:opacity-100 transition"></div>
+          <button class="aio-del-edit absolute -top-2.5 -right-2.5 w-5 h-5 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow">
             &times;
           </button>
         `;
 
-        makeDraggable(box, (newXRatio, newYRatio) => {
-          edit.xRatio = newXRatio;
-          edit.yRatio = newYRatio;
-        });
+        attachDragAndResize(box, edit, () => updateChangesBadge());
 
         box.querySelector('.aio-del-edit').addEventListener('click', (e) => {
           e.stopPropagation();
-          textEdits.splice(eIdx, 1);
+          const realIdx = textEdits.indexOf(edit);
+          if (realIdx !== -1) textEdits.splice(realIdx, 1);
           renderOverlays();
           updateChangesBadge();
         });
@@ -630,13 +873,17 @@ const AllInOneTool = {
       });
     };
 
-    // Helper: Make an overlay element draggable with normalized ratios (0.0 to 1.0)
-    const makeDraggable = (el, onMove) => {
+    // --- Helper: Attach Draggable and Resizable Handlers with Relative Ratio Tracking ---
+    const attachDragAndResize = (el, stateItem, onUpdate) => {
       let isDragging = false;
-      let startX, startY, origLeft, origTop;
+      let isResizing = false;
+      let startX, startY, origLeft, origTop, origWidth, origHeight;
 
+      const resizeHandle = el.querySelector('.aio-resize-handle');
+
+      // Drag
       el.addEventListener('mousedown', (e) => {
-        if (e.target.tagName.toLowerCase() === 'button') return;
+        if (e.target.tagName.toLowerCase() === 'button' || e.target === resizeHandle) return;
         isDragging = true;
         startX = e.clientX;
         startY = e.clientY;
@@ -645,30 +892,61 @@ const AllInOneTool = {
         e.preventDefault();
       });
 
+      // Resize
+      if (resizeHandle) {
+        resizeHandle.addEventListener('mousedown', (e) => {
+          isResizing = true;
+          startX = e.clientX;
+          startY = e.clientY;
+          origWidth = el.offsetWidth;
+          origHeight = el.offsetHeight;
+          e.stopPropagation();
+          e.preventDefault();
+        });
+      }
+
       window.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
         const parentW = overlaysLayer.clientWidth;
         const parentH = overlaysLayer.clientHeight;
+        if (parentW === 0 || parentH === 0) return;
 
-        let newX = Math.max(0, Math.min(parentW - el.offsetWidth, origLeft + dx));
-        let newY = Math.max(0, Math.min(parentH - el.offsetHeight, origTop + dy));
+        if (isDragging) {
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
 
-        el.style.left = `${newX}px`;
-        el.style.top = `${newY}px`;
+          let newX = Math.max(0, Math.min(parentW - el.offsetWidth, origLeft + dx));
+          let newY = Math.max(0, Math.min(parentH - el.offsetHeight, origTop + dy));
 
-        if (onMove) {
-          onMove(newX / parentW, newY / parentH);
+          el.style.left = `${newX}px`;
+          el.style.top = `${newY}px`;
+
+          stateItem.xRatio = newX / parentW;
+          stateItem.yRatio = newY / parentH;
+        } else if (isResizing) {
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+
+          let newW = Math.max(40, Math.min(parentW - el.offsetLeft, origWidth + dx));
+          let newH = Math.max(20, Math.min(parentH - el.offsetTop, origHeight + dy));
+
+          el.style.width = `${newW}px`;
+          el.style.height = `${newH}px`;
+
+          stateItem.wRatio = newW / parentW;
+          stateItem.hRatio = newH / parentH;
         }
       });
 
       window.addEventListener('mouseup', () => {
-        isDragging = false;
+        if (isDragging || isResizing) {
+          isDragging = false;
+          isResizing = false;
+          if (onUpdate) onUpdate();
+        }
       });
     };
 
-    // Render Bottom Thumbnails Strip
+    // --- Render Bottom Thumbnails Strip ---
     const renderThumbStrip = () => {
       thumbStrip.innerHTML = '';
       pageItems.forEach((item, idx) => {
@@ -773,7 +1051,7 @@ const AllInOneTool = {
       });
     };
 
-    // Update Swap Dropdowns
+    // --- Update Swap Dropdowns ---
     const updateSwapDropdowns = () => {
       swapFrom.innerHTML = '';
       swapTo.innerHTML = '';
@@ -865,6 +1143,7 @@ const AllInOneTool = {
         sigPreviewImg.classList.add('hidden');
         sigPreviewText.innerText = sigNameInput.value || 'Signature';
         sigPreviewText.style.fontFamily = sigFontSelect.value;
+        sigPreviewText.style.fontSize = `${sigSizeSlider.value}px`;
         sigPreviewText.style.color = sigColor;
       } else if (currentSigMode === 'draw') {
         sigPreviewText.classList.add('hidden');
@@ -875,6 +1154,10 @@ const AllInOneTool = {
 
     sigNameInput.addEventListener('input', updateSigPreview);
     sigFontSelect.addEventListener('change', updateSigPreview);
+    sigSizeSlider.addEventListener('input', () => {
+      sigSizeVal.innerText = `${sigSizeSlider.value} pt`;
+      updateSigPreview();
+    });
 
     container.querySelectorAll('.aio-sig-mode-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -896,8 +1179,8 @@ const AllInOneTool = {
     container.querySelectorAll('.aio-sig-color').forEach(btn => {
       btn.addEventListener('click', () => {
         sigColor = btn.dataset.color;
-        container.querySelectorAll('.aio-sig-color').forEach(b => b.classList.remove('ring-2', 'ring-purple-600', 'ring-offset-1'));
-        btn.classList.add('ring-2', 'ring-purple-600', 'ring-offset-1');
+        container.querySelectorAll('.aio-sig-color').forEach(b => b.classList.remove('ring-2', 'ring-purple-600', 'ring-offset-2'));
+        btn.classList.add('ring-2', 'ring-purple-600', 'ring-offset-2');
         updateSigPreview();
       });
     });
@@ -936,6 +1219,16 @@ const AllInOneTool = {
       });
     }
 
+    // Signature File Upload
+    sigFileInput.addEventListener('change', async () => {
+      const f = sigFileInput.files[0];
+      if (!f) return;
+      const dataUrl = await window.pdfEngine.readFileAsDataURL(f);
+      sigPreviewImg.src = dataUrl;
+      sigPreviewText.classList.add('hidden');
+      sigPreviewImg.classList.remove('hidden');
+    });
+
     // Place Signature on Viewer
     addSigBtn.addEventListener('click', () => {
       const targetP = parseInt(sigTargetPage.value, 10);
@@ -943,13 +1236,13 @@ const AllInOneTool = {
 
       if (currentSigMode === 'type') {
         const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = 400;
-        tempCanvas.height = 120;
+        tempCanvas.width = 450;
+        tempCanvas.height = 130;
         const ctx = tempCanvas.getContext('2d');
-        ctx.font = `48px ${sigFontSelect.value}`;
+        ctx.font = `${sigSizeSlider.value * 1.3}px ${sigFontSelect.value}`;
         ctx.fillStyle = sigColor;
         ctx.textBaseline = 'middle';
-        ctx.fillText(sigNameInput.value || 'Dr. Vijayapriya Aki', 20, 60);
+        ctx.fillText(sigNameInput.value || 'Dr. Vijayapriya Aki', 20, 65);
         dataUrl = tempCanvas.toDataURL('image/png');
       } else if (currentSigMode === 'draw') {
         dataUrl = sigPadCanvas.toDataURL('image/png');
@@ -960,10 +1253,11 @@ const AllInOneTool = {
       if (!dataUrl) return;
 
       signatures.push({
+        id: `sig_${Date.now()}`,
         pageIndex: targetP,
         signatureDataUrl: dataUrl,
         xRatio: 0.15,
-        yRatio: 0.75,
+        yRatio: 0.72,
         wRatio: 0.35,
         hRatio: 0.12
       });
@@ -971,17 +1265,104 @@ const AllInOneTool = {
       currentPageNum = targetP + 1;
       renderActivePage();
       updateChangesBadge();
-      UI.showToast(`Placed draggable signature box on Page ${targetP + 1}! Drag to position.`, 'success');
+      UI.celebrate();
+      UI.showToast(`Placed draggable signature on Page ${targetP + 1}! Drag anywhere or use bottom-right handle to resize.`, 'success');
     });
 
-    // Place Correction / Whiteout Box on Viewer
+    // --- Watermark Handlers (Text & Image) ---
+    wmTabText.addEventListener('click', () => {
+      watermarkConfig.type = 'text';
+      wmTabText.className = 'px-3 py-1 rounded-md bg-white text-indigo-700 shadow-sm font-bold';
+      wmTabImg.className = 'px-3 py-1 rounded-md text-slate-500 hover:text-slate-800 font-bold';
+      wmSecText.classList.remove('hidden');
+      wmSecImg.classList.add('hidden');
+      renderWatermarkPreview();
+    });
+
+    wmTabImg.addEventListener('click', () => {
+      watermarkConfig.type = 'image';
+      wmTabImg.className = 'px-3 py-1 rounded-md bg-white text-indigo-700 shadow-sm font-bold';
+      wmTabText.className = 'px-3 py-1 rounded-md text-slate-500 hover:text-slate-800 font-bold';
+      wmSecImg.classList.remove('hidden');
+      wmSecText.classList.add('hidden');
+      renderWatermarkPreview();
+    });
+
+    wmColor.addEventListener('input', () => {
+      wmColorHex.innerText = wmColor.value.toUpperCase();
+      renderWatermarkPreview();
+    });
+
+    wmSize.addEventListener('input', () => {
+      wmSizeVal.innerText = `${wmSize.value} pt`;
+      renderWatermarkPreview();
+    });
+
+    wmOpacity.addEventListener('input', () => {
+      wmOpVal.innerText = `${Math.round(wmOpacity.value * 100)}%`;
+      renderWatermarkPreview();
+    });
+
+    wmAngle.addEventListener('input', () => {
+      wmAngVal.innerText = `${wmAngle.value}°`;
+      renderWatermarkPreview();
+    });
+
+    wmScale.addEventListener('input', () => {
+      wmScaleVal.innerText = `${wmScale.value}%`;
+      renderWatermarkPreview();
+    });
+
+    [wmText, wmFont, wmPos, wmEnabled].forEach(el => {
+      el.addEventListener('input', () => {
+        renderWatermarkPreview();
+        updateChangesBadge();
+      });
+      el.addEventListener('change', () => {
+        renderWatermarkPreview();
+        updateChangesBadge();
+      });
+    });
+
+    // Watermark Image file loader
+    wmImgInput.addEventListener('change', async () => {
+      const f = wmImgInput.files[0];
+      if (!f) return;
+      watermarkConfig.imageType = f.type || 'image/png';
+      watermarkConfig.imageBuffer = await window.pdfEngine.readFileAsArrayBuffer(f);
+      watermarkConfig.imageDataUrl = await window.pdfEngine.readFileAsDataURL(f);
+      wmImgThumb.innerHTML = `<img src="${watermarkConfig.imageDataUrl}" class="max-w-full max-h-full object-contain">`;
+      renderWatermarkPreview();
+      updateChangesBadge();
+    });
+
+    // --- Edit Handlers ---
+    editTabReplace.addEventListener('click', () => {
+      currentEditMode = 'replace';
+      editTabReplace.className = 'px-3 py-1 rounded-md bg-white text-rose-700 shadow-sm font-bold';
+      editTabWhiteout.className = 'px-3 py-1 rounded-md text-slate-500 hover:text-slate-800 font-bold';
+      editSecReplace.classList.remove('hidden');
+      editSecWhiteout.classList.add('hidden');
+    });
+
+    editTabWhiteout.addEventListener('click', () => {
+      currentEditMode = 'whiteout';
+      editTabWhiteout.className = 'px-3 py-1 rounded-md bg-white text-rose-700 shadow-sm font-bold';
+      editTabReplace.className = 'px-3 py-1 rounded-md text-slate-500 hover:text-slate-800 font-bold';
+      editSecWhiteout.classList.remove('hidden');
+      editSecReplace.classList.add('hidden');
+    });
+
     placeEditBoxBtn.addEventListener('click', () => {
       const pageIdx = currentPageNum - 1;
       textEdits.push({
+        id: `edit_${Date.now()}`,
         pageIndex: pageIdx,
         type: 'replace',
         origText: editOrigText.value || '',
         newText: editNewText.value || editOrigText.value || 'Correction',
+        fontSize: 11,
+        fontColor: '#000000',
         xRatio: 0.15,
         yRatio: 0.35,
         wRatio: 0.45,
@@ -990,10 +1371,60 @@ const AllInOneTool = {
 
       renderActivePage();
       updateChangesBadge();
-      UI.showToast(`Placed correction box on Page ${currentPageNum}! Drag to position.`, 'info');
+      UI.showToast(`Placed correction box on Page ${currentPageNum}! Drag over text to replace.`, 'info');
     });
 
-    // Navigation & Zoom
+    placeWhiteoutBoxBtn.addEventListener('click', () => {
+      const pageIdx = currentPageNum - 1;
+      textEdits.push({
+        id: `edit_${Date.now()}`,
+        pageIndex: pageIdx,
+        type: 'whiteout',
+        origText: '',
+        newText: '',
+        xRatio: 0.20,
+        yRatio: 0.40,
+        wRatio: 0.35,
+        hRatio: 0.06
+      });
+
+      renderActivePage();
+      updateChangesBadge();
+      UI.showToast(`Placed whiteout block on Page ${currentPageNum}! Drag to cover errors.`, 'info');
+    });
+
+    // --- Compress Handlers ---
+    compEnabled.addEventListener('change', updateChangesBadge);
+    container.querySelectorAll('.aio-comp-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        compTargetVal.value = chip.dataset.val;
+        compTargetUnit.value = chip.dataset.unit;
+        compEnabled.checked = true;
+        updateChangesBadge();
+      });
+    });
+
+    container.querySelectorAll('.aio-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        compressConfig.level = btn.dataset.level;
+        compEnabled.checked = true;
+        container.querySelectorAll('.aio-preset-btn').forEach(b => {
+          b.className = b === btn
+            ? 'aio-preset-btn p-3 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-800 text-xs font-bold'
+            : 'aio-preset-btn p-3 rounded-xl border border-slate-200 bg-white text-xs font-bold hover:border-emerald-500';
+        });
+        updateChangesBadge();
+      });
+    });
+
+    // --- Security Handlers ---
+    secEnabled.addEventListener('change', updateChangesBadge);
+    secPassword.addEventListener('input', updateChangesBadge);
+    secTogglePwd.addEventListener('click', () => {
+      secPassword.type = secPassword.type === 'password' ? 'text' : 'password';
+    });
+
+    // --- Navigation & High-DPI Scaler ---
     prevPageBtn.addEventListener('click', () => {
       if (currentPageNum > 1) {
         currentPageNum--;
@@ -1009,13 +1440,13 @@ const AllInOneTool = {
     });
 
     zoomInBtn.addEventListener('click', () => {
-      currentZoom = Math.min(2.5, currentZoom + 0.15);
+      currentZoom = Math.min(2.5, +(currentZoom + 0.2).toFixed(1));
       zoomLevelEl.innerText = `${Math.round(currentZoom * 100)}%`;
       renderActivePage();
     });
 
     zoomOutBtn.addEventListener('click', () => {
-      currentZoom = Math.max(0.6, currentZoom - 0.15);
+      currentZoom = Math.max(0.5, +(currentZoom - 0.2).toFixed(1));
       zoomLevelEl.innerText = `${Math.round(currentZoom * 100)}%`;
       renderActivePage();
     });
@@ -1026,25 +1457,7 @@ const AllInOneTool = {
       renderActivePage();
     });
 
-    wmOpacity.addEventListener('input', () => {
-      wmOpVal.innerText = `${Math.round(wmOpacity.value * 100)}%`;
-      updateChangesBadge();
-    });
-    wmEnabled.addEventListener('change', updateChangesBadge);
-    compEnabled.addEventListener('change', updateChangesBadge);
-    secEnabled.addEventListener('change', updateChangesBadge);
-
-    // Preset Chip Buttons for Compression
-    container.querySelectorAll('.aio-comp-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        compTargetVal.value = chip.dataset.val;
-        compTargetUnit.value = chip.dataset.unit;
-        compEnabled.checked = true;
-        updateChangesBadge();
-      });
-    });
-
-    // Dropzone File Loader
+    // --- File Dropzone Loader ---
     UI.setupDropzone(dropzone, input, async (files) => {
       if (files.length === 0) return;
       currentFile = files[0];
@@ -1074,7 +1487,7 @@ const AllInOneTool = {
           });
 
           // Pre-render small thumbnail
-          window.pdfEngine.renderPageToCanvas(pdfJsDoc, i, thumbCanvas, 120);
+          window.pdfEngine.renderPageToCanvas(pdfJsDoc, i, thumbCanvas, 140);
         }
 
         currentPageNum = 1;
@@ -1140,17 +1553,16 @@ const AllInOneTool = {
 
         // 2. Apply Text Edits & Corrections if present
         if (textEdits.length > 0) {
-          UI.showProgress(0.3, 'Step 2/6: Applying text replacements & corrections...');
+          UI.showProgress(0.3, 'Step 2/6: Applying text replacements & whiteouts...');
           const formattedEdits = textEdits.map(t => ({
             page: t.pageIndex + 1,
-            type: 'replace',
+            type: t.type === 'whiteout' ? 'whiteout' : 'replace',
             origText: t.origText,
             newText: t.newText,
             font: 'Helvetica',
-            size: 11,
-            color: '#000000',
+            size: t.fontSize || 11,
+            color: t.fontColor || '#000000',
             bgWhiteout: true,
-            // Convert ratios to PDF coordinates approximately
             x: Math.round(t.xRatio * 595),
             y: Math.round((1 - t.yRatio - t.hRatio) * 842),
             width: Math.round(t.wRatio * 595),
@@ -1163,7 +1575,7 @@ const AllInOneTool = {
 
         // 3. Apply Digital Signatures
         if (signatures.length > 0) {
-          UI.showProgress(0.5, 'Step 3/6: Stamping digital signatures...');
+          UI.showProgress(0.5, 'Step 3/6: Stamping digital signatures on exact coordinates...');
           const sigList = signatures.map(s => ({
             pageIndex: s.pageIndex,
             signatureDataUrl: s.signatureDataUrl,
@@ -1177,16 +1589,24 @@ const AllInOneTool = {
           workingBuffer = await workingBlob.arrayBuffer();
         }
 
-        // 4. Apply Watermark
-        if (wmEnabled.checked && wmText.value.trim()) {
+        // 4. Apply Watermark (Text or Image)
+        if (wmEnabled.checked) {
           UI.showProgress(0.7, 'Step 4/6: Stamping watermark...');
-          workingBlob = await window.pdfEngine.addWatermark(workingBuffer, {
-            type: 'text',
-            text: wmText.value.trim(),
+          const opts = {
+            type: watermarkConfig.type,
+            text: wmText.value.trim() || 'CONFIDENTIAL',
+            fontFamily: wmFont.value || 'Helvetica',
+            fontSize: parseInt(wmSize.value, 10) || 48,
+            colorHex: wmColor.value || '#e11d48',
             opacity: parseFloat(wmOpacity.value) || 0.25,
-            position: wmPos.value,
-            color: wmColor.value || '#e11d48'
-          });
+            angle: parseInt(wmAngle.value, 10) || -45,
+            position: wmPos.value || 'center-diag',
+            imageBuffer: watermarkConfig.imageBuffer ? window.pdfEngine.cloneBuffer(watermarkConfig.imageBuffer) : null,
+            imageType: watermarkConfig.imageType,
+            imageScale: (parseInt(wmScale.value, 10) || 50) / 100
+          };
+
+          workingBlob = await window.pdfEngine.addWatermark(workingBuffer, opts);
           workingBuffer = await workingBlob.arrayBuffer();
         }
 
