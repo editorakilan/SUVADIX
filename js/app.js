@@ -306,6 +306,18 @@ const TOOLS_CONFIG = [
     icon: 'help-circle',
     color: 'text-violet-600 bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-900',
     handler: (c) => IntelligenceTools.renderOcrAnswer(c)
+  },
+
+  // 8. ALL-IN-ONE
+  {
+    id: 'all-in-one',
+    name: 'All-In-One',
+    category: 'all-in-one',
+    categoryLabel: 'ALL-IN-ONE',
+    desc: 'The complete PDF studio: swap pages, rotate, edit text, whiteout, sign, watermark, redact, protect & compress all in one place.',
+    icon: 'layers',
+    color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-900',
+    handler: (c) => AllInOneTool.render(c)
   }
 ];
 
