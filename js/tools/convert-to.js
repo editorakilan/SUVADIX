@@ -54,8 +54,28 @@ const ConvertToTools = {
                   <input type="radio" name="jpg-mode" value="text" class="text-amber-600">
                   <span class="text-xs font-bold text-slate-800">Digital Text Type</span>
                 </div>
-                <p class="text-[11px] text-slate-500 mt-1 pl-5">Extracts OCR text into clean, printable vector text paragraphs.</p>
+                <p class="text-[11px] text-slate-500 mt-1 pl-5">Extracts OCR text into clean vector text, preserving clinic logos & photos at the top.</p>
               </label>
+            </div>
+          </div>
+
+          <!-- Digital Text Logo & Photo Preservation Options -->
+          <div id="jpg-text-options" class="p-4 rounded-xl bg-amber-50/60 border border-amber-200 space-y-3 hidden">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="jpg-include-logo" checked class="text-amber-600 rounded">
+                <label for="jpg-include-logo" class="text-xs font-bold text-slate-800 cursor-pointer">Place Clinic / Company Logo & Photos at Top of Page</label>
+              </div>
+              <span class="text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">Logo + Digital Text</span>
+            </div>
+            <p class="text-[11px] text-slate-500">Crops the top hospital/clinic branding banner, logo, or photo from the image and places it at the top of the PDF, while formatting all bill and report details as clean, selectable digital text below.</p>
+            <div class="flex items-center gap-3 text-xs pt-1">
+              <span class="text-slate-600 font-medium">Header / Logo Banner Height:</span>
+              <select id="jpg-logo-ratio" class="text-xs font-medium bg-white p-1.5 rounded-lg border border-slate-200 outline-none">
+                <option value="0.20">Standard Logo Area (Top 20%)</option>
+                <option value="0.14">Compact Logo (Top 14%)</option>
+                <option value="0.28">Large Header & Photos (Top 28%)</option>
+              </select>
             </div>
           </div>
 
@@ -115,6 +135,9 @@ const ConvertToTools = {
       ocr: container.querySelector('#jpg-mode-ocr-card'),
       text: container.querySelector('#jpg-mode-txt-card')
     };
+    const textOptionsEl = container.querySelector('#jpg-text-options');
+    const includeLogoCheckbox = container.querySelector('#jpg-include-logo');
+    const logoRatioSelect = container.querySelector('#jpg-logo-ratio');
 
     container.querySelectorAll('input[name="jpg-mode"]').forEach(r => {
       r.addEventListener('change', () => {
@@ -124,6 +147,11 @@ const ConvertToTools = {
             ? 'flex flex-col p-3 rounded-xl border border-amber-400 bg-amber-50/70 cursor-pointer transition hover:bg-amber-50 shadow-sm'
             : 'flex flex-col p-3 rounded-xl border border-slate-200 bg-white cursor-pointer transition hover:bg-slate-50';
         });
+
+        // Show logo/photo options when Digital Text mode is selected
+        if (textOptionsEl) {
+          textOptionsEl.classList.toggle('hidden', r.value !== 'text');
+        }
       });
     });
 
@@ -178,11 +206,14 @@ const ConvertToTools = {
           });
           subtitle = `${imageFiles.length} image(s) converted to Searchable OCR PDF (Ctrl+F & select text enabled)`;
         } else if (mode === 'text') {
-          UI.showProgress(0.1, 'Extracting OCR text from images into formatted pages...');
-          pdfBlob = await window.pdfEngine.imagesToTextPdf(imageFiles, { pageSize, orientation, margin }, (pct, msg) => {
+          const includeLogo = includeLogoCheckbox ? includeLogoCheckbox.checked : true;
+          const logoRatio = logoRatioSelect ? parseFloat(logoRatioSelect.value) : 0.20;
+
+          UI.showProgress(0.1, 'Extracting OCR text & preserving logo graphics into formatted pages...');
+          pdfBlob = await window.pdfEngine.imagesToTextPdf(imageFiles, { pageSize, orientation, margin, includeLogo, logoRatio }, (pct, msg) => {
             UI.showProgress(pct, msg);
           });
-          subtitle = `${imageFiles.length} image(s) digitized into clean vector text document`;
+          subtitle = `${imageFiles.length} image(s) digitized into digital text document with logo header preserved`;
         } else {
           UI.showProgress(0.3, 'Converting images into standard high-res PDF pages...');
           pdfBlob = await window.pdfEngine.imagesToPDF(imageFiles, { pageSize, orientation, margin });

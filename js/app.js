@@ -296,6 +296,16 @@ const TOOLS_CONFIG = [
     icon: 'file-code',
     color: 'text-violet-600 bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-900',
     handler: (c) => IntelligenceTools.renderPdfToMarkdown(c)
+  },
+  {
+    id: 'ocr-answer',
+    name: 'OCR Answer Tool',
+    category: 'intelligence',
+    categoryLabel: 'PDF INTELLIGENCE',
+    desc: 'Extract questions from image or PDF via OCR and generate step-by-step answers & solutions.',
+    icon: 'help-circle',
+    color: 'text-violet-600 bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-900',
+    handler: (c) => IntelligenceTools.renderOcrAnswer(c)
   }
 ];
 

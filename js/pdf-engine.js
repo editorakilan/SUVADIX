@@ -743,10 +743,56 @@ class PDFEngine {
   }
 
   /**
-   * Convert Images to Pure Digital Text PDF (Extracts OCR text into formatted pages)
+   * Extract top header logo / emblem / graphic from an image file
+   */
+  async extractHeaderLogo(file, topRatio = 0.20) {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const cropH = Math.max(50, Math.floor(img.height * topRatio));
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = cropH;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, img.width, cropH, 0, 0, img.width, cropH);
+
+          canvas.toBlob((blob) => {
+            URL.revokeObjectURL(url);
+            if (!blob) return resolve(null);
+            blob.arrayBuffer().then(buf => resolve({
+              buffer: buf,
+              width: img.width,
+              height: cropH,
+              aspectRatio: img.width / cropH
+            })).catch(() => resolve(null));
+          }, 'image/png');
+        } catch (_) {
+          URL.revokeObjectURL(url);
+          resolve(null);
+        }
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      };
+      img.src = url;
+    });
+  }
+
+  /**
+   * Convert Images to Pure Digital Text PDF with Embedded Logo/Photos & Clean Vector Text
    */
   async imagesToTextPdf(imageFileList, options = {}, onProgress) {
-    const { pageSize = 'A4', orientation = 'portrait', margin = 40 } = options;
+    const {
+      pageSize = 'A4',
+      orientation = 'portrait',
+      margin = 40,
+      includeLogo = true,
+      logoRatio = 0.20
+    } = options;
+
     const { PDFDocument, PageSizes, StandardFonts, rgb } = PDFLib;
     const doc = await PDFDocument.create();
     const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -761,77 +807,128 @@ class PDFEngine {
     const base = standardSizes[pageSize] || PageSizes.A4;
     const pageWidth = orientation === 'landscape' ? base[1] : base[0];
     const pageHeight = orientation === 'landscape' ? base[0] : base[1];
+    const usableWidth = pageWidth - margin * 2;
+    const fontSize = 11;
+    const lineHeight = 16;
 
     const total = imageFileList.length;
-    let combinedText = '';
 
     for (let i = 0; i < total; i++) {
       const file = imageFileList[i];
-      if (onProgress) onProgress((i / total) * 0.75, `Extracting text from image ${i + 1} of ${total}...`);
+      if (onProgress) onProgress((i / total) * 0.35, `Processing image & header logo ${i + 1} of ${total}...`);
+
+      // 1. Extract Header Logo / Graphic crop if requested
+      let logoData = null;
+      if (includeLogo) {
+        logoData = await this.extractHeaderLogo(file, logoRatio);
+      }
+
+      // 2. Extract OCR Text
+      if (onProgress) onProgress(0.35 + (i / total) * 0.55, `Extracting digital text from image ${i + 1} of ${total}...`);
+      let pageText = '';
       if (window.Tesseract) {
         const res = await Tesseract.recognize(file, 'eng', {
           logger: m => {
             if (m.status === 'recognizing text' && onProgress) {
-              const prog = ((i + m.progress) / total) * 0.75;
-              onProgress(prog, `Extracting text from image ${i + 1}: ${Math.round(m.progress * 100)}%`);
+              const prog = 0.35 + ((i + m.progress) / total) * 0.55;
+              onProgress(prog, `OCR page ${i + 1}: ${Math.round(m.progress * 100)}%`);
             }
           }
         });
         if (res && res.data && res.data.text) {
-          combinedText += `\n--- Page ${i + 1} (${file.name}) ---\n\n` + res.data.text + '\n';
+          pageText = res.data.text;
         }
       }
-    }
 
-    if (!combinedText.trim()) {
-      combinedText = 'No text detected in uploaded images.';
-    }
+      if (!pageText.trim()) {
+        pageText = `(No text detected on image ${i + 1})`;
+      }
 
-    const fontSize = 11;
-    const lineHeight = 16;
-    const usableWidth = pageWidth - margin * 2;
+      // 3. Create PDF Page
+      let currentPage = doc.addPage([pageWidth, pageHeight]);
+      let currentY = pageHeight - margin;
 
-    const lines = combinedText.split('\n');
-    let currentPage = doc.addPage([pageWidth, pageHeight]);
-    let currentY = pageHeight - margin - 20;
+      // 4. Draw Logo / Header at top of page
+      if (logoData && logoData.buffer) {
+        try {
+          const embeddedLogo = await doc.embedPng(logoData.buffer);
+          const maxLogoH = Math.min(120, Math.round(pageHeight * 0.17));
+          let logoW = usableWidth;
+          let logoH = logoW / logoData.aspectRatio;
+          if (logoH > maxLogoH) {
+            logoH = maxLogoH;
+            logoW = logoH * logoData.aspectRatio;
+          }
+          const logoX = margin + (usableWidth - logoW) / 2;
+          const logoY = pageHeight - margin - logoH;
 
-    for (const rawLine of lines) {
-      if (rawLine.startsWith('--- Page')) {
-        currentY -= 12;
-        if (currentY < margin + 40) {
-          currentPage = doc.addPage([pageWidth, pageHeight]);
+          currentPage.drawImage(embeddedLogo, {
+            x: logoX,
+            y: logoY,
+            width: logoW,
+            height: logoH
+          });
+
+          currentY = logoY - 16;
+
+          // Elegant dividing rule below logo
+          currentPage.drawLine({
+            start: { x: margin, y: currentY + 8 },
+            end: { x: pageWidth - margin, y: currentY + 8 },
+            thickness: 0.5,
+            color: rgb(0.85, 0.85, 0.85)
+          });
+        } catch (logoErr) {
+          console.warn('Error embedding logo:', logoErr);
           currentY = pageHeight - margin - 20;
         }
-        currentPage.drawText(rawLine, {
-          x: margin,
-          y: currentY,
-          size: 13,
-          font: boldFont,
-          color: rgb(0.2, 0.3, 0.7)
-        });
-        currentY -= lineHeight + 8;
-        continue;
+      } else {
+        currentY = pageHeight - margin - 20;
       }
 
-      if (!rawLine.trim()) {
-        currentY -= 8;
-        continue;
-      }
+      // 5. Typeset Clean Digital Vector Text
+      const lines = pageText.split('\n');
 
-      // Word wrap
-      const words = rawLine.split(/\s+/);
-      let lineBuf = '';
-
-      for (const w of words) {
-        const testLine = lineBuf ? `${lineBuf} ${w}` : w;
-        let testWidth = usableWidth + 1;
-        try {
-          testWidth = font.widthOfTextAtSize(testLine, fontSize);
-        } catch (_) {
-          testWidth = testLine.length * (fontSize * 0.55);
+      for (const rawLine of lines) {
+        if (!rawLine.trim()) {
+          currentY -= 8;
+          continue;
         }
 
-        if (testWidth > usableWidth && lineBuf) {
+        const words = rawLine.split(/\s+/);
+        let lineBuf = '';
+
+        for (const w of words) {
+          const testLine = lineBuf ? `${lineBuf} ${w}` : w;
+          let testWidth = usableWidth + 1;
+          try {
+            testWidth = font.widthOfTextAtSize(testLine, fontSize);
+          } catch (_) {
+            testWidth = testLine.length * (fontSize * 0.55);
+          }
+
+          if (testWidth > usableWidth && lineBuf) {
+            if (currentY < margin + lineHeight) {
+              currentPage = doc.addPage([pageWidth, pageHeight]);
+              currentY = pageHeight - margin - 20;
+            }
+            try {
+              currentPage.drawText(lineBuf, {
+                x: margin,
+                y: currentY,
+                size: fontSize,
+                font,
+                color: rgb(0.12, 0.12, 0.12)
+              });
+            } catch (_) {}
+            currentY -= lineHeight;
+            lineBuf = w;
+          } else {
+            lineBuf = testLine;
+          }
+        }
+
+        if (lineBuf) {
           if (currentY < margin + lineHeight) {
             currentPage = doc.addPage([pageWidth, pageHeight]);
             currentY = pageHeight - margin - 20;
@@ -846,27 +943,7 @@ class PDFEngine {
             });
           } catch (_) {}
           currentY -= lineHeight;
-          lineBuf = w;
-        } else {
-          lineBuf = testLine;
         }
-      }
-
-      if (lineBuf) {
-        if (currentY < margin + lineHeight) {
-          currentPage = doc.addPage([pageWidth, pageHeight]);
-          currentY = pageHeight - margin - 20;
-        }
-        try {
-          currentPage.drawText(lineBuf, {
-            x: margin,
-            y: currentY,
-            size: fontSize,
-            font,
-            color: rgb(0.12, 0.12, 0.12)
-          });
-        } catch (_) {}
-        currentY -= lineHeight;
       }
     }
 
