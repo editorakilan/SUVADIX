@@ -281,6 +281,9 @@ const UI = {
     };
 
     if (closeBtn) closeBtn.onclick = closeModal;
+    const footerCloseBtn = document.getElementById('res-footer-close-btn');
+    if (footerCloseBtn) footerCloseBtn.onclick = closeModal;
+
     modal.onclick = (e) => {
       if (e.target === modal) closeModal();
     };

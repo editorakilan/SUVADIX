@@ -307,12 +307,18 @@ const OrganizeTools = {
         </div>
 
         <div id="remove-workspace" class="space-y-4 hidden">
-          <div class="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-            <span id="remove-summary" class="text-sm font-medium">Click on pages below to mark them for removal</span>
-            <button id="remove-run-btn" class="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium text-sm shadow transition flex items-center gap-2">
-              <i data-lucide="trash-2" class="w-4 h-4"></i>
-              <span>Remove Selected Pages</span>
-            </button>
+          <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+            <span id="remove-summary" class="text-sm font-medium text-slate-700">Click on pages below to mark them for removal</span>
+            <div class="flex items-center gap-3">
+              <button id="remove-close-btn" class="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm font-medium transition flex items-center gap-1.5" title="Close Preview & choose another file">
+                <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
+                <span>Close Preview</span>
+              </button>
+              <button id="remove-run-btn" class="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium text-sm shadow transition flex items-center gap-2">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                <span>Remove Selected Pages</span>
+              </button>
+            </div>
           </div>
           <div id="remove-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
         </div>
@@ -327,6 +333,19 @@ const OrganizeTools = {
     const grid = container.querySelector('#remove-grid');
     const summary = container.querySelector('#remove-summary');
     const runBtn = container.querySelector('#remove-run-btn');
+    const removeCloseBtn = container.querySelector('#remove-close-btn');
+
+    if (removeCloseBtn) {
+      removeCloseBtn.addEventListener('click', () => {
+        currentBuffer = null;
+        currentFile = null;
+        pageStates = [];
+        workspace.classList.add('hidden');
+        dropzone.classList.remove('hidden');
+        grid.innerHTML = '';
+        input.value = '';
+      });
+    }
 
     UI.setupDropzone(dropzone, input, async (files) => {
       if (files.length === 0) return;
@@ -394,12 +413,18 @@ const OrganizeTools = {
         </div>
 
         <div id="extract-workspace" class="space-y-4 hidden">
-          <div class="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-            <span id="extract-summary" class="text-sm font-medium">Click on pages to select for extraction</span>
-            <button id="extract-run-btn" class="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium text-sm shadow transition flex items-center gap-2">
-              <i data-lucide="download" class="w-4 h-4"></i>
-              <span>Extract Selected Pages</span>
-            </button>
+          <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+            <span id="extract-summary" class="text-sm font-medium text-slate-700">Click on pages to select for extraction</span>
+            <div class="flex items-center gap-3">
+              <button id="extract-close-btn" class="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm font-medium transition flex items-center gap-1.5" title="Close Preview & choose another file">
+                <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
+                <span>Close Preview</span>
+              </button>
+              <button id="extract-run-btn" class="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium text-sm shadow transition flex items-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Extract Selected Pages</span>
+              </button>
+            </div>
           </div>
           <div id="extract-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
         </div>
@@ -414,6 +439,19 @@ const OrganizeTools = {
     const grid = container.querySelector('#extract-grid');
     const summary = container.querySelector('#extract-summary');
     const runBtn = container.querySelector('#extract-run-btn');
+    const extractCloseBtn = container.querySelector('#extract-close-btn');
+
+    if (extractCloseBtn) {
+      extractCloseBtn.addEventListener('click', () => {
+        currentBuffer = null;
+        currentFile = null;
+        pageStates = [];
+        workspace.classList.add('hidden');
+        dropzone.classList.remove('hidden');
+        grid.innerHTML = '';
+        input.value = '';
+      });
+    }
 
     UI.setupDropzone(dropzone, input, async (files) => {
       if (files.length === 0) return;
@@ -481,12 +519,18 @@ const OrganizeTools = {
         </div>
 
         <div id="org-workspace" class="space-y-4 hidden">
-          <div class="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-            <span class="text-sm font-medium">Use the controls on each card to rotate or delete</span>
-            <button id="org-run-btn" class="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium text-sm shadow transition flex items-center gap-2">
-              <i data-lucide="save" class="w-4 h-4"></i>
-              <span>Save Organized PDF</span>
-            </button>
+          <div class="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+            <span class="text-sm font-medium text-slate-700">Use the controls on each card to rotate or delete</span>
+            <div class="flex items-center gap-3">
+              <button id="org-close-btn" class="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm font-medium transition flex items-center gap-1.5" title="Close Preview & choose another file">
+                <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
+                <span>Close Preview</span>
+              </button>
+              <button id="org-run-btn" class="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium text-sm shadow transition flex items-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                <span>Save Organized PDF</span>
+              </button>
+            </div>
           </div>
           <div id="org-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
         </div>
@@ -500,6 +544,19 @@ const OrganizeTools = {
     const workspace = container.querySelector('#org-workspace');
     const grid = container.querySelector('#org-grid');
     const runBtn = container.querySelector('#org-run-btn');
+    const orgCloseBtn = container.querySelector('#org-close-btn');
+
+    if (orgCloseBtn) {
+      orgCloseBtn.addEventListener('click', () => {
+        currentBuffer = null;
+        currentFile = null;
+        pageStates = [];
+        workspace.classList.add('hidden');
+        dropzone.classList.remove('hidden');
+        grid.innerHTML = '';
+        input.value = '';
+      });
+    }
 
     UI.setupDropzone(dropzone, input, async (files) => {
       if (files.length === 0) return;

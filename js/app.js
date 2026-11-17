@@ -305,7 +305,7 @@ class App {
 
   initTheme() {
     const saved = localStorage.getItem('pdf_suite_theme');
-    const isDark = saved === 'dark' || saved === null; // Default to rich dark SaaS aesthetic
+    const isDark = saved === 'dark'; // Default to clean, modern, professional light theme
     document.documentElement.classList.toggle('dark', isDark);
 
     const themeBtn = document.getElementById('theme-toggle-btn');

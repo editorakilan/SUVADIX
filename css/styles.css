@@ -1,4 +1,4 @@
-/* PDF Suite - Premium Modern UI Styles with Fluid Animations */
+/* PDF Suite - Clean, Modern, Professional Light UI */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
@@ -6,46 +6,27 @@
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   
-  /* Vibrant Brand Accents */
-  --brand-primary: #FF3B30;
-  --brand-gradient: linear-gradient(135deg, #FF3B30 0%, #FF6B00 50%, #9013FE 100%);
-  --brand-glow: 0 10px 30px -5px rgba(255, 59, 48, 0.3);
+  /* Brand Accent */
+  --brand-primary: #E11D48;
+  --brand-gradient: linear-gradient(135deg, #E11D48 0%, #F43F5E 50%, #FB7185 100%);
   
-  /* Light Theme */
+  /* Clean Light Theme Palette */
   --bg-main: #F8FAFC;
   --bg-surface: #FFFFFF;
   --bg-card: #FFFFFF;
-  --border: rgba(226, 232, 240, 0.8);
-  --border-hover: rgba(255, 59, 48, 0.35);
+  --border: #E2E8F0;
+  --border-hover: #CBD5E1;
   --text-main: #0F172A;
   --text-muted: #64748B;
-  --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
-  --card-hover-shadow: 0 20px 35px -8px rgba(255, 59, 48, 0.15), 0 8px 16px -4px rgba(15, 23, 42, 0.06);
-}
-
-.dark {
-  /* Rich Deep Space Dark Theme (No plain boring black/white) */
-  --bg-main: #090D16;
-  --bg-surface: #0F172A;
-  --bg-card: rgba(15, 23, 42, 0.75);
-  --border: rgba(51, 65, 85, 0.6);
-  --border-hover: rgba(255, 59, 48, 0.5);
-  --text-main: #F8FAFC;
-  --text-muted: #94A3B8;
-  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
-  --card-hover-shadow: 0 20px 40px -10px rgba(255, 59, 48, 0.25), 0 0 20px rgba(139, 92, 246, 0.15);
+  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+  --card-hover-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.08), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
 }
 
 body {
   font-family: var(--font-sans);
   color: var(--text-main);
   background-color: var(--bg-main);
-  background-image: 
-    radial-gradient(circle at 10% 10%, rgba(255, 59, 48, 0.07) 0%, transparent 40%),
-    radial-gradient(circle at 90% 15%, rgba(139, 92, 246, 0.07) 0%, transparent 40%),
-    radial-gradient(circle at 50% 80%, rgba(14, 165, 233, 0.05) 0%, transparent 50%);
-  background-attachment: fixed;
-  transition: background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1), color 0.3s ease;
+  background-image: none;
   min-height: 100vh;
 }
 
@@ -61,96 +42,84 @@ body {
   background: #CBD5E1;
   border-radius: 9999px;
 }
-.dark ::-webkit-scrollbar-thumb {
-  background: #334155;
-}
 ::-webkit-scrollbar-thumb:hover {
-  background: #FF3B30;
+  background: #94A3B8;
 }
 
-/* Glassmorphism Header with animated glow */
+/* Clean Header */
 .glass-nav {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
-}
-.dark .glass-nav {
-  background: rgba(9, 13, 22, 0.85);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+  background: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03);
 }
 
-/* Fluid Navigation Tabs */
-.nav-tab-slider {
-  position: relative;
-  background: rgba(241, 245, 249, 0.8);
-  border: 1px solid var(--border);
-  border-radius: 9999px;
-  padding: 4px;
-}
-.dark .nav-tab-slider {
-  background: rgba(15, 23, 42, 0.8);
-}
-
+/* Category Filter Tabs with Smooth Animation */
 .cat-filter-btn {
   position: relative;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 1;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #64748B;
+  font-weight: 600;
 }
 .cat-filter-btn:hover {
+  color: #0F172A;
+  background: #F1F5F9;
   transform: translateY(-1px);
 }
 .cat-filter-btn.active {
-  background: linear-gradient(135deg, #FF3B30 0%, #E11D48 100%);
-  color: white !important;
-  box-shadow: 0 4px 14px rgba(255, 59, 48, 0.35);
+  background: #E11D48 !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
 }
 
-/* Tool Cards with 3D Elevation & Border Glow */
+/* Tool Cards with Clean Elevation */
 .tool-card {
   position: relative;
-  background: var(--bg-card);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
   box-shadow: var(--card-shadow);
-  border-radius: 1.25rem;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 1rem;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 }
-.tool-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #FF3B30, #9013FE);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
 .tool-card:hover {
-  transform: translateY(-4px) scale(1.01);
-  border-color: var(--border-hover);
+  transform: translateY(-3px);
+  border-color: #CBD5E1;
   box-shadow: var(--card-hover-shadow);
-}
-.tool-card:hover::before {
-  opacity: 1;
 }
 
 /* Drag-and-drop dropzone */
 .dropzone {
-  border: 2px dashed var(--border);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  background: var(--bg-card);
-  backdrop-filter: blur(12px);
+  border: 2px dashed #CBD5E1;
+  border-radius: 1rem;
+  background: #FFFFFF;
+  transition: all 0.2s ease;
 }
-.dropzone.dragover {
-  border-color: #FF3B30;
-  background: rgba(255, 59, 48, 0.08);
-  transform: scale(1.01);
-  box-shadow: 0 10px 25px rgba(255, 59, 48, 0.2);
+.dropzone:hover, .dropzone.dragover {
+  border-color: #E11D48;
+  background: #FFF1F2;
+}
+
+/* Page Thumbnail Cards */
+.page-thumb-card {
+  transition: all 0.2s ease;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+}
+.page-thumb-card:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.page-thumb-card.selected {
+  border-color: #E11D48 !important;
+  box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.2) !important;
+  background: #FFF1F2 !important;
+}
+.page-thumb-card.marked-delete {
+  opacity: 0.45;
+  filter: grayscale(1);
+  border-color: #EF4444 !important;
+  background: #FEF2F2 !important;
 }
 
 /* Shimmer Button Effect */
@@ -175,7 +144,8 @@ body {
 
 /* Realistic PDF Paper Texture in Previews */
 .pdf-paper-preview {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  border: 1px solid #E2E8F0;
   border-radius: 4px;
   background: #FFFFFF;
   transition: transform 0.2s ease;
@@ -183,9 +153,9 @@ body {
 
 /* Smooth modal fade */
 .modal-backdrop {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  animation: modalFadeIn 0.25s ease forwards;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: modalFadeIn 0.2s ease forwards;
 }
 @keyframes modalFadeIn {
   from { opacity: 0; }
@@ -193,10 +163,10 @@ body {
 }
 
 .modal-content {
-  animation: modalScaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modalScaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 @keyframes modalScaleUp {
-  from { opacity: 0; transform: scale(0.95) translateY(12px); }
+  from { opacity: 0; transform: scale(0.97) translateY(8px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
