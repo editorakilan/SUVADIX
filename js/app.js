@@ -110,6 +110,16 @@ const TOOLS_CONFIG = [
 
   // 3. CONVERT TO PDF
   {
+    id: 'office-to-pdf',
+    name: 'OFFICE to PDF',
+    category: 'convert-to',
+    categoryLabel: 'CONVERT TO PDF',
+    desc: 'All-in-one Office importer: Convert Word (.docx), Excel (.xlsx/.csv), PowerPoint (.pptx), HTML, or Text into PDF.',
+    icon: 'file-plus-2',
+    color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900',
+    handler: (c) => ConvertToTools.renderOfficeToPdfHub(c)
+  },
+  {
     id: 'jpg-to-pdf',
     name: 'JPG to PDF',
     category: 'convert-to',
@@ -137,7 +147,7 @@ const TOOLS_CONFIG = [
     desc: 'Parse Word (.docx) documents and export to clean printable PDF format.',
     icon: 'file-type-2',
     color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900',
-    handler: (c) => ConvertToTools.renderWordToPdf(c)
+    handler: (c) => ConvertToTools.renderOfficeToPdfHub(c, 'word')
   },
   {
     id: 'excel-to-pdf',
@@ -147,7 +157,7 @@ const TOOLS_CONFIG = [
     desc: 'Convert Excel spreadsheets (.xlsx, .csv) into clean tabular PDF documents.',
     icon: 'sheet',
     color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900',
-    handler: (c) => ConvertToTools.renderExcelToPdf(c)
+    handler: (c) => ConvertToTools.renderOfficeToPdfHub(c, 'excel')
   },
   {
     id: 'ppt-to-pdf',
@@ -157,7 +167,7 @@ const TOOLS_CONFIG = [
     desc: 'Render PowerPoint (.pptx) slides into crisp 16:9 widescreen presentation PDFs.',
     icon: 'presentation',
     color: 'text-orange-600 bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-900',
-    handler: (c) => ConvertToTools.renderPptToPdf(c)
+    handler: (c) => ConvertToTools.renderOfficeToPdfHub(c, 'ppt')
   },
   {
     id: 'html-to-pdf',
@@ -182,6 +192,26 @@ const TOOLS_CONFIG = [
 
   // 4. CONVERT FROM PDF
   {
+    id: 'pdf-to-img',
+    name: 'PDF to IMAGE',
+    category: 'convert-from',
+    categoryLabel: 'CONVERT FROM PDF',
+    desc: 'All-in-one Image hub: Extract pages into PNG, JPG, 16-bit TIFF, 16-bit DPX, 16-bit OpenEXR, JPEG 2000, or WebP.',
+    icon: 'image-down',
+    color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-900',
+    handler: (c) => ConvertFromTools.renderPdfToImageHub(c, 'png')
+  },
+  {
+    id: 'pdf-to-office',
+    name: 'PDF to OFFICE',
+    category: 'convert-from',
+    categoryLabel: 'CONVERT FROM PDF',
+    desc: 'All-in-one Office export hub: Convert PDF into editable Word (.docx), Excel spreadsheets (.csv), PowerPoint (.pptx), HTML, or Text.',
+    icon: 'layers',
+    color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900',
+    handler: (c) => ConvertFromTools.renderPdfToOfficeHub(c, 'word')
+  },
+  {
     id: 'pdf-to-jpg',
     name: 'PDF to JPG',
     category: 'convert-from',
@@ -189,7 +219,7 @@ const TOOLS_CONFIG = [
     desc: 'Convert all pages of a PDF into high-res JPG images and download as ZIP.',
     icon: 'image-down',
     color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-900',
-    handler: (c) => ConvertFromTools.renderPdfToJpg(c)
+    handler: (c) => ConvertFromTools.renderPdfToImageHub(c, 'jpeg')
   },
   {
     id: 'pdf-to-png',
@@ -199,7 +229,7 @@ const TOOLS_CONFIG = [
     desc: 'Extract transparent, crisp PNG graphics from each PDF page.',
     icon: 'file-image',
     color: 'text-cyan-600 bg-cyan-50 dark:bg-cyan-950/40 border-cyan-200 dark:border-cyan-900',
-    handler: (c) => ConvertFromTools.renderPdfToPng(c)
+    handler: (c) => ConvertFromTools.renderPdfToImageHub(c, 'png')
   },
   {
     id: 'pdf-to-tiff-16',
@@ -209,7 +239,7 @@ const TOOLS_CONFIG = [
     desc: 'Mastering & archival grade 16-bit uncompressed RGB TIFF export per page.',
     icon: 'layers',
     color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900',
-    handler: (c) => ConvertFromTools.renderPdfToTiff16(c)
+    handler: (c) => ConvertFromTools.renderPdfToImageHub(c, 'tiff16')
   },
   {
     id: 'pdf-to-dpx-16',
@@ -219,7 +249,7 @@ const TOOLS_CONFIG = [
     desc: 'SMPTE 268M standard 16-bit digital film and cinema VFX mastering rasterization.',
     icon: 'film',
     color: 'text-rose-600 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900',
-    handler: (c) => ConvertFromTools.renderPdfToDpx16(c)
+    handler: (c) => ConvertFromTools.renderPdfToImageHub(c, 'dpx16')
   },
   {
     id: 'pdf-to-exr-16',
@@ -229,7 +259,7 @@ const TOOLS_CONFIG = [
     desc: 'Academy / ILM standard 16-bit half-float OpenEXR lossless VFX rasterization.',
     icon: 'sparkles',
     color: 'text-violet-600 bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-900',
-    handler: (c) => ConvertFromTools.renderPdfToExr16(c)
+    handler: (c) => ConvertFromTools.renderPdfToImageHub(c, 'exr16')
   },
   {
     id: 'pdf-to-jp2',
@@ -239,7 +269,7 @@ const TOOLS_CONFIG = [
     desc: 'ISO/IEC 15444-1 compliant high-compression JP2 / JPEG 2000 container export.',
     icon: 'image',
     color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900',
-    handler: (c) => ConvertFromTools.renderPdfToJp2(c)
+    handler: (c) => ConvertFromTools.renderPdfToImageHub(c, 'jp2')
   },
   {
     id: 'pdf-to-word',
@@ -249,7 +279,7 @@ const TOOLS_CONFIG = [
     desc: 'Convert PDF paragraphs and content into an editable Microsoft Word (.docx) document.',
     icon: 'file-text',
     color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900',
-    handler: (c) => ConvertFromTools.renderPdfToWord(c)
+    handler: (c) => ConvertFromTools.renderPdfToOfficeHub(c, 'word')
   },
   {
     id: 'pdf-to-excel',
@@ -259,7 +289,7 @@ const TOOLS_CONFIG = [
     desc: 'Extract tables, rows, and financial data from PDF into Excel / CSV format.',
     icon: 'sheet',
     color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900',
-    handler: (c) => ConvertFromTools.renderPdfToExcel(c)
+    handler: (c) => ConvertFromTools.renderPdfToOfficeHub(c, 'excel')
   },
   {
     id: 'pdf-to-ppt',
@@ -269,7 +299,7 @@ const TOOLS_CONFIG = [
     desc: 'Transform PDF pages into a presentation slide deck for PowerPoint (.pptx).',
     icon: 'presentation',
     color: 'text-orange-600 bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-900',
-    handler: (c) => ConvertFromTools.renderPdfToPpt(c)
+    handler: (c) => ConvertFromTools.renderPdfToOfficeHub(c, 'ppt')
   },
   {
     id: 'pdf-to-html',
@@ -279,7 +309,7 @@ const TOOLS_CONFIG = [
     desc: 'Convert PDF layout and text into a responsive HTML webpage with clean styling.',
     icon: 'code-2',
     color: 'text-teal-600 bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-900',
-    handler: (c) => ConvertFromTools.renderPdfToHtml(c)
+    handler: (c) => ConvertFromTools.renderPdfToOfficeHub(c, 'html')
   },
   {
     id: 'pdf-to-text',
@@ -289,7 +319,7 @@ const TOOLS_CONFIG = [
     desc: 'Extract all textual content from PDF pages into plain text (.txt).',
     icon: 'file-text',
     color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-900',
-    handler: (c) => ConvertFromTools.renderPdfToText(c)
+    handler: (c) => ConvertFromTools.renderPdfToOfficeHub(c, 'text')
   },
 
   // 5. EDIT PDF
@@ -509,7 +539,7 @@ class App {
       <div class="col-span-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
         <div class="flex items-center gap-2 text-xs text-slate-500">
           <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i>
-          <span>All 42 tools run 100% locally in browser memory with zero server uploads</span>
+          <span>All 46 tools run 100% locally in browser memory with zero server uploads</span>
         </div>
         <button class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-extrabold text-xs shadow-sm hover:shadow transition flex items-center gap-1.5" onclick="window.app && window.app.openTool('all-in-one')">
           <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>

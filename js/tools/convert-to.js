@@ -245,39 +245,72 @@ const ConvertToTools = {
     if (sub) sub.innerText = 'Convert PNG image files into clean, professional PDF documents.';
   },
 
-  // 3. EXCEL TO PDF (.xlsx / .csv)
-  renderExcelToPdf(container) {
+  // =========================================================================
+  // 3. UNIFIED FLAGSHIP HUB: OFFICE TO PDF (WORD, EXCEL, PPT, HTML, TEXT)
+  // =========================================================================
+  renderOfficeToPdfHub(container, defaultType = 'all') {
     let currentFile = null;
 
     container.innerHTML = `
-      <div class="max-w-3xl mx-auto space-y-6">
+      <div class="max-w-4xl mx-auto space-y-6">
+        <!-- Header -->
         <div class="text-center space-y-2">
-          <h2 class="text-2xl font-bold tracking-tight">Convert Excel (.xlsx / .csv) to PDF</h2>
-          <p class="text-sm text-slate-500">Transform spreadsheet tables and CSV records into beautifully formatted PDF documents.</p>
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-xs">
+            <i data-lucide="file-plus-2" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span>ALL-IN-ONE OFFICE IMPORTER HUB</span>
+          </div>
+          <h2 class="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-slate-100">OFFICE to PDF</h2>
+          <p class="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto">
+            Convert any Microsoft Word (.docx, .doc), Excel (.xlsx, .csv), PowerPoint (.pptx, .ppt), HTML, or Text file into a clean, professional PDF document.
+          </p>
         </div>
 
-        <div id="excel-dropzone" class="dropzone p-8 rounded-2xl text-center cursor-pointer hover:border-emerald-500 transition">
-          <input type="file" id="excel-file-input" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden">
+        <!-- Supported Formats Badges -->
+        <div class="flex flex-wrap items-center justify-center gap-2 text-xs font-bold">
+          <span class="px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1.5 shadow-xs"><i data-lucide="file-text" class="w-3.5 h-3.5"></i>Word (.docx)</span>
+          <span class="px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5 shadow-xs"><i data-lucide="sheet" class="w-3.5 h-3.5"></i>Excel (.xlsx, .csv)</span>
+          <span class="px-3 py-1 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800 flex items-center gap-1.5 shadow-xs"><i data-lucide="presentation" class="w-3.5 h-3.5"></i>PowerPoint (.pptx)</span>
+          <span class="px-3 py-1 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 flex items-center gap-1.5 shadow-xs"><i data-lucide="code-2" class="w-3.5 h-3.5"></i>HTML (.html)</span>
+          <span class="px-3 py-1 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1.5 shadow-xs"><i data-lucide="file-type-2" class="w-3.5 h-3.5"></i>Text (.txt)</span>
+        </div>
+
+        <!-- Dropzone -->
+        <div id="hub-to-dropzone" class="dropzone p-8 sm:p-10 rounded-3xl text-center cursor-pointer hover:border-emerald-500 transition border-2 border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
+          <input type="file" id="hub-to-file-input" accept=".docx,.doc,.xlsx,.xls,.csv,.pptx,.ppt,.html,.htm,.txt,.rtf,.md" class="hidden">
           <div class="flex flex-col items-center gap-3">
-            <div class="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
-              <i data-lucide="sheet" class="w-8 h-8"></i>
+            <div class="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center shadow-inner">
+              <i data-lucide="file-up" class="w-8 h-8"></i>
             </div>
             <div>
-              <p class="font-semibold text-slate-700 dark:text-slate-200">Upload Excel or CSV file</p>
-              <p class="text-xs text-slate-400 mt-1" id="excel-file-status">Drag & drop or click to browse</p>
+              <p class="font-extrabold text-base text-slate-800 dark:text-slate-100">Upload Word, Excel, PowerPoint, HTML, or Text</p>
+              <p class="text-xs text-slate-400 mt-1" id="hub-to-file-status">Drag & drop or click to choose document</p>
             </div>
           </div>
         </div>
 
-        <div id="excel-workspace" class="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4 hidden">
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100" id="excel-filename">spreadsheet.xlsx</h3>
-              <p class="text-xs text-slate-400" id="excel-filesize">0 KB</p>
+        <!-- Workspace -->
+        <div id="hub-to-workspace" class="p-6 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-lg space-y-5 hidden">
+          <!-- File Detected Info Card -->
+          <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-xl flex items-center justify-center font-bold" id="hub-to-badge-icon">
+                <i data-lucide="file-text" class="w-6 h-6"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="font-black text-sm text-slate-900 dark:text-slate-100" id="hub-to-filename">document.docx</h3>
+                  <span id="hub-to-type-badge" class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase">WORD</span>
+                </div>
+                <p class="text-xs text-slate-400" id="hub-to-filesize">0 KB</p>
+              </div>
             </div>
-            <button id="excel-run-btn" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition shadow-sm flex items-center gap-2">
-              <i data-lucide="arrow-right" class="w-4 h-4"></i>
-              <span>Convert to PDF</span>
+          </div>
+
+          <!-- Action Bar -->
+          <div class="flex justify-end pt-2">
+            <button id="hub-to-run-btn" class="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-sm shadow-xl shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]">
+              <i data-lucide="file-check" class="w-4 h-4"></i>
+              <span id="hub-to-run-label">Convert to PDF</span>
             </button>
           </div>
         </div>
@@ -286,13 +319,59 @@ const ConvertToTools = {
 
     if (window.lucide) window.lucide.createIcons();
 
-    const dropzone = container.querySelector('#excel-dropzone');
-    const input = container.querySelector('#excel-file-input');
-    const statusEl = container.querySelector('#excel-file-status');
-    const workspace = container.querySelector('#excel-workspace');
-    const filenameEl = container.querySelector('#excel-filename');
-    const filesizeEl = container.querySelector('#excel-filesize');
-    const runBtn = container.querySelector('#excel-run-btn');
+    const dropzone = container.querySelector('#hub-to-dropzone');
+    const input = container.querySelector('#hub-to-file-input');
+    const statusEl = container.querySelector('#hub-to-file-status');
+    const workspace = container.querySelector('#hub-to-workspace');
+    const filenameEl = container.querySelector('#hub-to-filename');
+    const filesizeEl = container.querySelector('#hub-to-filesize');
+    const typeBadge = container.querySelector('#hub-to-type-badge');
+    const badgeIcon = container.querySelector('#hub-to-badge-icon');
+    const runBtn = container.querySelector('#hub-to-run-btn');
+    const runLabel = container.querySelector('#hub-to-run-label');
+
+    let detectedEngine = 'word-to-pdf';
+
+    const detectFileType = (file) => {
+      const name = file.name.toLowerCase();
+      if (name.endsWith('.docx') || name.endsWith('.doc')) {
+        detectedEngine = 'word-to-pdf';
+        typeBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700';
+        typeBadge.innerText = 'WORD DOCUMENT';
+        badgeIcon.className = 'w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center';
+        badgeIcon.innerHTML = '<i data-lucide="file-text" class="w-6 h-6"></i>';
+        runLabel.innerText = 'Convert Word to PDF';
+      } else if (name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.csv')) {
+        detectedEngine = 'excel-to-pdf';
+        typeBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700';
+        typeBadge.innerText = 'EXCEL SPREADSHEET';
+        badgeIcon.className = 'w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center';
+        badgeIcon.innerHTML = '<i data-lucide="sheet" class="w-6 h-6"></i>';
+        runLabel.innerText = 'Convert Excel to PDF';
+      } else if (name.endsWith('.pptx') || name.endsWith('.ppt')) {
+        detectedEngine = 'ppt-to-pdf';
+        typeBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-orange-100 dark:bg-orange-900/60 text-orange-800 dark:text-orange-300 border border-orange-200 dark:border-orange-700';
+        typeBadge.innerText = 'POWERPOINT PRESENTATION';
+        badgeIcon.className = 'w-12 h-12 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 flex items-center justify-center';
+        badgeIcon.innerHTML = '<i data-lucide="presentation" class="w-6 h-6"></i>';
+        runLabel.innerText = 'Convert PowerPoint to PDF';
+      } else if (name.endsWith('.html') || name.endsWith('.htm')) {
+        detectedEngine = 'html-to-pdf';
+        typeBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-700';
+        typeBadge.innerText = 'HTML WEBPAGE';
+        badgeIcon.className = 'w-12 h-12 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-600 flex items-center justify-center';
+        badgeIcon.innerHTML = '<i data-lucide="code-2" class="w-6 h-6"></i>';
+        runLabel.innerText = 'Convert HTML to PDF';
+      } else {
+        detectedEngine = 'text-to-pdf';
+        typeBadge.className = 'px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700';
+        typeBadge.innerText = 'TEXT DOCUMENT';
+        badgeIcon.className = 'w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center';
+        badgeIcon.innerHTML = '<i data-lucide="file-type-2" class="w-6 h-6"></i>';
+        runLabel.innerText = 'Convert Text to PDF';
+      }
+      if (window.lucide) window.lucide.createIcons();
+    };
 
     UI.setupDropzone(dropzone, input, async (files) => {
       if (files.length === 0) return;
@@ -300,25 +379,29 @@ const ConvertToTools = {
       statusEl.innerText = `${currentFile.name} (${window.pdfEngine.formatBytes(currentFile.size)})`;
       filenameEl.innerText = currentFile.name;
       filesizeEl.innerText = window.pdfEngine.formatBytes(currentFile.size);
+      detectFileType(currentFile);
       workspace.classList.remove('hidden');
     });
 
     runBtn.addEventListener('click', async () => {
       if (!currentFile) return;
       try {
-        UI.showProgress(0.2, 'Converting spreadsheet to PDF tables...');
-        const res = await window.PDFEngine['excel-to-pdf']([currentFile], {}, (pct, status) => {
+        UI.showProgress(0.2, `Converting ${currentFile.name} to PDF...`);
+        const res = await window.PDFEngine[detectedEngine]([currentFile], {}, (pct, status) => {
           UI.showProgress(pct, status);
         });
+
         UI.hideProgress();
         UI.celebrate();
-        UI.showToast('Spreadsheet converted to PDF!', 'success');
+        UI.showToast('Document converted to PDF successfully!', 'success');
+
         if (res && res.files && res.files.length) {
           const pdfBlob = res.files[0].blob;
           const pdfName = res.files[0].name;
+          window.pdfEngine.downloadBlob(pdfBlob, pdfName);
           UI.showResultPreview({
-            title: 'Spreadsheet PDF Ready',
-            subtitle: `Converted table pages successfully. Ready to review and save.`,
+            title: 'PDF Document Ready',
+            subtitle: `Converted ${currentFile.name} successfully into high-quality PDF.`,
             blob: pdfBlob,
             filename: pdfName
           });
@@ -330,189 +413,10 @@ const ConvertToTools = {
     });
   },
 
-  // 4. POWERPOINT TO PDF (.pptx)
-  renderPptToPdf(container) {
-    let currentFile = null;
-
-    container.innerHTML = `
-      <div class="max-w-3xl mx-auto space-y-6">
-        <div class="text-center space-y-2">
-          <h2 class="text-2xl font-bold tracking-tight">Convert PowerPoint (.pptx) to PDF</h2>
-          <p class="text-sm text-slate-500">Render PowerPoint presentation slides into crisp widescreen PDF slides.</p>
-        </div>
-
-        <div id="ppt-dropzone" class="dropzone p-8 rounded-2xl text-center cursor-pointer hover:border-orange-500 transition">
-          <input type="file" id="ppt-file-input" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" class="hidden">
-          <div class="flex flex-col items-center gap-3">
-            <div class="w-16 h-16 rounded-full bg-orange-50 dark:bg-orange-950/40 text-orange-600 flex items-center justify-center">
-              <i data-lucide="presentation" class="w-8 h-8"></i>
-            </div>
-            <div>
-              <p class="font-semibold text-slate-700 dark:text-slate-200">Upload PowerPoint (.pptx) file</p>
-              <p class="text-xs text-slate-400 mt-1" id="ppt-file-status">Drag & drop or click to browse</p>
-            </div>
-          </div>
-        </div>
-
-        <div id="ppt-workspace" class="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4 hidden">
-          <div class="flex items-center justify-between">
-            <div>
-              <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100" id="ppt-filename">presentation.pptx</h3>
-              <p class="text-xs text-slate-400" id="ppt-filesize">0 KB</p>
-            </div>
-            <button id="ppt-run-btn" class="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm transition shadow-sm flex items-center gap-2">
-              <i data-lucide="arrow-right" class="w-4 h-4"></i>
-              <span>Convert to PDF</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    if (window.lucide) window.lucide.createIcons();
-
-    const dropzone = container.querySelector('#ppt-dropzone');
-    const input = container.querySelector('#ppt-file-input');
-    const statusEl = container.querySelector('#ppt-file-status');
-    const workspace = container.querySelector('#ppt-workspace');
-    const filenameEl = container.querySelector('#ppt-filename');
-    const filesizeEl = container.querySelector('#ppt-filesize');
-    const runBtn = container.querySelector('#ppt-run-btn');
-
-    UI.setupDropzone(dropzone, input, async (files) => {
-      if (files.length === 0) return;
-      currentFile = files[0];
-      statusEl.innerText = `${currentFile.name} (${window.pdfEngine.formatBytes(currentFile.size)})`;
-      filenameEl.innerText = currentFile.name;
-      filesizeEl.innerText = window.pdfEngine.formatBytes(currentFile.size);
-      workspace.classList.remove('hidden');
-    });
-
-    runBtn.addEventListener('click', async () => {
-      if (!currentFile) return;
-      try {
-        UI.showProgress(0.2, 'Extracting slides & compiling PDF...');
-        const res = await window.PDFEngine['ppt-to-pdf']([currentFile], {}, (pct, status) => {
-          UI.showProgress(pct, status);
-        });
-        UI.hideProgress();
-        UI.celebrate();
-        UI.showToast('Presentation converted to PDF!', 'success');
-        if (res && res.files && res.files.length) {
-          const pdfBlob = res.files[0].blob;
-          const pdfName = res.files[0].name;
-          UI.showResultPreview({
-            title: 'Presentation PDF Ready',
-            subtitle: `Converted 16:9 presentation slides successfully.`,
-            blob: pdfBlob,
-            filename: pdfName
-          });
-        }
-      } catch (err) {
-        UI.hideProgress();
-        UI.showToast(`Error: ${err.message}`, 'error');
-      }
-    });
-  },
-
-  // 5. WORD TO PDF (.docx)
-  renderWordToPdf(container) {
-    let docxFile = null;
-
-    container.innerHTML = `
-      <div class="max-w-3xl mx-auto space-y-6">
-        <div class="text-center space-y-2">
-          <h2 class="text-2xl font-bold tracking-tight">Convert Word (.docx) to PDF</h2>
-          <p class="text-sm text-slate-500">Convert Microsoft Word documents directly in your browser with privacy preservation.</p>
-        </div>
-
-        <div id="word-dropzone" class="dropzone p-8 rounded-2xl text-center cursor-pointer hover:border-blue-500 transition">
-          <input type="file" id="word-file-input" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden">
-          <div class="flex flex-col items-center gap-3">
-            <div class="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center">
-              <i data-lucide="file-type-2" class="w-8 h-8"></i>
-            </div>
-            <div>
-              <p class="font-semibold text-slate-700 dark:text-slate-200">Upload Word (.docx) file</p>
-              <p class="text-xs text-slate-400 mt-1" id="word-file-status">Fast client-side document parser</p>
-            </div>
-          </div>
-        </div>
-
-        <div id="word-preview-card" class="p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4 hidden">
-          <div class="flex items-center justify-between">
-            <h3 class="font-semibold text-sm">Document Preview</h3>
-            <button id="word-run-btn" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition flex items-center gap-2">
-              <i data-lucide="download" class="w-4 h-4"></i>
-              <span>Export as PDF</span>
-            </button>
-          </div>
-          <div id="word-html-content" class="p-6 bg-slate-50 dark:bg-slate-900 rounded-xl max-h-96 overflow-y-auto border border-slate-100 dark:border-slate-800 prose dark:prose-invert text-xs leading-normal"></div>
-        </div>
-      </div>
-    `;
-
-    if (window.lucide) window.lucide.createIcons();
-
-    const dropzone = container.querySelector('#word-dropzone');
-    const input = container.querySelector('#word-file-input');
-    const statusEl = container.querySelector('#word-file-status');
-    const previewCard = container.querySelector('#word-preview-card');
-    const htmlContent = container.querySelector('#word-html-content');
-    const runBtn = container.querySelector('#word-run-btn');
-
-    UI.setupDropzone(dropzone, input, async (files) => {
-      if (files.length === 0) return;
-      docxFile = files[0];
-      statusEl.innerText = `${docxFile.name} (${window.pdfEngine.formatBytes(docxFile.size)})`;
-
-      if (window.mammoth) {
-        UI.showProgress(0.3, 'Parsing Word document structure...');
-        const arrayBuffer = await window.pdfEngine.readFileAsArrayBuffer(docxFile);
-        const result = await window.mammoth.convertToHtml({ arrayBuffer });
-        htmlContent.innerHTML = result.value;
-        previewCard.classList.remove('hidden');
-        UI.hideProgress();
-      }
-    });
-
-    runBtn.addEventListener('click', async () => {
-      if (!docxFile) return;
-      try {
-        UI.showProgress(0.5, 'Rendering formatted document to PDF...');
-        // Print window or html canvas rendering
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>${docxFile.name.replace(/\.docx$/i, '')}</title>
-            <style>
-              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 40px; color: #111; line-height: 1.6; }
-              h1, h2, h3 { color: #111; }
-              table { border-collapse: collapse; width: 100%; margin: 16px 0; }
-              th, td { border: 1px solid #ccc; padding: 8px; }
-            </style>
-          </head>
-          <body>
-            ${htmlContent.innerHTML}
-          </body>
-          </html>
-        `);
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => {
-          printWindow.print();
-        }, 500);
-
-        UI.hideProgress();
-        UI.showToast('Ready to save/print as PDF!', 'success');
-      } catch (err) {
-        UI.hideProgress();
-        UI.showToast(`Error: ${err.message}`, 'error');
-      }
-    });
-  },
+  // Backward-compatible individual converters delegating to Hub
+  renderExcelToPdf(container) { this.renderOfficeToPdfHub(container, 'excel'); },
+  renderPptToPdf(container) { this.renderOfficeToPdfHub(container, 'ppt'); },
+  renderWordToPdf(container) { this.renderOfficeToPdfHub(container, 'word'); },
 
   // 3. HTML TO PDF
   renderHtmlToPdf(container) {

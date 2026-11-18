@@ -252,6 +252,32 @@ const PDF_TOOLS = [
 
   // =================== CONVERT TO PDF ===================
   {
+    id: 'office-to-pdf',
+    name: 'OFFICE to PDF',
+    short: 'All-in-one Office hub: Convert Word (.docx), Excel (.xlsx/.csv), PowerPoint (.pptx), HTML, or Text into PDF.',
+    desc: 'Universal Office importer: Drag & drop any Word, Excel, PowerPoint, CSV, HTML, or Text file and convert it into a clean, formatted PDF document with zero server transmission.',
+    icon: 'fa-file-circle-plus',
+    color: '#059669',
+    category: 'convert',
+    accept: '.docx,.doc,.xlsx,.xls,.csv,.pptx,.ppt,.html,.htm,.txt,.rtf,.md',
+    multiple: false,
+    minFiles: 1,
+    cta: 'Convert to PDF',
+    seoTitle: 'Convert Office to PDF Online Free — Word, Excel, PPT, HTML to PDF',
+    seoDesc: 'Universal Office to PDF converter. Convert Word (.docx), Excel (.xlsx/.csv), PowerPoint (.pptx), HTML, and Text into PDF files in your browser.',
+    howTo: [
+      'Upload any Word, Excel, PowerPoint, HTML, or Text document.',
+      'The hub automatically detects the document type and formats layout.',
+      'Click "Convert to PDF" and download your publication-ready document.'
+    ],
+    features: [
+      'Multi-format support (DOCX, XLSX, PPTX, HTML, TXT)',
+      'Automatic filetype detection & layout calibration',
+      'Client-side vector typography & tabular rendering',
+      '100% private in-browser memory execution'
+    ]
+  },
+  {
     id: 'jpg-to-pdf',
     name: 'JPG to PDF',
     short: 'Turn JPG and JPEG images into a single polished PDF.',
@@ -389,6 +415,58 @@ const PDF_TOOLS = [
   },
 
   // =================== CONVERT FROM PDF ===================
+  {
+    id: 'pdf-to-img',
+    name: 'PDF to IMAGE',
+    short: 'All-in-one Image hub: Extract pages into PNG, JPG, 16-bit TIFF, 16-bit DPX, 16-bit OpenEXR, JPEG 2000, or WebP.',
+    desc: 'Universal Image exporter: Convert PDF pages into standard or cinema/mastering grade formats (PNG, JPG, 16-bit TIFF, 16-bit DPX, 16-bit OpenEXR, JPEG 2000, WebP). Choose DPI up to 600 DPI and download as single images or ZIP.',
+    icon: 'fa-images',
+    color: '#4f46e5',
+    category: 'convert',
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    minFiles: 1,
+    cta: 'Extract Images',
+    seoTitle: 'Convert PDF to Images Online Free — PNG, JPG, 16-bit TIFF, EXR, DPX',
+    seoDesc: 'Multi-format PDF to Image converter: extract pages to PNG, JPG, 16-bit TIFF, 16-bit OpenEXR, 16-bit DPX, JPEG 2000, or WebP up to 600 DPI.',
+    howTo: [
+      'Upload your PDF document.',
+      'Select desired format (PNG, JPG, 16-bit TIFF, EXR, DPX, JP2, WebP) and render resolution.',
+      'Download individual pages or download all pages as a unified ZIP archive.'
+    ],
+    features: [
+      '7 image formats supported (PNG, JPG, TIFF, DPX, EXR, JP2, WebP)',
+      '16-bit depth archival & cinema mastering output',
+      'Selectable render scale from 72 DPI to 600 DPI',
+      'Download individual pages or complete ZIP archive'
+    ]
+  },
+  {
+    id: 'pdf-to-office',
+    name: 'PDF to OFFICE',
+    short: 'All-in-one Office export hub: Convert PDF into editable Word (.docx), Excel spreadsheets (.csv), PowerPoint (.pptx), HTML, or Text.',
+    desc: 'Universal Office exporter: Convert PDF documents into editable Microsoft Word (.docx), Excel spreadsheets (.csv), PowerPoint presentations (.pptx), HTML, or clean text in your browser.',
+    icon: 'fa-file-lines',
+    color: '#2563eb',
+    category: 'convert',
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    minFiles: 1,
+    cta: 'Convert to Office',
+    seoTitle: 'Convert PDF to Office Online Free — Word, Excel, PowerPoint, HTML',
+    seoDesc: 'Convert PDF to editable Word (.docx), Excel spreadsheets (.csv), PowerPoint (.pptx), HTML, or Text with privacy preservation.',
+    howTo: [
+      'Upload your PDF file.',
+      'Choose the target Office format (Word, Excel, PowerPoint, HTML, Text).',
+      'Click Convert & Download to receive your editable document.'
+    ],
+    features: [
+      'Export to Word (.docx), Excel (.csv), PPT (.pptx), HTML, TXT',
+      'Automatic table and text paragraph reconstruction',
+      'Private client-side processing with zero uploads',
+      'Fast and free with no file size limits'
+    ]
+  },
   {
     id: 'pdf-to-jpg',
     name: 'PDF to JPG',
