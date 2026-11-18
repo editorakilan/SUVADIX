@@ -51,7 +51,7 @@
 
   <!-- Top Clean Navigation -->
   <header class="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm transition-colors duration-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
       <div class="flex items-center gap-3 cursor-pointer group" onclick="window.app && window.app.closeToolWorkspace()">
         <img src="assets/suvadix-icon.png" alt="SUVADIX Logo" class="w-10 h-10 object-contain rounded-xl shadow-sm group-hover:scale-105 transition-transform duration-300">
         <div class="flex flex-col">
@@ -63,9 +63,41 @@
         </div>
       </div>
 
+      <!-- Header Navigation Bar -->
+      <nav class="hidden lg:flex items-center gap-1.5 text-xs font-bold text-slate-600">
+        <!-- All Tools Mega Dropdown Button -->
+        <div class="relative group" id="header-tools-dropdown-container">
+          <button id="header-all-tools-trigger" class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-slate-700 hover:text-indigo-600 hover:bg-slate-100 transition font-extrabold">
+            <i data-lucide="grid" class="w-4 h-4 text-indigo-600"></i>
+            <span>All Tools (42)</span>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 group-hover:rotate-180 transition-transform"></i>
+          </button>
+
+          <!-- Mega Menu Dropdown Pane -->
+          <div id="header-mega-menu" class="absolute top-full left-0 -ml-16 w-[860px] p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 grid grid-cols-4 gap-6 max-h-[80vh] overflow-y-auto">
+            <!-- Populated dynamically by app.js -->
+          </div>
+        </div>
+
+        <button onclick="window.app && window.app.openTool('merge')" class="px-2.5 py-1.5 rounded-lg hover:text-slate-900 hover:bg-slate-100 transition">Merge</button>
+        <button onclick="window.app && window.app.openTool('split')" class="px-2.5 py-1.5 rounded-lg hover:text-slate-900 hover:bg-slate-100 transition">Split</button>
+        <button onclick="window.app && window.app.openTool('compress')" class="px-2.5 py-1.5 rounded-lg hover:text-slate-900 hover:bg-slate-100 transition">Compress</button>
+        <button onclick="window.app && window.app.openTool('crop')" class="px-2.5 py-1.5 rounded-lg hover:text-slate-900 hover:bg-slate-100 transition">Crop</button>
+        <button onclick="window.app && window.app.openTool('redact')" class="px-2.5 py-1.5 rounded-lg text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 transition font-extrabold flex items-center gap-1">
+          <i data-lucide="eye-off" class="w-3 h-3 text-sky-600"></i>
+          <span>Redact</span>
+        </button>
+        <button onclick="window.app && window.app.openTool('sign')" class="px-2.5 py-1.5 rounded-lg hover:text-slate-900 hover:bg-slate-100 transition">Sign</button>
+        <button onclick="window.app && window.app.openTool('pdf-to-word')" class="px-2.5 py-1.5 rounded-lg hover:text-slate-900 hover:bg-slate-100 transition">PDF to Word</button>
+        <button onclick="window.app && window.app.openTool('all-in-one')" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold shadow-sm hover:shadow transition flex items-center gap-1.5">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+          <span>Studio</span>
+        </button>
+      </nav>
+
       <div class="flex items-center gap-3">
         <!-- Privacy Badge -->
-        <div class="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold shadow-sm">
+        <div class="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold shadow-sm">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>100% In-Browser Memory</span>
         </div>
@@ -84,35 +116,94 @@
           Every tool you need to work with <span class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">PDFs</span> in one place
         </h1>
         <p class="text-sm sm:text-base text-slate-600 max-w-xl mx-auto">
-          Private, fast, and 100% in-browser. All processing runs directly on your machine with zero remote server limits.
+          Private, fast, and 100% in-browser. All 42 professional tools run directly in your memory with zero server uploads and zero file size limits.
         </p>
 
         <!-- Search Bar with Glow -->
-        <div class="relative max-w-lg mx-auto pt-3">
+        <div class="relative max-w-xl mx-auto pt-3">
           <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
             <i data-lucide="search" class="w-4 h-4"></i>
           </div>
-          <input type="text" id="search-input" placeholder="Search 25+ PDF tools (merge, split, watermark, sign, ocr)..." class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 bg-white text-sm shadow-sm focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition">
+          <input type="text" id="search-input" placeholder="Search 42+ PDF tools (merge, split, crop, 16-bit tiff/exr/dpx, redact, sign, word, excel, ppt)..." class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 bg-white text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition">
+        </div>
+
+        <!-- Popular Trending Chips -->
+        <div class="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs">
+          <span class="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Trending:</span>
+          <button onclick="window.app && window.app.openTool('merge')" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-slate-400 font-semibold transition shadow-xs">Merge</button>
+          <button onclick="window.app && window.app.openTool('split')" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-slate-400 font-semibold transition shadow-xs">Split</button>
+          <button onclick="window.app && window.app.openTool('compress')" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-slate-400 font-semibold transition shadow-xs">Compress</button>
+          <button onclick="window.app && window.app.openTool('crop')" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-slate-400 font-semibold transition shadow-xs">Crop</button>
+          <button onclick="window.app && window.app.openTool('redact')" class="px-2.5 py-1 rounded-lg bg-sky-50 border border-sky-300 text-sky-800 hover:bg-sky-100 font-extrabold transition shadow-xs flex items-center gap-1">
+            <i data-lucide="eye-off" class="w-3 h-3 text-sky-600"></i>
+            <span>Redact</span>
+          </button>
+          <button onclick="window.app && window.app.openTool('sign')" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-slate-400 font-semibold transition shadow-xs">Sign</button>
+          <button onclick="window.app && window.app.openTool('pdf-to-word')" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-slate-400 font-semibold transition shadow-xs">PDF to Word</button>
+          <button onclick="window.app && window.app.openTool('pdf-to-tiff-16')" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-slate-400 font-semibold transition shadow-xs">16-bit TIFF</button>
+          <button onclick="window.app && window.app.openTool('all-in-one')" class="px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 font-extrabold transition shadow-xs flex items-center gap-1">
+            <i data-lucide="sparkles" class="w-3 h-3 text-indigo-600"></i>
+            <span>All-In-One Studio</span>
+          </button>
         </div>
       </div>
 
-      <!-- Category Filter Tabs with Sliding Pill Animation -->
+      <!-- Category Filter Tabs with Exact Count Badges -->
       <div class="flex justify-center">
         <div class="inline-flex items-center gap-1.5 p-1.5 rounded-2xl bg-white border border-slate-200 shadow-sm overflow-x-auto max-w-full scrollbar-none text-xs font-bold">
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap active" data-category="all">All Tools</button>
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap" data-category="organize">Organize</button>
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap" data-category="optimize">Optimize</button>
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap" data-category="convert-to">Convert To</button>
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap" data-category="convert-from">Convert From</button>
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap" data-category="edit">Edit PDF</button>
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap" data-category="security">Security</button>
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap" data-category="intelligence">Intelligence</button>
-          <button class="cat-filter-btn px-4 py-2 rounded-xl text-indigo-600 font-bold hover:text-indigo-800 transition whitespace-nowrap" data-category="all-in-one">All-In-One</button>
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap active flex items-center gap-1.5" data-category="all">
+            <span>All Tools</span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-700 font-extrabold">42</span>
+          </button>
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap flex items-center gap-1.5" data-category="organize">
+            <span>Organize</span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-orange-100 text-orange-700 font-extrabold">6</span>
+          </button>
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap flex items-center gap-1.5" data-category="optimize">
+            <span>Optimize</span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-700 font-extrabold">3</span>
+          </button>
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap flex items-center gap-1.5" data-category="convert-to">
+            <span>Convert To</span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-700 font-extrabold">7</span>
+          </button>
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap flex items-center gap-1.5" data-category="convert-from">
+            <span>Convert From</span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-indigo-100 text-indigo-700 font-extrabold">11</span>
+          </button>
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap flex items-center gap-1.5" data-category="edit">
+            <span>Edit PDF</span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-purple-100 text-purple-700 font-extrabold">6</span>
+          </button>
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap flex items-center gap-1.5" data-category="security">
+            <span>Security</span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-sky-100 text-sky-700 font-extrabold">4</span>
+          </button>
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap flex items-center gap-1.5" data-category="intelligence">
+            <span>Intelligence</span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-violet-100 text-violet-700 font-extrabold">4</span>
+          </button>
+          <button class="cat-filter-btn px-4 py-2 rounded-xl text-indigo-600 font-extrabold hover:text-indigo-800 transition whitespace-nowrap flex items-center gap-1.5" data-category="all-in-one">
+            <span>All-In-One</span>
+            <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-indigo-100 text-indigo-700 font-extrabold">1</span>
+          </button>
         </div>
+      </div>
+
+      <!-- Live Tool Counter & Reset Bar -->
+      <div class="flex items-center justify-between text-xs text-slate-500 font-semibold px-2">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>Showing <strong id="grid-count-current" class="text-slate-800">42</strong> of <strong class="text-slate-800">42</strong> tools</span>
+          <span id="grid-filter-label" class="hidden px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-bold"></span>
+        </div>
+        <button id="grid-reset-filter" class="hidden text-indigo-600 hover:text-indigo-800 font-bold hover:underline">
+          View all 42 tools &rarr;
+        </button>
       </div>
 
       <!-- Tools Grid -->
-      <div id="tools-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-2">
+      <div id="tools-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-1">
         <!-- Rendered dynamically by app.js -->
       </div>
 

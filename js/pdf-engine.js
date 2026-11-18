@@ -971,27 +971,60 @@ class PDFEngine {
   }
 
   /**
-   * Apply Redactions (blackout boxes) permanently
+   * Apply Redactions (blackout / whiteout boxes) permanently
    */
   async applyRedactions(arrayBuffer, redactionsList) {
-    const { PDFDocument, rgb } = PDFLib;
+    const { PDFDocument, rgb, StandardFonts } = PDFLib;
     const safeBuffer = this.cloneBuffer(arrayBuffer);
     const doc = await PDFDocument.load(safeBuffer, { ignoreEncryption: true });
     const pages = doc.getPages();
 
-    redactionsList.forEach(red => {
+    let font = null;
+    try {
+      font = await doc.embedFont(StandardFonts.HelveticaBold);
+    } catch (e) {
+      console.warn('Could not embed font for redaction label:', e);
+    }
+
+    for (const red of redactionsList) {
       const page = pages[red.pageIndex];
-      if (page) {
-        page.drawRectangle({
-          x: red.x,
-          y: red.y,
-          width: red.width,
-          height: red.height,
-          color: rgb(0, 0, 0),
-          borderColor: rgb(0, 0, 0)
-        });
+      if (!page) continue;
+
+      const { width: pWidth, height: pHeight } = page.getSize();
+      const rx = red.xRatio !== undefined ? red.xRatio * pWidth : (red.x !== undefined ? red.x : 0);
+      const ry = red.yRatio !== undefined ? (pHeight - (red.yRatio + red.hRatio) * pHeight) : (red.y !== undefined ? red.y : 0);
+      const rw = red.wRatio !== undefined ? red.wRatio * pWidth : (red.width !== undefined ? red.width : 50);
+      const rh = red.hRatio !== undefined ? red.hRatio * pHeight : (red.height !== undefined ? red.height : 20);
+
+      const isWhite = red.color === 'white';
+      const fillColor = isWhite ? rgb(1, 1, 1) : rgb(0, 0, 0);
+
+      page.drawRectangle({
+        x: Math.max(0, rx),
+        y: Math.max(0, ry),
+        width: Math.min(rw, pWidth - Math.max(0, rx)),
+        height: Math.min(rh, pHeight - Math.max(0, ry)),
+        color: fillColor,
+        borderColor: fillColor
+      });
+
+      if (red.text && font) {
+        try {
+          const fontSize = Math.min(11, Math.max(7, rh * 0.45));
+          const textWidth = font.widthOfTextAtSize(red.text, fontSize);
+          const textHeight = font.heightAtSize(fontSize);
+          page.drawText(red.text, {
+            x: rx + (rw - textWidth) / 2,
+            y: ry + (rh - textHeight) / 2 + 1,
+            size: fontSize,
+            font: font,
+            color: isWhite ? rgb(0, 0, 0) : rgb(1, 1, 1)
+          });
+        } catch (e) {
+          console.warn('Error drawing redaction text:', e);
+        }
       }
-    });
+    }
 
     const bytes = await doc.save({ useObjectStreams: false });
     return new Blob([bytes], { type: 'application/pdf' });

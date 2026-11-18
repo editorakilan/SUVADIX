@@ -450,9 +450,65 @@ class App {
 
   init() {
     this.initTheme();
+    this.populateHeaderMegaMenu();
     this.renderDashboard();
     this.bindEvents();
     window.pdfEngine.initPdfJs();
+  }
+
+  populateHeaderMegaMenu() {
+    const menu = document.getElementById('header-mega-menu');
+    if (!menu) return;
+
+    const categories = [
+      {
+        title: 'ORGANIZE & OPTIMIZE',
+        color: 'text-orange-600',
+        tools: TOOLS_CONFIG.filter(t => t.category === 'organize' || t.category === 'optimize')
+      },
+      {
+        title: 'CONVERT TO PDF',
+        color: 'text-amber-600',
+        tools: TOOLS_CONFIG.filter(t => t.category === 'convert-to')
+      },
+      {
+        title: 'CONVERT FROM PDF',
+        color: 'text-indigo-600',
+        tools: TOOLS_CONFIG.filter(t => t.category === 'convert-from')
+      },
+      {
+        title: 'EDIT, SECURITY & AI',
+        color: 'text-purple-600',
+        tools: TOOLS_CONFIG.filter(t => t.category === 'edit' || t.category === 'security' || t.category === 'intelligence')
+      }
+    ];
+
+    menu.innerHTML = categories.map(cat => `
+      <div class="space-y-3">
+        <h4 class="text-[10px] font-extrabold uppercase tracking-wider ${cat.color} pb-1 border-b border-slate-100 dark:border-slate-800">${cat.title} (${cat.tools.length})</h4>
+        <div class="space-y-1">
+          ${cat.tools.map(t => `
+            <button class="w-full text-left px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs font-semibold flex items-center gap-2 transition group" onclick="window.app && window.app.openTool('${t.id}')">
+              <i data-lucide="${t.icon}" class="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600 transition-colors flex-shrink-0"></i>
+              <span class="truncate">${t.name}</span>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `).join('') + `
+      <div class="col-span-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2 text-xs text-slate-500">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i>
+          <span>All 42 tools run 100% locally in browser memory with zero server uploads</span>
+        </div>
+        <button class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-extrabold text-xs shadow-sm hover:shadow transition flex items-center gap-1.5" onclick="window.app && window.app.openTool('all-in-one')">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+          <span>Launch All-In-One Studio</span>
+        </button>
+      </div>
+    `;
+
+    if (window.lucide) window.lucide.createIcons();
   }
 
   initTheme() {
@@ -512,6 +568,20 @@ class App {
         this.closeToolWorkspace();
       });
     }
+
+    // Reset filter button
+    const resetFilterBtn = document.getElementById('grid-reset-filter');
+    if (resetFilterBtn) {
+      resetFilterBtn.addEventListener('click', () => {
+        this.currentCategory = 'all';
+        this.searchQuery = '';
+        if (searchInput) searchInput.value = '';
+        categoryBtns.forEach(b => {
+          b.classList.toggle('active', b.dataset.category === 'all');
+        });
+        this.renderDashboard();
+      });
+    }
   }
 
   renderDashboard() {
@@ -530,6 +600,44 @@ class App {
         t.desc.toLowerCase().includes(this.searchQuery) ||
         t.categoryLabel.toLowerCase().includes(this.searchQuery)
       );
+    }
+
+    // Update live counter bar
+    const countCurrentEl = document.getElementById('grid-count-current');
+    const filterLabelEl = document.getElementById('grid-filter-label');
+    const resetBtn = document.getElementById('grid-reset-filter');
+
+    if (countCurrentEl) countCurrentEl.innerText = filtered.length;
+
+    const isFiltered = this.currentCategory !== 'all' || this.searchQuery;
+    if (filterLabelEl) {
+      if (isFiltered) {
+        let label = '';
+        if (this.currentCategory !== 'all') {
+          const catMap = {
+            'organize': 'Category: Organize',
+            'optimize': 'Category: Optimize',
+            'convert-to': 'Category: Convert To',
+            'convert-from': 'Category: Convert From',
+            'edit': 'Category: Edit PDF',
+            'security': 'Category: Security',
+            'intelligence': 'Category: Intelligence',
+            'all-in-one': 'Category: All-In-One'
+          };
+          label += catMap[this.currentCategory] || this.currentCategory;
+        }
+        if (this.searchQuery) {
+          label += (label ? ' • ' : '') + `Keyword: "${this.searchQuery}"`;
+        }
+        filterLabelEl.innerText = label;
+        filterLabelEl.classList.remove('hidden');
+      } else {
+        filterLabelEl.classList.add('hidden');
+      }
+    }
+
+    if (resetBtn) {
+      resetBtn.classList.toggle('hidden', !isFiltered);
     }
 
     if (filtered.length === 0) {

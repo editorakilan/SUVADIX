@@ -397,50 +397,115 @@ const SecurityTools = {
     });
   },
 
-  // 4. REDACT PDF (Blackout sensitive information)
+  // 4. REDACT PDF (Blackout sensitive information with interactive drag & resize)
   renderRedact(container) {
     let currentBuffer = null;
     let currentFile = null;
     let pdfDoc = null;
     let currentPageNum = 1;
-    let redactions = []; // [{ pageIndex, x, y, width, height }]
+    let totalPages = 1;
+    let redactions = []; // [{ id, pageIndex, xRatio, yRatio, wRatio, hRatio, color, text }]
+    let selectedBoxId = null;
+    let activeMode = 'black'; // 'black' | 'white' | 'text'
 
     container.innerHTML = `
-      <div class="max-w-4xl mx-auto space-y-6">
+      <div class="max-w-5xl mx-auto space-y-6">
         <div class="text-center space-y-2">
-          <h2 class="text-2xl font-bold tracking-tight">Redact PDF (Blackout Data)</h2>
-          <p class="text-sm text-slate-500">Permanently remove and blackout private, medical, or confidential data from your PDF.</p>
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+            <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+            <span>Interactive Visual Redaction</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">Redact PDF (Blackout & Sanitization)</h2>
+          <p class="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto">Permanently blackout confidential data, SSNs, medical records, or whiteout unwanted text. Fully client-side with adjustable, draggable, and resizable redaction boxes.</p>
         </div>
 
-        <div id="redact-dropzone" class="dropzone p-8 rounded-2xl text-center cursor-pointer hover:border-sky-500 transition">
+        <!-- Dropzone -->
+        <div id="redact-dropzone" class="dropzone p-8 rounded-2xl text-center cursor-pointer hover:border-sky-500 transition border-2 border-dashed border-slate-300 bg-white dark:bg-slate-800 shadow-sm">
           <input type="file" id="redact-file-input" accept="application/pdf" class="hidden">
           <div class="flex flex-col items-center gap-3">
-            <div class="w-16 h-16 rounded-full bg-sky-50 dark:bg-sky-950/40 text-sky-600 flex items-center justify-center">
+            <div class="w-16 h-16 rounded-2xl bg-sky-50 dark:bg-sky-950/40 text-sky-600 flex items-center justify-center shadow-inner">
               <i data-lucide="eye-off" class="w-8 h-8"></i>
             </div>
             <div>
-              <p class="font-semibold text-slate-700 dark:text-slate-200">Upload PDF to redact</p>
-              <p class="text-xs text-slate-400 mt-1" id="redact-file-status">Drag & drop or click</p>
+              <p class="font-bold text-slate-800 dark:text-slate-100">Choose PDF or drop it here to redact</p>
+              <p class="text-xs text-slate-400 mt-1" id="redact-file-status">Fast, private in-browser document sanitization</p>
             </div>
           </div>
         </div>
 
-        <div id="redact-workspace" class="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4 hidden">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500">Click & drag on the page below to draw blackout redaction boxes</span>
+        <!-- Interactive Workspace -->
+        <div id="redact-workspace" class="p-4 sm:p-6 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-lg space-y-5 hidden">
+          <!-- Control Toolbar -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-slate-700">
+            <!-- Mode Selector -->
+            <div class="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl text-xs font-bold">
+              <button id="redact-mode-black" class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm flex items-center gap-1.5 transition">
+                <span class="w-2.5 h-2.5 rounded-full bg-black"></span>
+                <span>Solid Blackout</span>
+              </button>
+              <button id="redact-mode-white" class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 flex items-center gap-1.5 transition">
+                <span class="w-2.5 h-2.5 rounded-full bg-white border border-slate-400"></span>
+                <span>Whiteout</span>
+              </button>
+              <button id="redact-mode-text" class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 flex items-center gap-1.5 transition">
+                <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span>
+                <span>REDACTED Stamp</span>
+              </button>
+            </div>
+
+            <!-- Page Navigation -->
+            <div class="flex items-center gap-2 text-xs font-bold bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-xl">
+              <button id="redact-prev-page" class="p-1 hover:bg-white dark:hover:bg-slate-800 rounded text-slate-600 transition disabled:opacity-40" title="Previous Page">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+              </button>
+              <span class="px-1 text-slate-700 dark:text-slate-200">
+                Page <span id="redact-page-num" class="text-sky-600 font-extrabold">1</span> of <span id="redact-page-total">1</span>
+              </span>
+              <button id="redact-next-page" class="p-1 hover:bg-white dark:hover:bg-slate-800 rounded text-slate-600 transition disabled:opacity-40" title="Next Page">
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+              </button>
+            </div>
+
+            <!-- Box Action Buttons -->
             <div class="flex items-center gap-2">
-              <button id="redact-clear-btn" class="px-3 py-1.5 text-xs text-red-500 hover:underline">Clear Boxes</button>
-              <button id="redact-run-btn" class="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-medium text-sm transition flex items-center gap-2">
-                <i data-lucide="check" class="w-4 h-4"></i>
-                <span>Apply Redactions & Download</span>
+              <button id="redact-add-box-btn" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-100 font-bold text-xs transition flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="plus-circle" class="w-4 h-4 text-sky-600"></i>
+                <span>+ Add Redaction Box</span>
+              </button>
+              <button id="redact-clear-page-btn" class="px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition">
+                Clear Page
+              </button>
+              <button id="redact-run-btn" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md shadow-sky-600/20 transition flex items-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Apply Redactions & Save</span>
               </button>
             </div>
           </div>
 
-          <div class="flex justify-center p-4 bg-slate-100 dark:bg-slate-900 rounded-xl overflow-auto">
-            <div class="relative inline-block border border-slate-300 shadow-md">
-              <canvas id="redact-page-canvas"></canvas>
-              <canvas id="redact-overlay-canvas" class="absolute inset-0 cursor-crosshair"></canvas>
+          <!-- Instructions & HUD banner -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-slate-500 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800 gap-2">
+            <div class="flex items-center gap-2">
+              <i data-lucide="info" class="w-4 h-4 text-sky-500 flex-shrink-0"></i>
+              <span><strong>Click & drag</strong> on the document to draw a redaction box, or click <strong>+ Add Redaction Box</strong>. Drag center to move, drag any corner handle to resize. Press <strong>Delete / Backspace</strong> or click <strong>&times;</strong> to remove.</span>
+            </div>
+            <div class="whitespace-nowrap font-bold text-slate-700 dark:text-slate-300">
+              <span id="redact-page-count-badge">0</span> box(es) on this page (<span id="redact-total-count-badge">0</span> total)
+            </div>
+          </div>
+
+          <!-- Viewer & Overlay Wrapper -->
+          <div class="flex justify-center p-3 sm:p-6 bg-slate-100 dark:bg-slate-900 rounded-2xl overflow-auto max-h-[75vh]">
+            <div id="redact-canvas-wrapper" class="relative inline-block border border-slate-300 dark:border-slate-700 shadow-2xl select-none bg-white" style="user-select: none;">
+              <!-- Document Page Canvas -->
+              <canvas id="redact-page-canvas" class="block"></canvas>
+              
+              <!-- Placed Redaction Boxes Container -->
+              <div id="redact-boxes-container" class="absolute inset-0 pointer-events-none"></div>
+
+              <!-- Interactive Drawing Surface for new boxes -->
+              <div id="redact-draw-surface" class="absolute inset-0 cursor-crosshair pointer-events-auto">
+                <div id="redact-draw-preview" class="absolute hidden border-2 border-dashed border-red-500 bg-red-500/25 pointer-events-none"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -449,80 +514,394 @@ const SecurityTools = {
 
     if (window.lucide) window.lucide.createIcons();
 
+    // DOM references
     const dropzone = container.querySelector('#redact-dropzone');
     const input = container.querySelector('#redact-file-input');
     const statusEl = container.querySelector('#redact-file-status');
     const workspace = container.querySelector('#redact-workspace');
+    const canvasWrapper = container.querySelector('#redact-canvas-wrapper');
     const pageCanvas = container.querySelector('#redact-page-canvas');
-    const overlayCanvas = container.querySelector('#redact-overlay-canvas');
-    const clearBtn = container.querySelector('#redact-clear-btn');
+    const boxesContainer = container.querySelector('#redact-boxes-container');
+    const drawSurface = container.querySelector('#redact-draw-surface');
+    const drawPreview = container.querySelector('#redact-draw-preview');
+
+    const prevPageBtn = container.querySelector('#redact-prev-page');
+    const nextPageBtn = container.querySelector('#redact-next-page');
+    const pageNumEl = container.querySelector('#redact-page-num');
+    const pageTotalEl = container.querySelector('#redact-page-total');
+    const pageCountBadge = container.querySelector('#redact-page-count-badge');
+    const totalCountBadge = container.querySelector('#redact-total-count-badge');
+
+    const modeBlackBtn = container.querySelector('#redact-mode-black');
+    const modeWhiteBtn = container.querySelector('#redact-mode-white');
+    const modeTextBtn = container.querySelector('#redact-mode-text');
+
+    const addBoxBtn = container.querySelector('#redact-add-box-btn');
+    const clearPageBtn = container.querySelector('#redact-clear-page-btn');
     const runBtn = container.querySelector('#redact-run-btn');
 
-    const overlayCtx = overlayCanvas.getContext('2d');
-    let isDrawing = false;
-    let startX = 0;
-    let startY = 0;
+    // Mode toggling
+    const setMode = (mode) => {
+      activeMode = mode;
+      [modeBlackBtn, modeWhiteBtn, modeTextBtn].forEach(b => {
+        b.className = 'px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 flex items-center gap-1.5 transition';
+      });
+      const activeBtn = mode === 'white' ? modeWhiteBtn : (mode === 'text' ? modeTextBtn : modeBlackBtn);
+      activeBtn.className = 'px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm flex items-center gap-1.5 transition font-extrabold';
+    };
 
-    const renderOverlayBoxes = () => {
-      overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-      redactions.forEach(box => {
-        overlayCtx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-        overlayCtx.fillRect(box.canvasX, box.canvasY, box.canvasW, box.canvasH);
+    modeBlackBtn.addEventListener('click', () => setMode('black'));
+    modeWhiteBtn.addEventListener('click', () => setMode('white'));
+    modeTextBtn.addEventListener('click', () => setMode('text'));
+
+    // Render active page
+    const renderPage = async (pageIdx) => {
+      if (!pdfDoc) return;
+      currentPageNum = pageIdx;
+      pageNumEl.innerText = currentPageNum;
+      pageTotalEl.innerText = totalPages;
+      prevPageBtn.disabled = currentPageNum <= 1;
+      nextPageBtn.disabled = currentPageNum >= totalPages;
+
+      // Render PDF page to canvas with optimal target width (750px max on desktop, fits mobile)
+      const targetWidth = Math.min(800, Math.max(480, window.innerWidth - 80));
+      await window.pdfEngine.renderPageToCanvas(pdfDoc, currentPageNum, pageCanvas, targetWidth);
+
+      // Align canvasWrapper dimensions exactly with canvas CSS dimensions
+      const cssW = pageCanvas.offsetWidth;
+      const cssH = pageCanvas.offsetHeight;
+      canvasWrapper.style.width = `${cssW}px`;
+      canvasWrapper.style.height = `${cssH}px`;
+
+      renderBoxes();
+    };
+
+    // Render all redaction boxes on current page
+    const renderBoxes = () => {
+      boxesContainer.innerHTML = '';
+      const pIdx = currentPageNum - 1;
+      const pageBoxes = redactions.filter(r => r.pageIndex === pIdx);
+
+      pageCountBadge.innerText = pageBoxes.length;
+      totalCountBadge.innerText = redactions.length;
+
+      pageBoxes.forEach((red) => {
+        const isSelected = selectedBoxId === red.id;
+        const box = document.createElement('div');
+        box.dataset.redId = red.id;
+        box.className = `absolute pointer-events-auto select-none group transition-shadow ${
+          isSelected ? 'ring-2 ring-red-500 shadow-2xl z-30' : 'z-20 hover:ring-1 hover:ring-sky-400'
+        }`;
+        box.style.left = `${red.xRatio * 100}%`;
+        box.style.top = `${red.yRatio * 100}%`;
+        box.style.width = `${red.wRatio * 100}%`;
+        box.style.height = `${red.hRatio * 100}%`;
+        box.style.cursor = 'move';
+
+        const isWhite = red.color === 'white';
+        const hasText = !!red.text;
+
+        box.innerHTML = `
+          <!-- Blackout / Whiteout Body -->
+          <div class="w-full h-full flex items-center justify-center overflow-hidden ${
+            isWhite 
+              ? 'bg-white border-2 border-dashed border-slate-400 shadow-sm' 
+              : 'bg-black text-white shadow-md'
+          }">
+            ${hasText ? `<span class="text-[10px] font-black tracking-wider px-1.5 py-0.5 rounded ${isWhite ? 'bg-slate-200 text-slate-900 border border-slate-300' : 'bg-red-600/90 text-white uppercase'} pointer-events-none select-none">${red.text}</span>` : ''}
+          </div>
+
+          <!-- Delete Button (Top-Right) -->
+          <button class="redact-box-del absolute -top-3 -right-3 w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-black flex items-center justify-center shadow-lg transition-transform hover:scale-110 z-40 cursor-pointer pointer-events-auto" title="Delete Redaction Box">
+            &times;
+          </button>
+
+          <!-- 8 Interactive Resize Handles (Visible when selected or hovered) -->
+          <div class="redact-resize-handle handle-nw absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-red-600 rounded-sm cursor-nwse-resize z-40 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+          <div class="redact-resize-handle handle-ne absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-red-600 rounded-sm cursor-nesw-resize z-40 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+          <div class="redact-resize-handle handle-sw absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-red-600 rounded-sm cursor-nesw-resize z-40 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+          <div class="redact-resize-handle handle-se absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-red-600 rounded-sm cursor-nwse-resize z-40 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+
+          <div class="redact-resize-handle handle-n absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-red-600 rounded-sm cursor-ns-resize z-40 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+          <div class="redact-resize-handle handle-s absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-red-600 rounded-sm cursor-ns-resize z-40 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+          <div class="redact-resize-handle handle-w absolute top-1/2 -left-1.5 -translate-y-1/2 w-2.5 h-4 bg-white border-2 border-red-600 rounded-sm cursor-ew-resize z-40 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+          <div class="redact-resize-handle handle-e absolute top-1/2 -right-1.5 -translate-y-1/2 w-2.5 h-4 bg-white border-2 border-red-600 rounded-sm cursor-ew-resize z-40 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+        `;
+
+        // Click to select
+        box.addEventListener('mousedown', (e) => {
+          if (e.target.closest('.redact-box-del') || e.target.classList.contains('redact-resize-handle')) return;
+          selectedBoxId = red.id;
+          renderBoxes();
+          initDragMove(e, box, red);
+        });
+
+        // Delete button
+        box.querySelector('.redact-box-del').addEventListener('click', (e) => {
+          e.stopPropagation();
+          redactions = redactions.filter(r => r.id !== red.id);
+          if (selectedBoxId === red.id) selectedBoxId = null;
+          renderBoxes();
+        });
+
+        // Resize handles
+        box.querySelectorAll('.redact-resize-handle').forEach(handle => {
+          handle.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            selectedBoxId = red.id;
+            let dir = 'se';
+            if (handle.classList.contains('handle-nw')) dir = 'nw';
+            else if (handle.classList.contains('handle-ne')) dir = 'ne';
+            else if (handle.classList.contains('handle-sw')) dir = 'sw';
+            else if (handle.classList.contains('handle-se')) dir = 'se';
+            else if (handle.classList.contains('handle-n')) dir = 'n';
+            else if (handle.classList.contains('handle-s')) dir = 's';
+            else if (handle.classList.contains('handle-w')) dir = 'w';
+            else if (handle.classList.contains('handle-e')) dir = 'e';
+
+            initResize(e, box, red, dir);
+          });
+        });
+
+        boxesContainer.appendChild(box);
       });
     };
 
-    overlayCanvas.addEventListener('mousedown', (e) => {
-      const rect = overlayCanvas.getBoundingClientRect();
-      startX = e.clientX - rect.left;
-      startY = e.clientY - rect.top;
+    // Move drag implementation
+    const initDragMove = (e, boxEl, redObj) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const parentW = canvasWrapper.clientWidth;
+      const parentH = canvasWrapper.clientHeight;
+      if (parentW === 0 || parentH === 0) return;
+
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const origLeft = boxEl.offsetLeft;
+      const origTop = boxEl.offsetTop;
+      const boxW = boxEl.offsetWidth;
+      const boxH = boxEl.offsetHeight;
+
+      const onMouseMove = (ev) => {
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+
+        const maxL = parentW - boxW;
+        const maxT = parentH - boxH;
+
+        const newL = Math.max(0, Math.min(maxL, origLeft + dx));
+        const newT = Math.max(0, Math.min(maxT, origTop + dy));
+
+        boxEl.style.left = `${newL}px`;
+        boxEl.style.top = `${newT}px`;
+      };
+
+      const onMouseUp = (ev) => {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+
+        // Commit updated ratios
+        redObj.xRatio = boxEl.offsetLeft / parentW;
+        redObj.yRatio = boxEl.offsetTop / parentH;
+        renderBoxes();
+      };
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    };
+
+    // Resize implementation for all 8 handles
+    const initResize = (e, boxEl, redObj, dir) => {
+      const parentW = canvasWrapper.clientWidth;
+      const parentH = canvasWrapper.clientHeight;
+      if (parentW === 0 || parentH === 0) return;
+
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const origL = boxEl.offsetLeft;
+      const origT = boxEl.offsetTop;
+      const origW = boxEl.offsetWidth;
+      const origH = boxEl.offsetHeight;
+      const minSize = 15;
+
+      const onMouseMove = (ev) => {
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+
+        let newL = origL;
+        let newT = origT;
+        let newW = origW;
+        let newH = origH;
+
+        if (dir.includes('e')) {
+          newW = Math.max(minSize, Math.min(parentW - origL, origW + dx));
+        }
+        if (dir.includes('s')) {
+          newH = Math.max(minSize, Math.min(parentH - origT, origH + dy));
+        }
+        if (dir.includes('w')) {
+          const maxDx = origW - minSize;
+          const clampedDx = Math.min(maxDx, Math.max(-origL, dx));
+          newL = origL + clampedDx;
+          newW = origW - clampedDx;
+        }
+        if (dir.includes('n')) {
+          const maxDy = origH - minSize;
+          const clampedDy = Math.min(maxDy, Math.max(-origT, dy));
+          newT = origT + clampedDy;
+          newH = origH - clampedDy;
+        }
+
+        boxEl.style.left = `${newL}px`;
+        boxEl.style.top = `${newT}px`;
+        boxEl.style.width = `${newW}px`;
+        boxEl.style.height = `${newH}px`;
+      };
+
+      const onMouseUp = () => {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+
+        redObj.xRatio = boxEl.offsetLeft / parentW;
+        redObj.yRatio = boxEl.offsetTop / parentH;
+        redObj.wRatio = boxEl.offsetWidth / parentW;
+        redObj.hRatio = boxEl.offsetHeight / parentH;
+        renderBoxes();
+      };
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    };
+
+    // Drawing a new box directly on the surface
+    let isDrawing = false;
+    let drawStartX = 0;
+    let drawStartY = 0;
+
+    drawSurface.addEventListener('mousedown', (e) => {
+      // If clicked on an existing box, ignore draw
+      if (e.target.closest('[data-red-id]')) return;
+
+      const rect = canvasWrapper.getBoundingClientRect();
+      drawStartX = e.clientX - rect.left;
+      drawStartY = e.clientY - rect.top;
       isDrawing = true;
+
+      drawPreview.style.left = `${drawStartX}px`;
+      drawPreview.style.top = `${drawStartY}px`;
+      drawPreview.style.width = '0px';
+      drawPreview.style.height = '0px';
+      drawPreview.classList.remove('hidden');
+
+      selectedBoxId = null;
+      renderBoxes();
     });
 
-    overlayCanvas.addEventListener('mousemove', (e) => {
+    window.addEventListener('mousemove', (e) => {
       if (!isDrawing) return;
-      const rect = overlayCanvas.getBoundingClientRect();
-      const curX = e.clientX - rect.left;
-      const curY = e.clientY - rect.top;
+      const rect = canvasWrapper.getBoundingClientRect();
+      const curX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+      const curY = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
 
-      renderOverlayBoxes();
-      overlayCtx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-      overlayCtx.strokeStyle = '#EF4444';
-      overlayCtx.lineWidth = 1;
-      overlayCtx.fillRect(startX, startY, curX - startX, curY - startY);
-      overlayCtx.strokeRect(startX, startY, curX - startX, curY - startY);
+      const boxL = Math.min(drawStartX, curX);
+      const boxT = Math.min(drawStartY, curY);
+      const boxW = Math.abs(curX - drawStartX);
+      const boxH = Math.abs(curY - drawStartY);
+
+      drawPreview.style.left = `${boxL}px`;
+      drawPreview.style.top = `${boxT}px`;
+      drawPreview.style.width = `${boxW}px`;
+      drawPreview.style.height = `${boxH}px`;
     });
 
-    overlayCanvas.addEventListener('mouseup', (e) => {
+    window.addEventListener('mouseup', (e) => {
       if (!isDrawing) return;
       isDrawing = false;
-      const rect = overlayCanvas.getBoundingClientRect();
-      const endX = e.clientX - rect.left;
-      const endY = e.clientY - rect.top;
+      drawPreview.classList.add('hidden');
 
-      const canvasX = Math.min(startX, endX);
-      const canvasY = Math.min(startY, endY);
-      const canvasW = Math.abs(endX - startX);
-      const canvasH = Math.abs(endY - startY);
+      const rect = canvasWrapper.getBoundingClientRect();
+      const curX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+      const curY = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
 
-      if (canvasW > 5 && canvasH > 5) {
-        // Map to PDF coordinate system (PDF origin is bottom-left)
-        const scale = pageCanvas.width / pageCanvas.offsetWidth;
+      const boxL = Math.min(drawStartX, curX);
+      const boxT = Math.min(drawStartY, curY);
+      const boxW = Math.abs(curX - drawStartX);
+      const boxH = Math.abs(curY - drawStartY);
+
+      // Only create if box has meaningful size (> 12px)
+      if (boxW > 12 && boxH > 10 && rect.width > 0 && rect.height > 0) {
+        const newId = Date.now() + Math.random();
         redactions.push({
-          pageIndex: 0,
-          canvasX,
-          canvasY,
-          canvasW,
-          canvasH
+          id: newId,
+          pageIndex: currentPageNum - 1,
+          xRatio: boxL / rect.width,
+          yRatio: boxT / rect.height,
+          wRatio: boxW / rect.width,
+          hRatio: boxH / rect.height,
+          color: activeMode === 'white' ? 'white' : 'black',
+          text: activeMode === 'text' ? 'REDACTED' : ''
         });
-        renderOverlayBoxes();
+        selectedBoxId = newId;
+        renderBoxes();
       }
     });
 
-    clearBtn.addEventListener('click', () => {
-      redactions = [];
-      renderOverlayBoxes();
+    // Delete selected box on keydown
+    const onKeyDown = (e) => {
+      if (!selectedBoxId) return;
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const activeEl = document.activeElement;
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) return;
+        redactions = redactions.filter(r => r.id !== selectedBoxId);
+        selectedBoxId = null;
+        renderBoxes();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+
+    // "+ Add Redaction Box" button (places at center of page)
+    addBoxBtn.addEventListener('click', () => {
+      const parentW = canvasWrapper.clientWidth || 600;
+      const parentH = canvasWrapper.clientHeight || 800;
+
+      const boxW = Math.min(parentW * 0.4, 220);
+      const boxH = Math.min(parentH * 0.08, 45);
+      const boxL = (parentW - boxW) / 2;
+      const boxT = (parentH - boxH) / 2;
+
+      const newId = Date.now() + Math.random();
+      redactions.push({
+        id: newId,
+        pageIndex: currentPageNum - 1,
+        xRatio: boxL / parentW,
+        yRatio: boxT / parentH,
+        wRatio: boxW / parentW,
+        hRatio: boxH / parentH,
+        color: activeMode === 'white' ? 'white' : 'black',
+        text: activeMode === 'text' ? 'REDACTED' : ''
+      });
+      selectedBoxId = newId;
+      renderBoxes();
     });
 
+    // Page navigation
+    prevPageBtn.addEventListener('click', () => {
+      if (currentPageNum > 1) renderPage(currentPageNum - 1);
+    });
+    nextPageBtn.addEventListener('click', () => {
+      if (currentPageNum < totalPages) renderPage(currentPageNum + 1);
+    });
+
+    // Clear Page
+    clearPageBtn.addEventListener('click', () => {
+      const pIdx = currentPageNum - 1;
+      redactions = redactions.filter(r => r.pageIndex !== pIdx);
+      selectedBoxId = null;
+      renderBoxes();
+    });
+
+    // Dropzone setup
     UI.setupDropzone(dropzone, input, async (files) => {
       if (files.length === 0) return;
       currentFile = files[0];
@@ -531,44 +910,34 @@ const SecurityTools = {
       workspace.classList.remove('hidden');
 
       pdfDoc = await window.pdfEngine.getPdfJsDoc(currentBuffer);
-      await window.pdfEngine.renderPageToCanvas(pdfDoc, 1, pageCanvas, 500);
-
-      overlayCanvas.width = pageCanvas.width;
-      overlayCanvas.height = pageCanvas.height;
-      overlayCanvas.style.width = `${pageCanvas.offsetWidth}px`;
-      overlayCanvas.style.height = `${pageCanvas.offsetHeight}px`;
+      totalPages = pdfDoc.numPages;
       redactions = [];
-      renderOverlayBoxes();
+      selectedBoxId = null;
+      await renderPage(1);
     });
 
+    // Apply & Save
     runBtn.addEventListener('click', async () => {
       if (!currentBuffer || redactions.length === 0) {
-        UI.showToast('Please draw at least one redaction box.', 'error');
+        UI.showToast('Please add or draw at least one redaction box.', 'error');
         return;
       }
 
       try {
-        UI.showProgress(0.3, 'Applying permanent redaction boxes...');
+        UI.showProgress(0.3, 'Permanently applying redactions and sanitizing PDF...');
         const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
-        const page = await pdfDoc.getPage(1);
-        const viewport = page.getViewport({ scale: 1.0 });
-        const scale = pageCanvas.width / viewport.width;
 
-        const pdfRedactions = redactions.map(r => ({
-          pageIndex: 0,
-          x: r.canvasX / scale,
-          y: viewport.height - (r.canvasY + r.canvasH) / scale,
-          width: r.canvasW / scale,
-          height: r.canvasH / scale
-        }));
+        const redactedBlob = await window.pdfEngine.applyRedactions(
+          window.pdfEngine.cloneBuffer(bufferToUse),
+          redactions
+        );
 
-        const redactedBlob = await window.pdfEngine.applyRedactions(window.pdfEngine.cloneBuffer(bufferToUse), pdfRedactions);
         UI.hideProgress();
         UI.celebrate();
-        UI.showToast('Redactions burned in permanently!', 'success');
+        UI.showToast(`Applied ${redactions.length} permanent redaction box(es)!`, 'success');
         UI.showResultPreview({
           title: 'Redacted PDF Ready',
-          subtitle: `${redactions.length} blacked-out area(s) burned in permanently. Inspect before saving`,
+          subtitle: `${redactions.length} sensitive area(s) blacked out / sanitized permanently. Zero data leakage.`,
           blob: redactedBlob,
           filename: `${currentFile.name.replace(/\.pdf$/i, '')}_redacted.pdf`
         });
