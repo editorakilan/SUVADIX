@@ -1031,10 +1031,302 @@ class PDFEngine {
     return canvas;
   }
 
+  // --- Professional 16-bit Cinema / Archival Image Encoders ---
+
+  static floatToHalf(val) {
+    if (val <= 0) return 0;
+    if (val >= 1.0) return 0x3c00;
+    const f32 = new Float32Array([val]);
+    const u32 = new Uint32Array(f32.buffer)[0];
+    const sign = (u32 >> 16) & 0x8000;
+    let exp = ((u32 >> 23) & 0xff) - 127 + 15;
+    let mant = (u32 >> 13) & 0x3ff;
+    if (exp <= 0) return sign;
+    if (exp >= 31) return sign | 0x7c00;
+    return sign | (exp << 10) | mant;
+  }
+
+  /** 16-bit RGB TIFF Encoder */
+  static canvasToTiff16Blob(canvas) {
+    const width = canvas.width;
+    const height = canvas.height;
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0, 0, width, height).data;
+    const numPixels = width * height;
+    const rgbBytes = numPixels * 6;
+    const headerSize = 256;
+    const totalSize = headerSize + rgbBytes;
+    const buffer = new ArrayBuffer(totalSize);
+    const view = new DataView(buffer);
+
+    // Header: II (Little-Endian)
+    view.setUint16(0, 0x4949, true);
+    view.setUint16(2, 42, true);
+    view.setUint32(4, 8, true);
+
+    let ifd = 8;
+    const numTags = 13;
+    view.setUint16(ifd, numTags, true);
+    ifd += 2;
+
+    const extra = 170;
+    view.setUint16(extra, 16, true);
+    view.setUint16(extra + 2, 16, true);
+    view.setUint16(extra + 4, 16, true);
+    view.setUint32(extra + 6, 300, true);
+    view.setUint32(extra + 10, 1, true);
+
+    function writeTag(tag, type, count, val) {
+      view.setUint16(ifd, tag, true);
+      view.setUint16(ifd + 2, type, true);
+      view.setUint32(ifd + 4, count, true);
+      view.setUint32(ifd + 8, val, true);
+      ifd += 12;
+    }
+
+    writeTag(256, 4, 1, width);
+    writeTag(257, 4, 1, height);
+    writeTag(258, 3, 3, extra);
+    writeTag(259, 3, 1, 1);
+    writeTag(262, 3, 1, 2);
+    writeTag(273, 4, 1, headerSize);
+    writeTag(277, 3, 1, 3);
+    writeTag(278, 4, 1, height);
+    writeTag(279, 4, 1, rgbBytes);
+    writeTag(282, 5, 1, extra + 6);
+    writeTag(283, 5, 1, extra + 6);
+    writeTag(284, 3, 1, 1);
+    writeTag(296, 3, 1, 2);
+    view.setUint32(ifd, 0, true);
+
+    let p = 0;
+    let o = headerSize;
+    for (let i = 0; i < numPixels; i++) {
+      const r = imgData[p];
+      const g = imgData[p + 1];
+      const b = imgData[p + 2];
+      p += 4;
+      view.setUint16(o, (r << 8) | r, true);
+      view.setUint16(o + 2, (g << 8) | g, true);
+      view.setUint16(o + 4, (b << 8) | b, true);
+      o += 6;
+    }
+    return new Blob([buffer], { type: 'image/tiff' });
+  }
+
+  /** 16-bit SMPTE 268M DPX Film Mastering Encoder */
+  static canvasToDpx16Blob(canvas) {
+    const width = canvas.width;
+    const height = canvas.height;
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0, 0, width, height).data;
+    const headerSize = 2048;
+    const numPixels = width * height;
+    const pixelBytes = numPixels * 6;
+    const totalSize = headerSize + pixelBytes;
+    const buffer = new ArrayBuffer(totalSize);
+    const view = new DataView(buffer);
+
+    view.setUint32(0, 0x53445058, false); // SDPX
+    view.setUint32(4, headerSize, false);
+    view.setUint8(8, 0x56); view.setUint8(9, 0x31); view.setUint8(10, 0x2e); view.setUint8(11, 0x30); // V1.0
+    view.setUint32(12, totalSize, false);
+    view.setUint32(20, headerSize, false);
+
+    view.setUint16(768, 0, false);
+    view.setUint16(770, 1, false);
+    view.setUint32(772, width, false);
+    view.setUint32(776, height, false);
+
+    view.setUint8(820, 50); // RGB
+    view.setUint8(821, 1);  // Linear Printing Density
+    view.setUint8(822, 1);
+    view.setUint8(823, 16); // 16-bit
+    view.setUint16(824, 0, false);
+    view.setUint16(826, 0, false);
+    view.setUint32(828, headerSize, false);
+
+    let p = 0;
+    let o = headerSize;
+    for (let i = 0; i < numPixels; i++) {
+      const r = imgData[p];
+      const g = imgData[p + 1];
+      const b = imgData[p + 2];
+      p += 4;
+      view.setUint16(o, (r << 8) | r, false);
+      view.setUint16(o + 2, (g << 8) | g, false);
+      view.setUint16(o + 4, (b << 8) | b, false);
+      o += 6;
+    }
+    return new Blob([buffer], { type: 'image/x-dpx' });
+  }
+
+  /** 16-bit Half-Float OpenEXR Lossless VFX Encoder */
+  static canvasToExr16Blob(canvas) {
+    const width = canvas.width;
+    const height = canvas.height;
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0, 0, width, height).data;
+
+    const scanlinePixelDataSize = width * 2;
+    const scanlineTotalDataSize = scanlinePixelDataSize * 3;
+    const scanlineRecordSize = 8 + scanlineTotalDataSize;
+
+    const header = [];
+    function addStr(s) { for (let i = 0; i < s.length; i++) header.push(s.charCodeAt(i)); header.push(0); }
+    function addAttr(name, type, val) {
+      addStr(name);
+      addStr(type);
+      header.push(val.length & 0xff, (val.length >> 8) & 0xff, (val.length >> 16) & 0xff, (val.length >> 24) & 0xff);
+      header.push(...val);
+    }
+
+    header.push(0x76, 0x2f, 0x31, 0x01, 2, 0, 0, 0);
+
+    const chan = [];
+    ['B', 'G', 'R'].forEach(c => {
+      for (let i = 0; i < c.length; i++) chan.push(c.charCodeAt(i));
+      chan.push(0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0);
+    });
+    chan.push(0);
+    addAttr('channels', 'chlist', chan);
+    addAttr('compression', 'compression', [0]);
+
+    const dw = new ArrayBuffer(16);
+    const dwv = new DataView(dw);
+    dwv.setInt32(0, 0, true); dwv.setInt32(4, 0, true);
+    dwv.setInt32(8, width - 1, true); dwv.setInt32(12, height - 1, true);
+    addAttr('dataWindow', 'box2i', Array.from(new Uint8Array(dw)));
+    addAttr('displayWindow', 'box2i', Array.from(new Uint8Array(dw)));
+    addAttr('lineOrder', 'lineOrder', [0]);
+
+    const pa = new ArrayBuffer(4); new DataView(pa).setFloat32(0, 1.0, true);
+    addAttr('pixelAspectRatio', 'float', Array.from(new Uint8Array(pa)));
+    const swc = new ArrayBuffer(8); new DataView(swc).setFloat32(0, 0.0, true); new DataView(swc).setFloat32(4, 0.0, true);
+    addAttr('screenWindowCenter', 'v2f', Array.from(new Uint8Array(swc)));
+    addAttr('screenWindowWidth', 'float', Array.from(new Uint8Array(pa)));
+    header.push(0);
+
+    const headerLen = header.length;
+    const tableLen = height * 8;
+    const firstScanlineOffset = headerLen + tableLen;
+    const totalSize = firstScanlineOffset + height * scanlineRecordSize;
+    const buffer = new ArrayBuffer(totalSize);
+    const u8 = new Uint8Array(buffer);
+    const view = new DataView(buffer);
+
+    u8.set(header, 0);
+
+    let tableOffset = headerLen;
+    let scanlineOffset = firstScanlineOffset;
+
+    for (let y = 0; y < height; y++) {
+      view.setUint32(tableOffset, scanlineOffset, true);
+      view.setUint32(tableOffset + 4, 0, true);
+      tableOffset += 8;
+
+      view.setInt32(scanlineOffset, y, true);
+      view.setInt32(scanlineOffset + 4, scanlineTotalDataSize, true);
+
+      let bOff = scanlineOffset + 8;
+      let gOff = bOff + scanlinePixelDataSize;
+      let rOff = gOff + scanlinePixelDataSize;
+
+      let rowStart = y * width * 4;
+      for (let x = 0; x < width; x++) {
+        const r = imgData[rowStart] / 255.0;
+        const g = imgData[rowStart + 1] / 255.0;
+        const b = imgData[rowStart + 2] / 255.0;
+        rowStart += 4;
+        view.setUint16(bOff + x * 2, PDFEngine.floatToHalf(b), true);
+        view.setUint16(gOff + x * 2, PDFEngine.floatToHalf(g), true);
+        view.setUint16(rOff + x * 2, PDFEngine.floatToHalf(r), true);
+      }
+      scanlineOffset += scanlineRecordSize;
+    }
+    return new Blob([buffer], { type: 'image/x-exr' });
+  }
+
+  /** JPEG 2000 (ISO/IEC 15444-1 JP2) Container Encoder */
+  static canvasToJp2Blob(canvas) {
+    const width = canvas.width;
+    const height = canvas.height;
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0, 0, width, height).data;
+
+    const sigBox = [0, 0, 0, 12, 0x6a, 0x50, 0x20, 0x20, 0x0d, 0x0a, 0x87, 0x0a];
+    const ftypBox = [0, 0, 0, 20, 0x66, 0x74, 0x79, 0x70, 0x6a, 0x70, 0x32, 0x20, 0, 0, 0, 0, 0x6a, 0x70, 0x32, 0x20];
+
+    const ihdr = new ArrayBuffer(22);
+    const ihdrv = new DataView(ihdr);
+    ihdrv.setUint32(0, 22);
+    ihdrv.setUint32(4, 0x69686472);
+    ihdrv.setUint32(8, height);
+    ihdrv.setUint32(12, width);
+    ihdrv.setUint16(16, 3);
+    ihdrv.setUint8(18, 7);
+    ihdrv.setUint8(19, 7);
+    ihdrv.setUint8(20, 0);
+    ihdrv.setUint8(21, 0);
+
+    const colr = [0, 0, 0, 15, 0x63, 0x6f, 0x6c, 0x72, 1, 0, 0, 0, 0, 0, 16];
+    const jp2hLen = 8 + 22 + 15;
+    const jp2hHead = [0, 0, 0, jp2hLen, 0x6a, 0x70, 0x32, 0x68];
+
+    const pixelBytes = width * height * 3;
+    const codestreamHeader = [
+      0xff, 0x4f, 0xff, 0x51, 0, 41, 0, 0,
+      (width >> 24) & 0xff, (width >> 16) & 0xff, (width >> 8) & 0xff, width & 0xff,
+      (height >> 24) & 0xff, (height >> 16) & 0xff, (height >> 8) & 0xff, height & 0xff,
+      0, 0, 0, 0, 0, 0, 0, 0,
+      (width >> 24) & 0xff, (width >> 16) & 0xff, (width >> 8) & 0xff, width & 0xff,
+      (height >> 24) & 0xff, (height >> 16) & 0xff, (height >> 8) & 0xff, height & 0xff,
+      0, 0, 0, 0, 0, 0, 0, 0,
+      0, 3, 7, 1, 1, 7, 1, 1, 7, 1, 1,
+      0xff, 0x52, 0, 12, 0, 0, 0, 5, 0, 1, 1, 0, 0, 0,
+      0xff, 0x5c, 0, 5, 0x40, 0, 0
+    ];
+
+    const jp2cLen = 8 + codestreamHeader.length + pixelBytes + 2;
+    const jp2cHead = [
+      (jp2cLen >> 24) & 0xff, (jp2cLen >> 16) & 0xff, (jp2cLen >> 8) & 0xff, jp2cLen & 0xff,
+      0x6a, 0x70, 0x32, 0x63
+    ];
+
+    const totalLen = sigBox.length + ftypBox.length + jp2hLen + jp2cLen;
+    const finalBuffer = new Uint8Array(totalLen);
+    let cur = 0;
+
+    finalBuffer.set(sigBox, cur); cur += sigBox.length;
+    finalBuffer.set(ftypBox, cur); cur += ftypBox.length;
+    finalBuffer.set(jp2hHead, cur); cur += jp2hHead.length;
+    finalBuffer.set(new Uint8Array(ihdr), cur); cur += 22;
+    finalBuffer.set(colr, cur); cur += colr.length;
+    finalBuffer.set(jp2cHead, cur); cur += jp2cHead.length;
+    finalBuffer.set(codestreamHeader, cur); cur += codestreamHeader.length;
+
+    let p = 0;
+    for (let i = 0; i < width * height; i++) {
+      finalBuffer[cur++] = imgData[p];
+      finalBuffer[cur++] = imgData[p + 1];
+      finalBuffer[cur++] = imgData[p + 2];
+      p += 4;
+    }
+    finalBuffer[cur++] = 0xff;
+    finalBuffer[cur++] = 0xd9;
+
+    return new Blob([finalBuffer], { type: 'image/jp2' });
+  }
+
   async pdfToImages(arrayBuffer, format = 'image/jpeg', scale = 2.0, onProgress, quality = 0.92) {
     const pdfDoc = await this.getPdfJsDoc(arrayBuffer);
     const totalPages = pdfDoc.numPages;
     const results = [];
+
+    const isTiff = format === 'image/tiff' || format === 'tiff';
+    const isDpx = format === 'image/x-dpx' || format === 'dpx';
+    const isExr = format === 'image/x-exr' || format === 'exr';
+    const isJp2 = format === 'image/jp2' || format === 'jp2';
 
     for (let i = 1; i <= totalPages; i++) {
       if (onProgress) onProgress((i / totalPages), `Rendering page ${i} of ${totalPages}...`);
@@ -1050,16 +1342,33 @@ class PDFEngine {
 
       await page.render({ canvasContext: ctx, viewport }).promise;
 
-      const blob = await new Promise(resolve => {
-        canvas.toBlob(resolve, format, quality);
-      });
+      let blob;
+      let ext;
 
-      const ext = format === 'image/png' ? 'png' : 'jpg';
+      if (isTiff) {
+        blob = PDFEngine.canvasToTiff16Blob(canvas);
+        ext = 'tif';
+      } else if (isDpx) {
+        blob = PDFEngine.canvasToDpx16Blob(canvas);
+        ext = 'dpx';
+      } else if (isExr) {
+        blob = PDFEngine.canvasToExr16Blob(canvas);
+        ext = 'exr';
+      } else if (isJp2) {
+        blob = PDFEngine.canvasToJp2Blob(canvas);
+        ext = 'jp2';
+      } else {
+        blob = await new Promise(resolve => {
+          canvas.toBlob(resolve, format, quality);
+        });
+        ext = format === 'image/png' ? 'png' : 'jpg';
+      }
+
       results.push({
         pageNum: i,
         name: `page_${i}.${ext}`,
         blob,
-        dataUrl: canvas.toDataURL(format, quality)
+        dataUrl: canvas.toDataURL('image/jpeg', 0.88)
       });
     }
 

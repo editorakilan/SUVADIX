@@ -236,7 +236,186 @@ const ConvertToTools = {
     });
   },
 
-  // 2. WORD TO PDF (.docx)
+  // 2. PNG TO PDF
+  renderPngToPdf(container) {
+    this.renderJpgToPdf(container);
+    const h2 = container.querySelector('h2');
+    if (h2) h2.innerText = 'Convert PNG to PDF';
+    const sub = container.querySelector('p.text-sm');
+    if (sub) sub.innerText = 'Convert PNG image files into clean, professional PDF documents.';
+  },
+
+  // 3. EXCEL TO PDF (.xlsx / .csv)
+  renderExcelToPdf(container) {
+    let currentFile = null;
+
+    container.innerHTML = `
+      <div class="max-w-3xl mx-auto space-y-6">
+        <div class="text-center space-y-2">
+          <h2 class="text-2xl font-bold tracking-tight">Convert Excel (.xlsx / .csv) to PDF</h2>
+          <p class="text-sm text-slate-500">Transform spreadsheet tables and CSV records into beautifully formatted PDF documents.</p>
+        </div>
+
+        <div id="excel-dropzone" class="dropzone p-8 rounded-2xl text-center cursor-pointer hover:border-emerald-500 transition">
+          <input type="file" id="excel-file-input" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden">
+          <div class="flex flex-col items-center gap-3">
+            <div class="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
+              <i data-lucide="sheet" class="w-8 h-8"></i>
+            </div>
+            <div>
+              <p class="font-semibold text-slate-700 dark:text-slate-200">Upload Excel or CSV file</p>
+              <p class="text-xs text-slate-400 mt-1" id="excel-file-status">Drag & drop or click to browse</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="excel-workspace" class="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4 hidden">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100" id="excel-filename">spreadsheet.xlsx</h3>
+              <p class="text-xs text-slate-400" id="excel-filesize">0 KB</p>
+            </div>
+            <button id="excel-run-btn" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm transition shadow-sm flex items-center gap-2">
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              <span>Convert to PDF</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (window.lucide) window.lucide.createIcons();
+
+    const dropzone = container.querySelector('#excel-dropzone');
+    const input = container.querySelector('#excel-file-input');
+    const statusEl = container.querySelector('#excel-file-status');
+    const workspace = container.querySelector('#excel-workspace');
+    const filenameEl = container.querySelector('#excel-filename');
+    const filesizeEl = container.querySelector('#excel-filesize');
+    const runBtn = container.querySelector('#excel-run-btn');
+
+    UI.setupDropzone(dropzone, input, async (files) => {
+      if (files.length === 0) return;
+      currentFile = files[0];
+      statusEl.innerText = `${currentFile.name} (${window.pdfEngine.formatBytes(currentFile.size)})`;
+      filenameEl.innerText = currentFile.name;
+      filesizeEl.innerText = window.pdfEngine.formatBytes(currentFile.size);
+      workspace.classList.remove('hidden');
+    });
+
+    runBtn.addEventListener('click', async () => {
+      if (!currentFile) return;
+      try {
+        UI.showProgress(0.2, 'Converting spreadsheet to PDF tables...');
+        const res = await window.PDFEngine['excel-to-pdf']([currentFile], {}, (pct, status) => {
+          UI.showProgress(pct, status);
+        });
+        UI.hideProgress();
+        UI.celebrate();
+        UI.showToast('Spreadsheet converted to PDF!', 'success');
+        if (res && res.files && res.files.length) {
+          const pdfBlob = res.files[0].blob;
+          const pdfName = res.files[0].name;
+          UI.showResultPreview({
+            title: 'Spreadsheet PDF Ready',
+            subtitle: `Converted table pages successfully. Ready to review and save.`,
+            blob: pdfBlob,
+            filename: pdfName
+          });
+        }
+      } catch (err) {
+        UI.hideProgress();
+        UI.showToast(`Error: ${err.message}`, 'error');
+      }
+    });
+  },
+
+  // 4. POWERPOINT TO PDF (.pptx)
+  renderPptToPdf(container) {
+    let currentFile = null;
+
+    container.innerHTML = `
+      <div class="max-w-3xl mx-auto space-y-6">
+        <div class="text-center space-y-2">
+          <h2 class="text-2xl font-bold tracking-tight">Convert PowerPoint (.pptx) to PDF</h2>
+          <p class="text-sm text-slate-500">Render PowerPoint presentation slides into crisp widescreen PDF slides.</p>
+        </div>
+
+        <div id="ppt-dropzone" class="dropzone p-8 rounded-2xl text-center cursor-pointer hover:border-orange-500 transition">
+          <input type="file" id="ppt-file-input" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" class="hidden">
+          <div class="flex flex-col items-center gap-3">
+            <div class="w-16 h-16 rounded-full bg-orange-50 dark:bg-orange-950/40 text-orange-600 flex items-center justify-center">
+              <i data-lucide="presentation" class="w-8 h-8"></i>
+            </div>
+            <div>
+              <p class="font-semibold text-slate-700 dark:text-slate-200">Upload PowerPoint (.pptx) file</p>
+              <p class="text-xs text-slate-400 mt-1" id="ppt-file-status">Drag & drop or click to browse</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="ppt-workspace" class="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4 hidden">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100" id="ppt-filename">presentation.pptx</h3>
+              <p class="text-xs text-slate-400" id="ppt-filesize">0 KB</p>
+            </div>
+            <button id="ppt-run-btn" class="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold text-sm transition shadow-sm flex items-center gap-2">
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              <span>Convert to PDF</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (window.lucide) window.lucide.createIcons();
+
+    const dropzone = container.querySelector('#ppt-dropzone');
+    const input = container.querySelector('#ppt-file-input');
+    const statusEl = container.querySelector('#ppt-file-status');
+    const workspace = container.querySelector('#ppt-workspace');
+    const filenameEl = container.querySelector('#ppt-filename');
+    const filesizeEl = container.querySelector('#ppt-filesize');
+    const runBtn = container.querySelector('#ppt-run-btn');
+
+    UI.setupDropzone(dropzone, input, async (files) => {
+      if (files.length === 0) return;
+      currentFile = files[0];
+      statusEl.innerText = `${currentFile.name} (${window.pdfEngine.formatBytes(currentFile.size)})`;
+      filenameEl.innerText = currentFile.name;
+      filesizeEl.innerText = window.pdfEngine.formatBytes(currentFile.size);
+      workspace.classList.remove('hidden');
+    });
+
+    runBtn.addEventListener('click', async () => {
+      if (!currentFile) return;
+      try {
+        UI.showProgress(0.2, 'Extracting slides & compiling PDF...');
+        const res = await window.PDFEngine['ppt-to-pdf']([currentFile], {}, (pct, status) => {
+          UI.showProgress(pct, status);
+        });
+        UI.hideProgress();
+        UI.celebrate();
+        UI.showToast('Presentation converted to PDF!', 'success');
+        if (res && res.files && res.files.length) {
+          const pdfBlob = res.files[0].blob;
+          const pdfName = res.files[0].name;
+          UI.showResultPreview({
+            title: 'Presentation PDF Ready',
+            subtitle: `Converted 16:9 presentation slides successfully.`,
+            blob: pdfBlob,
+            filename: pdfName
+          });
+        }
+      } catch (err) {
+        UI.hideProgress();
+        UI.showToast(`Error: ${err.message}`, 'error');
+      }
+    });
+  },
+
+  // 5. WORD TO PDF (.docx)
   renderWordToPdf(container) {
     let docxFile = null;
 

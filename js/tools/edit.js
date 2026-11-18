@@ -2514,6 +2514,179 @@ const EditTools = {
         UI.showToast(`Error: ${err.message}`, 'error');
       }
     });
+  },
+
+  // 6. CROP PDF (Margins & Page Bounds)
+  renderCrop(container) {
+    let currentBuffer = null;
+    let currentFile = null;
+    let pdfDoc = null;
+
+    container.innerHTML = `
+      <div class="max-w-4xl mx-auto space-y-6">
+        <div class="text-center space-y-2">
+          <h2 class="text-2xl font-bold tracking-tight">Crop PDF Margins & Page Bounds</h2>
+          <p class="text-sm text-slate-500">Trim unwanted outer margins, white borders, or adjust document boundary boxes.</p>
+        </div>
+
+        <div id="crop-dropzone" class="dropzone p-8 rounded-2xl text-center cursor-pointer hover:border-indigo-500 transition">
+          <input type="file" id="crop-file-input" accept="application/pdf" class="hidden">
+          <div class="flex flex-col items-center gap-3">
+            <div class="w-16 h-16 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center">
+              <i data-lucide="crop" class="w-8 h-8"></i>
+            </div>
+            <div>
+              <p class="font-semibold text-slate-700 dark:text-slate-200">Upload PDF to Crop</p>
+              <p class="text-xs text-slate-400 mt-1" id="crop-file-status">Drag & drop or click to browse</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="crop-workspace" class="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-6 hidden">
+          <div class="space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-600 dark:text-slate-300">Preset:</span>
+                <button type="button" class="crop-preset-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-200" data-top="20" data-bottom="20" data-left="20" data-right="20">Standard Trim (20 pt)</button>
+                <button type="button" class="crop-preset-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600" data-top="36" data-bottom="36" data-left="36" data-right="36">Aggressive (0.5 in / 36 pt)</button>
+                <button type="button" class="crop-preset-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600" data-top="10" data-bottom="10" data-left="10" data-right="10">Light Border (10 pt)</button>
+              </div>
+              <button id="crop-run-btn" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition shadow-sm flex items-center gap-2">
+                <i data-lucide="scissors" class="w-4 h-4"></i>
+                <span>Crop All Pages & Save</span>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-500 mb-1">Top Margin (pt)</label>
+                <input type="number" id="crop-top" value="20" min="0" max="300" class="w-full px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-500 mb-1">Bottom Margin (pt)</label>
+                <input type="number" id="crop-bottom" value="20" min="0" max="300" class="w-full px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-500 mb-1">Left Margin (pt)</label>
+                <input type="number" id="crop-left" value="20" min="0" max="300" class="w-full px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-500 mb-1">Right Margin (pt)</label>
+                <input type="number" id="crop-right" value="20" min="0" max="300" class="w-full px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col items-center justify-center p-4 bg-slate-100 dark:bg-slate-900 rounded-xl overflow-auto">
+            <p class="text-xs text-slate-400 mb-2 font-medium">Page 1 Crop Preview</p>
+            <div class="relative inline-block border border-slate-300 shadow-md">
+              <canvas id="crop-preview-canvas"></canvas>
+              <div id="crop-box-overlay" class="absolute border-2 border-dashed border-red-500 pointer-events-none transition-all"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (window.lucide) window.lucide.createIcons();
+
+    const dropzone = container.querySelector('#crop-dropzone');
+    const input = container.querySelector('#crop-file-input');
+    const statusEl = container.querySelector('#crop-file-status');
+    const workspace = container.querySelector('#crop-workspace');
+    const runBtn = container.querySelector('#crop-run-btn');
+    const topInp = container.querySelector('#crop-top');
+    const btmInp = container.querySelector('#crop-bottom');
+    const lftInp = container.querySelector('#crop-left');
+    const rgtInp = container.querySelector('#crop-right');
+    const canvas = container.querySelector('#crop-preview-canvas');
+    const overlay = container.querySelector('#crop-box-overlay');
+    const presetBtns = container.querySelectorAll('.crop-preset-btn');
+
+    let pageW = 600;
+    let pageH = 800;
+    let scaleRatio = 1;
+
+    const updateOverlay = () => {
+      const top = parseFloat(topInp.value) || 0;
+      const btm = parseFloat(btmInp.value) || 0;
+      const lft = parseFloat(lftInp.value) || 0;
+      const rgt = parseFloat(rgtInp.value) || 0;
+
+      const topPx = top * scaleRatio;
+      const btmPx = btm * scaleRatio;
+      const lftPx = lft * scaleRatio;
+      const rgtPx = rgt * scaleRatio;
+
+      overlay.style.top = `${topPx}px`;
+      overlay.style.left = `${lftPx}px`;
+      overlay.style.width = `${Math.max(10, canvas.width - lftPx - rgtPx)}px`;
+      overlay.style.height = `${Math.max(10, canvas.height - topPx - btmPx)}px`;
+    };
+
+    [topInp, btmInp, lftInp, rgtInp].forEach(inp => inp.addEventListener('input', updateOverlay));
+
+    presetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        presetBtns.forEach(b => {
+          b.className = 'crop-preset-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600';
+        });
+        btn.className = 'crop-preset-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-200';
+        topInp.value = btn.dataset.top;
+        btmInp.value = btn.dataset.bottom;
+        lftInp.value = btn.dataset.left;
+        rgtInp.value = btn.dataset.right;
+        updateOverlay();
+      });
+    });
+
+    UI.setupDropzone(dropzone, input, async (files) => {
+      if (files.length === 0) return;
+      currentFile = files[0];
+      statusEl.innerText = `${currentFile.name} (${window.pdfEngine.formatBytes(currentFile.size)})`;
+      currentBuffer = await window.pdfEngine.readFileAsArrayBuffer(currentFile);
+      workspace.classList.remove('hidden');
+
+      try {
+        pdfDoc = await window.pdfEngine.getPdfJsDoc(window.pdfEngine.cloneBuffer(currentBuffer));
+        const page = await pdfDoc.getPage(1);
+        const viewport = page.getViewport({ scale: 1.0 });
+        pageW = viewport.width;
+        pageH = viewport.height;
+        const targetW = Math.min(500, window.innerWidth - 80);
+        scaleRatio = targetW / pageW;
+        await window.pdfEngine.renderPageToCanvas(pdfDoc, 1, canvas, targetW);
+        updateOverlay();
+      } catch (err) {
+        UI.showToast(`Error rendering page: ${err.message}`, 'error');
+      }
+    });
+
+    runBtn.addEventListener('click', async () => {
+      if (!currentBuffer && !currentFile) return;
+      const top = parseFloat(topInp.value) || 0;
+      const bottom = parseFloat(btmInp.value) || 0;
+      const left = parseFloat(lftInp.value) || 0;
+      const right = parseFloat(rgtInp.value) || 0;
+
+      try {
+        UI.showProgress(0.2, 'Cropping page margins across document...');
+        const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
+        const croppedBlob = await window.pdfEngine.cropPages(window.pdfEngine.cloneBuffer(bufferToUse), { top, bottom, left, right });
+        UI.hideProgress();
+        UI.celebrate();
+        UI.showToast('Margins cropped successfully!', 'success');
+        UI.showResultPreview({
+          title: 'Cropped PDF Ready',
+          subtitle: `Trimmed margins: Top ${top}pt, Bottom ${bottom}pt, Left ${left}pt, Right ${right}pt`,
+          blob: croppedBlob,
+          filename: `${currentFile.name.replace(/\.pdf$/i, '')}_cropped.pdf`
+        });
+      } catch (err) {
+        UI.hideProgress();
+        UI.showToast(`Error: ${err.message}`, 'error');
+      }
+    });
   }
 };
 

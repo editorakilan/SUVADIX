@@ -110,14 +110,44 @@ const TOOLS_CONFIG = [
     handler: (c) => ConvertToTools.renderJpgToPdf(c)
   },
   {
+    id: 'png-to-pdf',
+    name: 'PNG to PDF',
+    category: 'convert-to',
+    categoryLabel: 'CONVERT TO PDF',
+    desc: 'Convert transparent PNG images and graphics into high-resolution PDF pages.',
+    icon: 'file-image',
+    color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900',
+    handler: (c) => ConvertToTools.renderPngToPdf(c)
+  },
+  {
     id: 'word-to-pdf',
-    name: 'WORD to PDF',
+    name: 'Word to PDF',
     category: 'convert-to',
     categoryLabel: 'CONVERT TO PDF',
     desc: 'Parse Word (.docx) documents and export to clean printable PDF format.',
     icon: 'file-type-2',
     color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900',
     handler: (c) => ConvertToTools.renderWordToPdf(c)
+  },
+  {
+    id: 'excel-to-pdf',
+    name: 'Excel to PDF',
+    category: 'convert-to',
+    categoryLabel: 'CONVERT TO PDF',
+    desc: 'Convert Excel spreadsheets (.xlsx, .csv) into clean tabular PDF documents.',
+    icon: 'sheet',
+    color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900',
+    handler: (c) => ConvertToTools.renderExcelToPdf(c)
+  },
+  {
+    id: 'ppt-to-pdf',
+    name: 'PPT to PDF',
+    category: 'convert-to',
+    categoryLabel: 'CONVERT TO PDF',
+    desc: 'Render PowerPoint (.pptx) slides into crisp 16:9 widescreen presentation PDFs.',
+    icon: 'presentation',
+    color: 'text-orange-600 bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-900',
+    handler: (c) => ConvertToTools.renderPptToPdf(c)
   },
   {
     id: 'html-to-pdf',
@@ -158,8 +188,88 @@ const TOOLS_CONFIG = [
     categoryLabel: 'CONVERT FROM PDF',
     desc: 'Extract transparent, crisp PNG graphics from each PDF page.',
     icon: 'file-image',
-    color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-900',
+    color: 'text-cyan-600 bg-cyan-50 dark:bg-cyan-950/40 border-cyan-200 dark:border-cyan-900',
     handler: (c) => ConvertFromTools.renderPdfToPng(c)
+  },
+  {
+    id: 'pdf-to-tiff-16',
+    name: 'PDF to TIFF 16bit',
+    category: 'convert-from',
+    categoryLabel: 'CONVERT FROM PDF',
+    desc: 'Mastering & archival grade 16-bit uncompressed RGB TIFF export per page.',
+    icon: 'layers',
+    color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900',
+    handler: (c) => ConvertFromTools.renderPdfToTiff16(c)
+  },
+  {
+    id: 'pdf-to-dpx-16',
+    name: 'PDF to DPX 16bit',
+    category: 'convert-from',
+    categoryLabel: 'CONVERT FROM PDF',
+    desc: 'SMPTE 268M standard 16-bit digital film and cinema VFX mastering rasterization.',
+    icon: 'film',
+    color: 'text-rose-600 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900',
+    handler: (c) => ConvertFromTools.renderPdfToDpx16(c)
+  },
+  {
+    id: 'pdf-to-exr-16',
+    name: 'PDF to EXR 16bit lossless',
+    category: 'convert-from',
+    categoryLabel: 'CONVERT FROM PDF',
+    desc: 'Academy / ILM standard 16-bit half-float OpenEXR lossless VFX rasterization.',
+    icon: 'sparkles',
+    color: 'text-violet-600 bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-900',
+    handler: (c) => ConvertFromTools.renderPdfToExr16(c)
+  },
+  {
+    id: 'pdf-to-jp2',
+    name: 'PDF to Jpeg2000',
+    category: 'convert-from',
+    categoryLabel: 'CONVERT FROM PDF',
+    desc: 'ISO/IEC 15444-1 compliant high-compression JP2 / JPEG 2000 container export.',
+    icon: 'image',
+    color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900',
+    handler: (c) => ConvertFromTools.renderPdfToJp2(c)
+  },
+  {
+    id: 'pdf-to-word',
+    name: 'PDF to Word',
+    category: 'convert-from',
+    categoryLabel: 'CONVERT FROM PDF',
+    desc: 'Convert PDF paragraphs and content into an editable Microsoft Word (.docx) document.',
+    icon: 'file-text',
+    color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900',
+    handler: (c) => ConvertFromTools.renderPdfToWord(c)
+  },
+  {
+    id: 'pdf-to-excel',
+    name: 'PDF to EXCEL',
+    category: 'convert-from',
+    categoryLabel: 'CONVERT FROM PDF',
+    desc: 'Extract tables, rows, and financial data from PDF into Excel / CSV format.',
+    icon: 'sheet',
+    color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900',
+    handler: (c) => ConvertFromTools.renderPdfToExcel(c)
+  },
+  {
+    id: 'pdf-to-ppt',
+    name: 'PDF to PPT',
+    category: 'convert-from',
+    categoryLabel: 'CONVERT FROM PDF',
+    desc: 'Transform PDF pages into a presentation slide deck for PowerPoint (.pptx).',
+    icon: 'presentation',
+    color: 'text-orange-600 bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-900',
+    handler: (c) => ConvertFromTools.renderPdfToPpt(c)
+  },
+  {
+    id: 'pdf-to-html',
+    name: 'PDF to HTML',
+    category: 'convert-from',
+    categoryLabel: 'CONVERT FROM PDF',
+    desc: 'Convert PDF layout and text into a responsive HTML webpage with clean styling.',
+    icon: 'code-2',
+    color: 'text-teal-600 bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-900',
+    handler: (c) => ConvertFromTools.renderPdfToHtml(c)
   },
   {
     id: 'pdf-to-text',
@@ -182,6 +292,16 @@ const TOOLS_CONFIG = [
     icon: 'rotate-cw',
     color: 'text-purple-600 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-900',
     handler: (c) => EditTools.renderRotate(c)
+  },
+  {
+    id: 'crop',
+    name: 'Crop PDF',
+    category: 'edit',
+    categoryLabel: 'EDIT PDF',
+    desc: 'Crop margins, trim white borders, and adjust page boundary boxes with live preview.',
+    icon: 'crop',
+    color: 'text-purple-600 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-900',
+    handler: (c) => EditTools.renderCrop(c)
   },
   {
     id: 'page-numbers',

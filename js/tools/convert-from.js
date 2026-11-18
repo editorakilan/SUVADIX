@@ -14,6 +14,46 @@ const ConvertFromTools = {
     this._renderImageConverter(container, 'image/png', 'PNG', 'cyan');
   },
 
+  // 3. PDF TO 16-BIT TIFF
+  renderPdfToTiff16(container) {
+    this._renderImageConverter(container, 'image/tiff', '16-bit TIFF', 'amber');
+  },
+
+  // 4. PDF TO 16-BIT DPX (SMPTE 268M)
+  renderPdfToDpx16(container) {
+    this._renderImageConverter(container, 'image/x-dpx', '16-bit DPX (SMPTE 268M)', 'rose');
+  },
+
+  // 5. PDF TO 16-BIT OPENEXR LOSSLESS
+  renderPdfToExr16(container) {
+    this._renderImageConverter(container, 'image/x-exr', '16-bit OpenEXR Lossless', 'violet');
+  },
+
+  // 6. PDF TO JPEG 2000
+  renderPdfToJp2(container) {
+    this._renderImageConverter(container, 'image/jp2', 'JPEG 2000 (JP2)', 'blue');
+  },
+
+  // 7. PDF TO WORD (.DOCX)
+  renderPdfToWord(container) {
+    this._renderDocConverter(container, 'word', 'Word Document (.docx)', 'file-text', 'blue');
+  },
+
+  // 8. PDF TO EXCEL (.CSV / .XLSX)
+  renderPdfToExcel(container) {
+    this._renderDocConverter(container, 'excel', 'Excel Spreadsheet (.csv)', 'sheet', 'emerald');
+  },
+
+  // 9. PDF TO POWERPOINT (.PPTX)
+  renderPdfToPpt(container) {
+    this._renderDocConverter(container, 'ppt', 'PowerPoint Presentation (.pptx)', 'presentation', 'orange');
+  },
+
+  // 10. PDF TO HTML (.HTML)
+  renderPdfToHtml(container) {
+    this._renderDocConverter(container, 'html', 'HTML Webpage (.html)', 'code-2', 'teal');
+  },
+
   _renderImageConverter(container, mimeType, formatLabel, colorScheme) {
     let currentBuffer = null;
     let currentFile = null;
@@ -150,7 +190,106 @@ const ConvertFromTools = {
     });
   },
 
-  // 3. PDF TO TEXT
+  _renderDocConverter(container, type, formatLabel, iconName, colorScheme) {
+    let currentBuffer = null;
+    let currentFile = null;
+
+    container.innerHTML = `
+      <div class="max-w-3xl mx-auto space-y-6">
+        <div class="text-center space-y-2">
+          <h2 class="text-2xl font-bold tracking-tight">Convert PDF to ${formatLabel}</h2>
+          <p class="text-sm text-slate-500">Transform your PDF into an editable ${formatLabel} directly in your browser with zero server transmission.</p>
+        </div>
+
+        <div id="doc-conv-dropzone" class="dropzone p-8 rounded-2xl text-center cursor-pointer hover:border-${colorScheme}-500 transition">
+          <input type="file" id="doc-conv-file-input" accept="application/pdf" class="hidden">
+          <div class="flex flex-col items-center gap-3">
+            <div class="w-16 h-16 rounded-full bg-${colorScheme}-50 dark:bg-${colorScheme}-950/40 text-${colorScheme}-600 flex items-center justify-center">
+              <i data-lucide="${iconName}" class="w-8 h-8"></i>
+            </div>
+            <div>
+              <p class="font-semibold text-slate-700 dark:text-slate-200">Upload PDF to convert to ${formatLabel}</p>
+              <p class="text-xs text-slate-400 mt-1" id="doc-conv-file-status">Drag & drop or click to browse</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="doc-conv-workspace" class="p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-4 hidden">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100" id="doc-conv-filename">document.pdf</h3>
+              <p class="text-xs text-slate-400" id="doc-conv-filesize">0 KB</p>
+            </div>
+            <button id="doc-conv-run-btn" class="px-6 py-2.5 rounded-xl bg-${colorScheme}-600 hover:bg-${colorScheme}-700 text-white font-semibold text-sm transition shadow-sm flex items-center gap-2">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>Convert & Download ${formatLabel}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (window.lucide) window.lucide.createIcons();
+
+    const dropzone = container.querySelector('#doc-conv-dropzone');
+    const input = container.querySelector('#doc-conv-file-input');
+    const statusEl = container.querySelector('#doc-conv-file-status');
+    const workspace = container.querySelector('#doc-conv-workspace');
+    const filenameEl = container.querySelector('#doc-conv-filename');
+    const filesizeEl = container.querySelector('#doc-conv-filesize');
+    const runBtn = container.querySelector('#doc-conv-run-btn');
+
+    UI.setupDropzone(dropzone, input, async (files) => {
+      if (files.length === 0) return;
+      currentFile = files[0];
+      statusEl.innerText = `${currentFile.name} (${window.pdfEngine.formatBytes(currentFile.size)})`;
+      filenameEl.innerText = currentFile.name;
+      filesizeEl.innerText = window.pdfEngine.formatBytes(currentFile.size);
+      currentBuffer = await window.pdfEngine.readFileAsArrayBuffer(currentFile);
+      workspace.classList.remove('hidden');
+    });
+
+    runBtn.addEventListener('click', async () => {
+      if (!currentBuffer && !currentFile) return;
+      try {
+        UI.showProgress(0.2, `Converting PDF to ${formatLabel}...`);
+        let res;
+        const handlerName = `pdf-to-${type}`;
+        if (window.PDFEngine && window.PDFEngine[handlerName]) {
+          res = await window.PDFEngine[handlerName]([currentFile], {}, (pct, status) => {
+            UI.showProgress(pct, status);
+          });
+        } else if (type === 'html') {
+          const text = await window.pdfEngine.extractText(window.pdfEngine.cloneBuffer(currentBuffer));
+          const htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${currentFile.name}</title><style>body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.6;white-space:pre-wrap;}</style></head><body>${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>`;
+          const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+          res = { files: [{ name: `${currentFile.name.replace(/\.pdf$/i, '')}.html`, blob }] };
+        } else {
+          throw new Error(`Converter for ${type} is not available.`);
+        }
+
+        UI.hideProgress();
+        UI.celebrate();
+        UI.showToast(`Converted to ${formatLabel} successfully!`, 'success');
+
+        if (res && res.files && res.files.length) {
+          const fileToDownload = res.files[0];
+          window.pdfEngine.downloadBlob(fileToDownload.blob, fileToDownload.name);
+          UI.showResultPreview({
+            title: `${formatLabel} Ready`,
+            subtitle: `Converted privately on your device. Downloaded: ${fileToDownload.name}`,
+            blob: fileToDownload.blob,
+            filename: fileToDownload.name
+          });
+        }
+      } catch (err) {
+        UI.hideProgress();
+        UI.showToast(`Error: ${err.message}`, 'error');
+      }
+    });
+  },
+
+  // 11. PDF TO TEXT
   renderPdfToText(container) {
     let currentBuffer = null;
     let currentFile = null;

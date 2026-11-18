@@ -8,10 +8,10 @@
 [![GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-success.svg)](https://editorakilan.github.io/SUVADIX/)
 [![Zero Server](https://img.shields.io/badge/Privacy-100%25%20In--Browser-emerald.svg)](#privacy-guarantee)
 [![PWA Ready](https://img.shields.io/badge/PWA-Installable-purple.svg)](manifest.json)
-[![Tools](https://img.shields.io/badge/Tools-38%2B%20Complete%20Suite-indigo.svg)](#complete-feature-matrix-38-tools)
+[![Tools](https://img.shields.io/badge/Tools-42%2B%20Complete%20Suite-indigo.svg)](#complete-feature-matrix-42-tools)
 
 > **A high-performance, private, 100% client-side document & PDF suite.**  
-> Featuring **38+ complete tools** plus an **All-In-One Studio** running entirely inside your browser via WebAssembly and JavaScript (`pdf-lib`, `pdf.js`, `tesseract.js`, `jszip`). Zero files are ever uploaded to external servers — ensuring complete privacy, zero latency queues, and unlimited free use.
+> Featuring **42+ complete tools** plus an **All-In-One Studio** running entirely inside your browser via WebAssembly and JavaScript (`pdf-lib`, `pdf.js`, `tesseract.js`, `jszip`). Zero files are ever uploaded to external servers — ensuring complete privacy, zero latency queues, and unlimited free use.
 
 🌐 **Live Website:** [https://editorakilan.github.io/SUVADIX/](https://editorakilan.github.io/SUVADIX/)
 
@@ -67,11 +67,16 @@ Located prominently on the dashboard and at `tool.html?t=all-in-one`, the **SUVA
 | Tool | Dedicated URL | Description |
 |---|---|---|
 | **PDF to JPG** | `tool.html?t=pdf-to-jpg` | Convert PDF pages into high-resolution JPG images (+ ZIP archive) |
-| **PDF to PNG** | `tool.html?t=pdf-to-png` | Export lossless PNG images at 150 or 300 DPI |
-| **PDF to Text** | `tool.html?t=pdf-to-text` | Extract all selectable text into a clean `.txt` document |
+| **PDF to PNG** | `tool.html?t=pdf-to-png` | Export lossless PNG images at 150 or 300 DPI with transparency |
+| **PDF to TIFF 16bit** | `tool.html?t=pdf-to-tiff-16` | Mastering & archival 16-bit uncompressed RGB TIFF export |
+| **PDF to DPX 16bit** | `tool.html?t=pdf-to-dpx-16` | SMPTE 268M standard 16-bit cinema film rasterization |
+| **PDF to EXR 16bit** | `tool.html?t=pdf-to-exr-16` | Academy / ILM 16-bit half-float OpenEXR lossless VFX export |
+| **PDF to Jpeg2000** | `tool.html?t=pdf-to-jp2` | ISO/IEC 15444-1 JP2 / JPEG 2000 container export |
 | **PDF to Word** | `tool.html?t=pdf-to-word` | Extract structured paragraphs and headings into editable `.docx` files |
 | **PDF to Excel** | `tool.html?t=pdf-to-excel` | Automatically detect and extract tabular data into `.csv` spreadsheets |
 | **PDF to PowerPoint** | `tool.html?t=pdf-to-ppt` | Export presentation slides into `.pptx` presentations |
+| **PDF to HTML** | `tool.html?t=pdf-to-html` | Convert PDF layout and text into clean, responsive HTML webpages |
+| **PDF to Text** | `tool.html?t=pdf-to-text` | Extract all selectable text into a clean `.txt` document |
 | **PDF to PDF/A** | `tool.html?t=pdf-to-pdfa` | Embed ISO 19005-1 archival standard metadata and color profiles |
 
 ### 5. Edit & Security
