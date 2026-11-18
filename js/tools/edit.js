@@ -1112,12 +1112,17 @@ const EditTools = {
             <div class="flex-1 min-h-[460px] flex items-center justify-center p-4 bg-slate-100 rounded-xl overflow-auto">
               <div id="sig-page-wrapper" class="relative border border-slate-300 shadow-md bg-white select-none">
                 <canvas id="sig-pdf-canvas" class="block"></canvas>
-                <!-- Draggable Signature Box -->
-                <div id="sig-drag-box" class="absolute cursor-move border-2 border-purple-600 bg-purple-600/10 rounded flex items-center justify-center shadow-lg transition-colors group" style="left: 60px; top: 280px; width: 180px; height: 65px;">
-                  <img id="sig-box-img" class="max-w-full max-h-full object-contain pointer-events-none">
+                <!-- Draggable Signature Box with Touch & Mouse Support -->
+                <div id="sig-drag-box" class="absolute cursor-move border-2 border-purple-600 bg-purple-600/10 rounded flex items-center justify-center shadow-lg transition-colors group select-none touch-none" style="left: 60px; top: 280px; width: 180px; height: 65px; touch-action: none;">
+                  <img id="sig-box-img" class="max-w-full max-h-full object-contain pointer-events-none select-none">
                   <span id="sig-box-placeholder" class="text-[10px] font-bold text-purple-700 uppercase tracking-wider pointer-events-none hidden">Signature Box</span>
-                  <div class="absolute -top-3 -right-3 w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-[10px] shadow pointer-events-none">
-                    <i data-lucide="move" class="w-3 h-3"></i>
+                  <!-- Drag Indicator Badge -->
+                  <div class="absolute -top-3.5 -left-3.5 w-7 h-7 bg-purple-600 text-white rounded-full flex items-center justify-center text-[10px] shadow pointer-events-none">
+                    <i data-lucide="move" class="w-3.5 h-3.5"></i>
+                  </div>
+                  <!-- Corner Resize Handle (Touch & Mouse friendly) -->
+                  <div id="sig-resize-handle" class="absolute -bottom-3.5 -right-3.5 w-7 h-7 bg-white border-2 border-purple-600 text-purple-700 rounded-full flex items-center justify-center shadow-md cursor-se-resize touch-none z-30 hover:scale-110 active:scale-95 transition-transform" title="Drag to resize signature">
+                    <i data-lucide="maximize-2" class="w-3.5 h-3.5 rotate-90 pointer-events-none"></i>
                   </div>
                 </div>
               </div>
@@ -1280,39 +1285,57 @@ const EditTools = {
       const rect = padCanvas.getBoundingClientRect();
       const scaleX = padCanvas.width / rect.width;
       const scaleY = padCanvas.height / rect.height;
+      let clientX = e.clientX;
+      let clientY = e.clientY;
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else if (e.changedTouches && e.changedTouches.length > 0) {
+        clientX = e.changedTouches[0].clientX;
+        clientY = e.changedTouches[0].clientY;
+      }
       return {
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
       };
     };
 
-    padCanvas.addEventListener('mousedown', (e) => {
+    const startPadDraw = (e) => {
+      if (e.cancelable) e.preventDefault();
       isDrawing = true;
       const pos = getPadPos(e);
       padCtx.beginPath();
       padCtx.moveTo(pos.x, pos.y);
       padCtx.strokeStyle = strokeColor;
-    });
+    };
 
-    padCanvas.addEventListener('mousemove', (e) => {
+    const movePadDraw = (e) => {
       if (!isDrawing) return;
+      if (e.cancelable) e.preventDefault();
       const pos = getPadPos(e);
       padCtx.lineTo(pos.x, pos.y);
       padCtx.stroke();
-    });
+    };
 
-    ['mouseup', 'mouseleave'].forEach(ev => {
-      padCanvas.addEventListener(ev, () => {
-        if (isDrawing) {
-          isDrawing = false;
-          if (signatureMode === 'draw') {
-            signatureDataUrl = padCanvas.toDataURL('image/png');
-            boxImg.src = signatureDataUrl;
-            boxPlaceholder.classList.add('hidden');
-          }
+    const stopPadDraw = () => {
+      if (isDrawing) {
+        isDrawing = false;
+        if (signatureMode === 'draw') {
+          signatureDataUrl = padCanvas.toDataURL('image/png');
+          boxImg.src = signatureDataUrl;
+          boxPlaceholder.classList.add('hidden');
         }
-      });
-    });
+      }
+    };
+
+    padCanvas.addEventListener('mousedown', startPadDraw);
+    padCanvas.addEventListener('mousemove', movePadDraw);
+    ['mouseup', 'mouseleave'].forEach(ev => padCanvas.addEventListener(ev, stopPadDraw));
+
+    // Touch events for mobile drawing
+    padCanvas.addEventListener('touchstart', startPadDraw, { passive: false });
+    padCanvas.addEventListener('touchmove', movePadDraw, { passive: false });
+    ['touchend', 'touchcancel'].forEach(ev => padCanvas.addEventListener(ev, stopPadDraw));
 
     drawClear.addEventListener('click', () => {
       padCtx.clearRect(0, 0, padCanvas.width, padCanvas.height);
@@ -1401,47 +1424,114 @@ const EditTools = {
       }
     });
 
-    // Drag-and-drop box logic on the PDF canvas wrapper
+    // Touch & Mouse Drag & Resize Logic for Signature Box
     let isDraggingBox = false;
+    let isResizingBox = false;
     let dragStartX = 0;
     let dragStartY = 0;
+    let resizeStartX = 0;
+    let resizeStartW = 0;
 
-    dragBox.addEventListener('mousedown', (e) => {
-      isDraggingBox = true;
-      dragStartX = e.clientX - dragBox.offsetLeft;
-      dragStartY = e.clientY - dragBox.offsetTop;
-      e.preventDefault();
-    });
+    const resizeHandle = container.querySelector('#sig-resize-handle');
 
-    window.addEventListener('mousemove', (e) => {
-      if (!isDraggingBox) return;
-      const dims = getCanvasCssDimensions();
-      let newLeft = e.clientX - dragStartX;
-      let newTop = e.clientY - dragStartY;
-
-      // Bound strictly within visible page preview
-      newLeft = Math.max(0, Math.min(newLeft, dims.w - dragBox.offsetWidth));
-      newTop = Math.max(0, Math.min(newTop, dims.h - dragBox.offsetHeight));
-
-      dragBox.style.left = `${newLeft}px`;
-      dragBox.style.top = `${newTop}px`;
-
-      // Immediately record normalized position
-      currentNorm.xRatio = newLeft / dims.w;
-      currentNorm.yRatio = newTop / dims.h;
-      currentNorm.wRatio = dragBox.offsetWidth / dims.w;
-      currentNorm.hRatio = dragBox.offsetHeight / dims.h;
-
-      // If current page is placed, update its saved normalized position
-      const pageIdx = currentPageNum - 1;
-      if (placedSignatures.has(pageIdx)) {
-        placedSignatures.set(pageIdx, { ...currentNorm });
+    const getBoxPointerPos = (e) => {
+      if (e.touches && e.touches.length > 0) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
       }
-    });
+      if (e.changedTouches && e.changedTouches.length > 0) {
+        return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+      }
+      return { x: e.clientX, y: e.clientY };
+    };
 
-    window.addEventListener('mouseup', () => {
+    const startBoxDrag = (e) => {
+      if (e.target.closest('#sig-resize-handle')) return;
+      isDraggingBox = true;
+      const pt = getBoxPointerPos(e);
+      dragStartX = pt.x - dragBox.offsetLeft;
+      dragStartY = pt.y - dragBox.offsetTop;
+      if (e.cancelable) e.preventDefault();
+    };
+
+    const startBoxResize = (e) => {
+      e.stopPropagation();
+      isResizingBox = true;
+      const pt = getBoxPointerPos(e);
+      resizeStartX = pt.x;
+      resizeStartW = dragBox.offsetWidth;
+      if (e.cancelable) e.preventDefault();
+    };
+
+    const onBoxPointerMove = (e) => {
+      if (isDraggingBox) {
+        if (e.cancelable) e.preventDefault();
+        const pt = getBoxPointerPos(e);
+        const dims = getCanvasCssDimensions();
+        let newLeft = pt.x - dragStartX;
+        let newTop = pt.y - dragStartY;
+
+        // Bound strictly within visible page preview
+        newLeft = Math.max(0, Math.min(newLeft, dims.w - dragBox.offsetWidth));
+        newTop = Math.max(0, Math.min(newTop, dims.h - dragBox.offsetHeight));
+
+        dragBox.style.left = `${newLeft}px`;
+        dragBox.style.top = `${newTop}px`;
+
+        // Record normalized position
+        currentNorm.xRatio = newLeft / dims.w;
+        currentNorm.yRatio = newTop / dims.h;
+        currentNorm.wRatio = dragBox.offsetWidth / dims.w;
+        currentNorm.hRatio = dragBox.offsetHeight / dims.h;
+
+        const pageIdx = currentPageNum - 1;
+        if (placedSignatures.has(pageIdx)) {
+          placedSignatures.set(pageIdx, { ...currentNorm });
+        }
+      } else if (isResizingBox) {
+        if (e.cancelable) e.preventDefault();
+        const pt = getBoxPointerPos(e);
+        const dx = pt.x - resizeStartX;
+        const dims = getCanvasCssDimensions();
+
+        const minW = 50;
+        const maxW = Math.max(minW, dims.w - dragBox.offsetLeft);
+        const newW = Math.round(Math.max(minW, Math.min(maxW, resizeStartW + dx)));
+        const newH = Math.round(newW * 0.36);
+
+        dragBox.style.width = `${newW}px`;
+        dragBox.style.height = `${newH}px`;
+        if (sizeSlider) sizeSlider.value = newW;
+        if (sizeVal) sizeVal.innerText = `${newW} px`;
+
+        currentNorm.wRatio = newW / dims.w;
+        currentNorm.hRatio = newH / dims.h;
+
+        const pageIdx = currentPageNum - 1;
+        if (placedSignatures.has(pageIdx)) {
+          placedSignatures.set(pageIdx, { ...currentNorm });
+        }
+      }
+    };
+
+    const onBoxPointerEnd = () => {
       isDraggingBox = false;
-    });
+      isResizingBox = false;
+    };
+
+    dragBox.addEventListener('mousedown', startBoxDrag);
+    dragBox.addEventListener('touchstart', startBoxDrag, { passive: false });
+
+    if (resizeHandle) {
+      resizeHandle.addEventListener('mousedown', startBoxResize);
+      resizeHandle.addEventListener('touchstart', startBoxResize, { passive: false });
+    }
+
+    window.addEventListener('mousemove', onBoxPointerMove);
+    window.addEventListener('touchmove', onBoxPointerMove, { passive: false });
+
+    window.addEventListener('mouseup', onBoxPointerEnd);
+    window.addEventListener('touchend', onBoxPointerEnd);
+    window.addEventListener('touchcancel', onBoxPointerEnd);
 
     // Helper: update page placement toggle button & summary
     const updatePlacementUI = () => {

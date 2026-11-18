@@ -689,9 +689,10 @@ const SecurityTools = {
         const isSelected = selectedBoxId === red.id;
         const box = document.createElement('div');
         box.dataset.redId = red.id;
-        box.className = `absolute pointer-events-auto select-none group transition-shadow ${
+        box.className = `redact-box absolute pointer-events-auto select-none group transition-shadow touch-none ${
           isSelected ? 'ring-2 ring-red-500 shadow-2xl z-40' : 'z-30 hover:ring-2 hover:ring-sky-400'
         }`;
+        box.style.touchAction = 'none';
         box.style.left = `${red.xRatio * 100}%`;
         box.style.top = `${red.yRatio * 100}%`;
         box.style.width = `${red.wRatio * 100}%`;
@@ -702,13 +703,13 @@ const SecurityTools = {
         const hasText = !!red.text;
 
         box.innerHTML = `
-          <!-- Top Drag Bar Handle -->
-          <div class="redact-drag-header absolute -top-5 left-0 right-0 h-5 bg-slate-900/95 text-white rounded-t flex items-center justify-between px-1.5 cursor-grab active:cursor-grabbing text-[9px] font-bold select-none z-40 shadow transition ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}">
-            <div class="flex items-center gap-1 pointer-events-none text-sky-400">
-              <i data-lucide="grip-horizontal" class="w-3 h-3"></i>
-              <span class="tracking-wide uppercase text-[8px]">Drag to Move</span>
+          <!-- Top Drag Bar Handle (Touch & Mouse friendly 24px target) -->
+          <div class="redact-drag-header absolute -top-6 left-0 right-0 h-6 bg-slate-900/95 text-white rounded-t flex items-center justify-between px-2 cursor-grab active:cursor-grabbing text-[10px] font-bold select-none z-40 shadow transition touch-none ${isSelected ? 'opacity-100' : 'opacity-85 group-hover:opacity-100'}" style="touch-action: none;">
+            <div class="flex items-center gap-1.5 pointer-events-none text-sky-400">
+              <i data-lucide="grip-horizontal" class="w-3.5 h-3.5"></i>
+              <span class="tracking-wide uppercase text-[9px]">Drag to Move</span>
             </div>
-            <div class="text-[8px] font-mono text-slate-300 pointer-events-none">X:${Math.round(red.xRatio * 100)}% Y:${Math.round(red.yRatio * 100)}%</div>
+            <div class="text-[9px] font-mono text-slate-300 pointer-events-none">X:${Math.round(red.xRatio * 100)}% Y:${Math.round(red.yRatio * 100)}%</div>
           </div>
 
           <!-- Blackout / Whiteout Body -->
@@ -725,41 +726,64 @@ const SecurityTools = {
             &times;
           </button>
 
-          <!-- 8 Interactive Resize Handles -->
-          <div class="redact-resize-handle handle-nw absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-red-600 rounded-sm cursor-nwse-resize z-50 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
-          <div class="redact-resize-handle handle-ne absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-red-600 rounded-sm cursor-nesw-resize z-50 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
-          <div class="redact-resize-handle handle-sw absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-red-600 rounded-sm cursor-nesw-resize z-50 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
-          <div class="redact-resize-handle handle-se absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-red-600 rounded-sm cursor-nwse-resize z-50 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+          <!-- 8 Interactive Resize Handles (Touch & Mouse Optimized) -->
+          <div class="redact-resize-handle handle-nw absolute -top-2.5 -left-2.5 w-5 h-5 bg-white border-2 border-red-600 rounded-sm cursor-nwse-resize z-50 shadow-md touch-none ${isSelected ? 'block' : 'hidden group-hover:block'}" style="touch-action: none;"></div>
+          <div class="redact-resize-handle handle-ne absolute -top-2.5 -right-2.5 w-5 h-5 bg-white border-2 border-red-600 rounded-sm cursor-nesw-resize z-50 shadow-md touch-none ${isSelected ? 'block' : 'hidden group-hover:block'}" style="touch-action: none;"></div>
+          <div class="redact-resize-handle handle-sw absolute -bottom-2.5 -left-2.5 w-5 h-5 bg-white border-2 border-red-600 rounded-sm cursor-nesw-resize z-50 shadow-md touch-none ${isSelected ? 'block' : 'hidden group-hover:block'}" style="touch-action: none;"></div>
+          <div class="redact-resize-handle handle-se absolute -bottom-2.5 -right-2.5 w-5 h-5 bg-white border-2 border-red-600 rounded-sm cursor-nwse-resize z-50 shadow-md touch-none ${isSelected ? 'block' : 'hidden group-hover:block'}" style="touch-action: none;"></div>
 
-          <div class="redact-resize-handle handle-n absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-red-600 rounded-sm cursor-ns-resize z-50 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
-          <div class="redact-resize-handle handle-s absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-red-600 rounded-sm cursor-ns-resize z-50 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
-          <div class="redact-resize-handle handle-w absolute top-1/2 -left-1.5 -translate-y-1/2 w-2.5 h-4 bg-white border-2 border-red-600 rounded-sm cursor-ew-resize z-50 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
-          <div class="redact-resize-handle handle-e absolute top-1/2 -right-1.5 -translate-y-1/2 w-2.5 h-4 bg-white border-2 border-red-600 rounded-sm cursor-ew-resize z-50 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+          <div class="redact-resize-handle handle-n absolute -top-2 left-1/2 -translate-x-1/2 w-6 h-4 bg-white border-2 border-red-600 rounded-sm cursor-ns-resize z-50 shadow-md touch-none ${isSelected ? 'block' : 'hidden group-hover:block'}" style="touch-action: none;"></div>
+          <div class="redact-resize-handle handle-s absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-4 bg-white border-2 border-red-600 rounded-sm cursor-ns-resize z-50 shadow-md touch-none ${isSelected ? 'block' : 'hidden group-hover:block'}" style="touch-action: none;"></div>
+          <div class="redact-resize-handle handle-w absolute top-1/2 -left-2 -translate-y-1/2 w-4 h-6 bg-white border-2 border-red-600 rounded-sm cursor-ew-resize z-50 shadow-md touch-none ${isSelected ? 'block' : 'hidden group-hover:block'}" style="touch-action: none;"></div>
+          <div class="redact-resize-handle handle-e absolute top-1/2 -right-2 -translate-y-1/2 w-4 h-6 bg-white border-2 border-red-600 rounded-sm cursor-ew-resize z-50 shadow-md touch-none ${isSelected ? 'block' : 'hidden group-hover:block'}" style="touch-action: none;"></div>
         `;
 
         if (window.lucide) window.lucide.createIcons();
 
-        // Dragging and selecting the box
-        box.addEventListener('mousedown', (e) => {
+        // Dragging and selecting the box (Touch & Mouse Support)
+        const onBoxStart = (e) => {
           if (e.target.closest('.redact-box-del') || e.target.classList.contains('redact-resize-handle')) return;
           selectedBoxId = red.id;
-          renderBoxes();
+          // Dynamically toggle selection highlight without rebuilding the DOM
+          boxesContainer.querySelectorAll('.redact-box').forEach(b => {
+            const isThis = b.dataset.redId == red.id;
+            b.classList.toggle('ring-2', isThis);
+            b.classList.toggle('ring-red-500', isThis);
+            b.classList.toggle('shadow-2xl', isThis);
+            b.classList.toggle('z-40', isThis);
+            b.classList.toggle('z-30', !isThis);
+            const hdr = b.querySelector('.redact-drag-header');
+            if (hdr) {
+              hdr.classList.toggle('opacity-100', isThis);
+              hdr.classList.toggle('opacity-85', !isThis);
+            }
+            b.querySelectorAll('.redact-resize-handle').forEach(h => {
+              h.classList.toggle('block', isThis);
+              h.classList.toggle('hidden', !isThis);
+            });
+          });
           initDragMove(e, box, red);
-        });
+        };
+        box.addEventListener('mousedown', onBoxStart);
+        box.addEventListener('touchstart', onBoxStart, { passive: false });
 
-        // Delete button
-        box.querySelector('.redact-box-del').addEventListener('click', (e) => {
+        // Delete button (Touch & Mouse)
+        const delBtn = box.querySelector('.redact-box-del');
+        const onDelete = (e) => {
           e.stopPropagation();
+          if (e.cancelable) e.preventDefault();
           redactions = redactions.filter(r => r.id !== red.id);
           if (selectedBoxId === red.id) selectedBoxId = null;
           renderBoxes();
-        });
+        };
+        delBtn.addEventListener('click', onDelete);
+        delBtn.addEventListener('touchend', onDelete);
 
-        // Resize handles
+        // Resize handles (Touch & Mouse Support)
         box.querySelectorAll('.redact-resize-handle').forEach(handle => {
-          handle.addEventListener('mousedown', (e) => {
+          const onHandleStart = (e) => {
             e.stopPropagation();
-            e.preventDefault();
+            if (e.cancelable) e.preventDefault();
             selectedBoxId = red.id;
             let dir = 'se';
             if (handle.classList.contains('handle-nw')) dir = 'nw';
@@ -772,23 +796,38 @@ const SecurityTools = {
             else if (handle.classList.contains('handle-e')) dir = 'e';
 
             initResize(e, box, red, dir);
-          });
+          };
+
+          handle.addEventListener('mousedown', onHandleStart);
+          handle.addEventListener('touchstart', onHandleStart, { passive: false });
         });
 
         boxesContainer.appendChild(box);
       });
     };
 
-    // Move drag implementation
+    // Helper to extract pointer coords from Mouse or Touch
+    const getRedactPointerPos = (ev) => {
+      if (ev.touches && ev.touches.length > 0) {
+        return { x: ev.touches[0].clientX, y: ev.touches[0].clientY };
+      }
+      if (ev.changedTouches && ev.changedTouches.length > 0) {
+        return { x: ev.changedTouches[0].clientX, y: ev.changedTouches[0].clientY };
+      }
+      return { x: ev.clientX, y: ev.clientY };
+    };
+
+    // Move drag implementation (Touch & Mouse Support)
     const initDragMove = (e, boxEl, redObj) => {
       e.stopPropagation();
-      e.preventDefault();
+      if (e.cancelable) e.preventDefault();
       const parentW = canvasWrapper.clientWidth;
       const parentH = canvasWrapper.clientHeight;
       if (parentW === 0 || parentH === 0) return;
 
-      const startX = e.clientX;
-      const startY = e.clientY;
+      const pt = getRedactPointerPos(e);
+      const startX = pt.x;
+      const startY = pt.y;
       const origLeft = boxEl.offsetLeft;
       const origTop = boxEl.offsetTop;
       const boxW = boxEl.offsetWidth;
@@ -797,9 +836,11 @@ const SecurityTools = {
       const dragHeader = boxEl.querySelector('.redact-drag-header');
       if (dragHeader) dragHeader.classList.add('cursor-grabbing');
 
-      const onMouseMove = (ev) => {
-        const dx = ev.clientX - startX;
-        const dy = ev.clientY - startY;
+      const onPointerMove = (ev) => {
+        if (ev.cancelable) ev.preventDefault();
+        const curPt = getRedactPointerPos(ev);
+        const dx = curPt.x - startX;
+        const dy = curPt.y - startY;
 
         const maxL = parentW - boxW;
         const maxT = parentH - boxH;
@@ -811,9 +852,12 @@ const SecurityTools = {
         boxEl.style.top = `${newT}px`;
       };
 
-      const onMouseUp = () => {
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
+      const onPointerUp = () => {
+        window.removeEventListener('mousemove', onPointerMove);
+        window.removeEventListener('mouseup', onPointerUp);
+        window.removeEventListener('touchmove', onPointerMove);
+        window.removeEventListener('touchend', onPointerUp);
+        window.removeEventListener('touchcancel', onPointerUp);
 
         if (dragHeader) dragHeader.classList.remove('cursor-grabbing');
 
@@ -823,27 +867,33 @@ const SecurityTools = {
         renderBoxes();
       };
 
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
+      window.addEventListener('mousemove', onPointerMove);
+      window.addEventListener('mouseup', onPointerUp);
+      window.addEventListener('touchmove', onPointerMove, { passive: false });
+      window.addEventListener('touchend', onPointerUp);
+      window.addEventListener('touchcancel', onPointerUp);
     };
 
-    // Resize implementation for all 8 handles
+    // Resize implementation for all 8 handles (Touch & Mouse Support)
     const initResize = (e, boxEl, redObj, dir) => {
       const parentW = canvasWrapper.clientWidth;
       const parentH = canvasWrapper.clientHeight;
       if (parentW === 0 || parentH === 0) return;
 
-      const startX = e.clientX;
-      const startY = e.clientY;
+      const pt = getRedactPointerPos(e);
+      const startX = pt.x;
+      const startY = pt.y;
       const origL = boxEl.offsetLeft;
       const origT = boxEl.offsetTop;
       const origW = boxEl.offsetWidth;
       const origH = boxEl.offsetHeight;
       const minSize = 15;
 
-      const onMouseMove = (ev) => {
-        const dx = ev.clientX - startX;
-        const dy = ev.clientY - startY;
+      const onPointerMove = (ev) => {
+        if (ev.cancelable) ev.preventDefault();
+        const curPt = getRedactPointerPos(ev);
+        const dx = curPt.x - startX;
+        const dy = curPt.y - startY;
 
         let newL = origL;
         let newT = origT;
@@ -875,9 +925,12 @@ const SecurityTools = {
         boxEl.style.height = `${newH}px`;
       };
 
-      const onMouseUp = () => {
-        window.removeEventListener('mousemove', onMouseMove);
-        window.removeEventListener('mouseup', onMouseUp);
+      const onPointerUp = () => {
+        window.removeEventListener('mousemove', onPointerMove);
+        window.removeEventListener('mouseup', onPointerUp);
+        window.removeEventListener('touchmove', onPointerMove);
+        window.removeEventListener('touchend', onPointerUp);
+        window.removeEventListener('touchcancel', onPointerUp);
 
         redObj.xRatio = boxEl.offsetLeft / parentW;
         redObj.yRatio = boxEl.offsetTop / parentH;
@@ -886,22 +939,25 @@ const SecurityTools = {
         renderBoxes();
       };
 
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
+      window.addEventListener('mousemove', onPointerMove);
+      window.addEventListener('mouseup', onPointerUp);
+      window.addEventListener('touchmove', onPointerMove, { passive: false });
+      window.addEventListener('touchend', onPointerUp);
+      window.addEventListener('touchcancel', onPointerUp);
     };
 
-    // Drawing a new box directly on the surface
+    // Drawing a new box directly on the surface (Touch & Mouse Support)
     let isDrawing = false;
     let drawStartX = 0;
     let drawStartY = 0;
 
-    drawSurface.addEventListener('mousedown', (e) => {
-      // If clicked on an existing box, ignore draw
+    const onSurfaceStart = (e) => {
       if (e.target.closest('[data-red-id]')) return;
 
       const rect = canvasWrapper.getBoundingClientRect();
-      drawStartX = e.clientX - rect.left;
-      drawStartY = e.clientY - rect.top;
+      const pt = getRedactPointerPos(e);
+      drawStartX = pt.x - rect.left;
+      drawStartY = pt.y - rect.top;
       isDrawing = true;
 
       drawPreview.style.left = `${drawStartX}px`;
@@ -912,13 +968,16 @@ const SecurityTools = {
 
       selectedBoxId = null;
       renderBoxes();
-    });
+      if (e.cancelable) e.preventDefault();
+    };
 
-    window.addEventListener('mousemove', (e) => {
+    const onSurfaceMove = (e) => {
       if (!isDrawing) return;
+      if (e.cancelable) e.preventDefault();
       const rect = canvasWrapper.getBoundingClientRect();
-      const curX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-      const curY = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+      const pt = getRedactPointerPos(e);
+      const curX = Math.max(0, Math.min(rect.width, pt.x - rect.left));
+      const curY = Math.max(0, Math.min(rect.height, pt.y - rect.top));
 
       const boxL = Math.min(drawStartX, curX);
       const boxT = Math.min(drawStartY, curY);
@@ -929,23 +988,23 @@ const SecurityTools = {
       drawPreview.style.top = `${boxT}px`;
       drawPreview.style.width = `${boxW}px`;
       drawPreview.style.height = `${boxH}px`;
-    });
+    };
 
-    window.addEventListener('mouseup', (e) => {
+    const onSurfaceEnd = (e) => {
       if (!isDrawing) return;
       isDrawing = false;
       drawPreview.classList.add('hidden');
 
       const rect = canvasWrapper.getBoundingClientRect();
-      const curX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-      const curY = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+      const pt = getRedactPointerPos(e);
+      const curX = Math.max(0, Math.min(rect.width, pt.x - rect.left));
+      const curY = Math.max(0, Math.min(rect.height, pt.y - rect.top));
 
       const boxL = Math.min(drawStartX, curX);
       const boxT = Math.min(drawStartY, curY);
       const boxW = Math.abs(curX - drawStartX);
       const boxH = Math.abs(curY - drawStartY);
 
-      // Only create if box has meaningful size (> 12px)
       if (boxW > 12 && boxH > 10 && rect.width > 0 && rect.height > 0) {
         const newId = Date.now() + Math.random();
         redactions.push({
@@ -961,7 +1020,17 @@ const SecurityTools = {
         selectedBoxId = newId;
         renderBoxes();
       }
-    });
+    };
+
+    drawSurface.addEventListener('mousedown', onSurfaceStart);
+    drawSurface.addEventListener('touchstart', onSurfaceStart, { passive: false });
+
+    window.addEventListener('mousemove', onSurfaceMove);
+    window.addEventListener('touchmove', onSurfaceMove, { passive: false });
+
+    window.addEventListener('mouseup', onSurfaceEnd);
+    window.addEventListener('touchend', onSurfaceEnd);
+    window.addEventListener('touchcancel', onSurfaceEnd);
 
     // Keyboard controls: Arrow Keys nudging and Delete / Backspace
     const onKeyDown = (e) => {
