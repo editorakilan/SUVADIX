@@ -125,19 +125,29 @@ class PDFEngine {
   /**
    * Lossless Merge of multiple PDFs (100% Vector & Text Stream Preserving)
    */
-  async mergePDFs(arrayBuffers, onProgress) {
-    const { PDFDocument } = PDFLib;
+  async mergePDFs(itemsOrBuffers, onProgress) {
+    const { PDFDocument, degrees } = PDFLib;
     const mergedDoc = await PDFDocument.create();
 
-    const total = arrayBuffers.length;
+    const total = itemsOrBuffers.length;
     for (let i = 0; i < total; i++) {
       if (onProgress) onProgress((i / total) * 0.9, `Merging file ${i + 1} of ${total}...`);
+      const item = itemsOrBuffers[i];
+      const rawBuf = (item && item.buffer) ? item.buffer : item;
+      const rotation = (item && item.rotation) ? item.rotation : 0;
+
       // Clone buffer to prevent detaching
-      const safeBuffer = this.cloneBuffer(arrayBuffers[i]);
+      const safeBuffer = this.cloneBuffer(rawBuf);
       const srcDoc = await PDFDocument.load(safeBuffer, { ignoreEncryption: true });
       const indices = srcDoc.getPageIndices();
       const copiedPages = await mergedDoc.copyPages(srcDoc, indices);
-      copiedPages.forEach(p => mergedDoc.addPage(p));
+      copiedPages.forEach(p => {
+        if (rotation) {
+          const currentRot = p.getRotation().angle || 0;
+          p.setRotation(degrees(((currentRot + rotation) % 360 + 360) % 360));
+        }
+        mergedDoc.addPage(p);
+      });
     }
 
     if (onProgress) onProgress(0.95, 'Finalizing merged document...');
