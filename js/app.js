@@ -99,11 +99,11 @@ const TOOLS_CONFIG = [
   },
   {
     id: 'color-correction',
-    name: 'Color Correction',
+    name: 'Enhance & Restore PDF',
     category: 'optimize',
     categoryLabel: 'OPTIMIZE PDF',
-    desc: 'Enhance scanned documents: apply Normal, Clean Document (paper white), Magic Color, Grayscale, B&W, and contrast fixes.',
-    icon: 'palette',
+    desc: 'Fix dull, grey & faded PDFs. Sharpen, deblur, upscale, remove grey backgrounds, yellow tint & shadows with Before/After comparison.',
+    icon: 'sparkles',
     color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900',
     handler: (c) => OptimizeTools.renderColorCorrection(c)
   },

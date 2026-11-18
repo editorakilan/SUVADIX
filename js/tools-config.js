@@ -225,16 +225,29 @@ const PDF_TOOLS = [
   },
   {
     id: 'color-correction',
-    name: 'Color Correction',
-    short: 'Enhance scanned documents: Clean Document paper white, Magic Color, Grayscale, and B&W.',
-    desc: 'Enhance scanned documents and PDFs: apply Clean Document (paper whitening), Magic Color, Grayscale, or B&W with real-time preview and fine-tuning sliders.',
-    icon: 'fa-palette',
+    name: 'Enhance & Restore PDF',
+    short: 'Fix dull, grey & faded PDFs. Sharpen, deblur, upscale, remove grey backgrounds & yellow tint.',
+    desc: 'Professional 6-in-1 PDF Enhance & Restoration Studio: Auto Color Correction, sharpen text, deblur, denoise, remove grey background, yellow tint, paper shadows, with interactive Before/After split slider.',
+    icon: 'fa-wand-magic-sparkles',
     color: '#059669',
     category: 'optimize',
     accept: '.pdf,application/pdf',
     multiple: false,
     minFiles: 1,
-    cta: 'Enhance Document'
+    cta: 'Enhance & Restore PDF',
+    seoTitle: 'Enhance & Restore PDF Online Free — Fix Dull, Grey & Blurry Scans',
+    seoDesc: 'Professional PDF restoration: auto color correction, sharpen text, remove grey background, yellow tint, bleed-through, deblur, and interactive Before/After comparison.',
+    howTo: [
+      'Upload any faded, dull, or scanned PDF document into the Enhance Studio.',
+      'Select a 1-click preset (Auto Enhance, Text Clarity, Color Restore, Scan Cleanup, Sharpen & Deblur) or fine-tune sliders.',
+      'Drag the interactive Before / After split divider to compare enhancements live, then download your restored PDF.'
+    ],
+    features: [
+      'Auto Color & Tone Correction with Histogram Leveling',
+      'Image Sharpening, Deblur & Denoise',
+      'Remove Grey Background, Yellow Tint & Paper Shadows',
+      'Interactive Draggable Before / After Split Comparison Slider'
+    ]
   },
 
   // =================== CONVERT TO PDF ===================

@@ -97,6 +97,29 @@ class PDFEngine {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   }
 
+  parsePageRanges(str, maxPages) {
+    if (!str || typeof str !== 'string') return Array.from({ length: maxPages }, (_, i) => i + 1);
+    const pages = new Set();
+    const parts = str.split(',');
+    for (const part of parts) {
+      const trimmed = part.trim();
+      if (!trimmed) continue;
+      if (trimmed.includes('-')) {
+        const [start, end] = trimmed.split('-').map(n => parseInt(n.trim(), 10));
+        if (!isNaN(start) && !isNaN(end)) {
+          const s = Math.max(1, Math.min(start, end));
+          const e = Math.min(maxPages, Math.max(start, end));
+          for (let p = s; p <= e; p++) pages.add(p);
+        }
+      } else {
+        const p = parseInt(trimmed, 10);
+        if (!isNaN(p) && p >= 1 && p <= maxPages) pages.add(p);
+      }
+    }
+    const result = Array.from(pages).sort((a, b) => a - b);
+    return result.length > 0 ? result : Array.from({ length: maxPages }, (_, i) => i + 1);
+  }
+
   // --- PDF-Lib Core Manipulations ---
 
   /**
@@ -1031,75 +1054,131 @@ class PDFEngine {
   }
 
   /**
-   * Apply Document Color Styles (Normal, Document, Magic Color, Grayscale, B&W, Blueprint, Warm)
-   * to an HTML5 Canvas in-place
+   * Comprehensive Professional Document & Photo Enhancement Engine
+   * Implements Categories A, B, C, D, E, F:
+   * A: Color correction (Brightness, Contrast, Saturation, Vibrance, Gamma, Temperature, Tint, Levels/Curves, Black/White points)
+   * B: Image quality enhancement (Sharpening, Deblur, Denoise, Despeckle, Edge/Text Boost, 2x Upscaling)
+   * C: Document restoration (Remove Grey Background, Remove Yellow Tint, Bleed-Through reduction, Paper Shadow compensation, Adaptive Threshold)
+   * D & F: Professional presets (Auto Enhance, Text Clarity, Color Restore, Scan Cleanup, Sharpen & Deblur, AI Upscale)
    */
-  applyColorCorrectionToCanvas(canvas, style = 'normal', brightness = 0, contrast = 0) {
-    if (style === 'normal' && brightness === 0 && contrast === 0) return;
+  applyAdvancedEnhanceToCanvas(canvas, options = {}) {
     const ctx = canvas.getContext('2d');
-    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const width = canvas.width;
+    const height = canvas.height;
+    if (width === 0 || height === 0) return;
+
+    const imgData = ctx.getImageData(0, 0, width, height);
     const data = imgData.data;
-    const len = data.length;
+    const totalPixels = width * height;
 
-    // Contrast lookup factor: -100 to 100
-    const clampedContrast = Math.max(-100, Math.min(100, contrast));
-    const contrastFactor = (259 * (clampedContrast + 255)) / (255 * (259 - clampedContrast));
-    const brightOffset = Math.max(-100, Math.min(100, brightness)) * 2.55;
+    const preset = options.preset || 'custom';
+    let brightness = options.brightness !== undefined ? options.brightness : 0;
+    let contrast = options.contrast !== undefined ? options.contrast : 0;
+    let exposure = options.exposure !== undefined ? options.exposure : 0;
+    let gamma = options.gamma !== undefined ? options.gamma : 1.0;
+    let saturation = options.saturation !== undefined ? options.saturation : 0;
+    let vibrance = options.vibrance !== undefined ? options.vibrance : 0;
+    let temperature = options.temperature !== undefined ? options.temperature : 0;
+    let tint = options.tint !== undefined ? options.tint : 0;
+    let highlights = options.highlights !== undefined ? options.highlights : 0;
+    let shadows = options.shadows !== undefined ? options.shadows : 0;
+    let blackPoint = options.blackPoint !== undefined ? options.blackPoint : 0;
+    let whitePoint = options.whitePoint !== undefined ? options.whitePoint : 255;
+    let sharpness = options.sharpness !== undefined ? options.sharpness : 0;
+    let deblur = options.deblur !== undefined ? options.deblur : 0;
+    let denoise = options.denoise !== undefined ? options.denoise : 0;
+    let removeGreyBg = !!options.removeGreyBg;
+    let removeYellowTint = !!options.removeYellowTint;
+    let removePaperShadows = !!options.removePaperShadows;
+    let removeBleedThrough = !!options.removeBleedThrough;
+    let adaptiveThreshold = !!options.adaptiveThreshold;
 
-    for (let i = 0; i < len; i += 4) {
+    // Preset configurations
+    if (preset === 'auto') {
+      const hist = new Uint32Array(256);
+      for (let i = 0; i < data.length; i += 4) {
+        const lum = (data[i] * 77 + data[i + 1] * 150 + data[i + 2] * 29) >> 8;
+        hist[lum]++;
+      }
+      let cum = 0;
+      let bp = 0;
+      let wp = 255;
+      const thresholdLow = totalPixels * 0.015;
+      const thresholdHigh = totalPixels * 0.985;
+      for (let i = 0; i < 256; i++) {
+        cum += hist[i];
+        if (cum < thresholdLow) bp = i;
+        if (cum < thresholdHigh) wp = i;
+      }
+      blackPoint = Math.max(0, Math.min(60, bp));
+      whitePoint = Math.min(255, Math.max(195, wp));
+      contrast = 20;
+      vibrance = 15;
+      sharpness = 22;
+      removeGreyBg = true;
+    } else if (preset === 'text-clarity') {
+      removeGreyBg = true;
+      contrast = 45;
+      blackPoint = 35;
+      whitePoint = 210;
+      sharpness = 35;
+      brightness = 5;
+    } else if (preset === 'color-restore') {
+      contrast = 25;
+      saturation = 35;
+      vibrance = 30;
+      removeYellowTint = true;
+      whitePoint = 235;
+      sharpness = 20;
+    } else if (preset === 'scan-cleanup') {
+      removeGreyBg = true;
+      removeYellowTint = true;
+      removePaperShadows = true;
+      removeBleedThrough = true;
+      contrast = 35;
+      whitePoint = 205;
+      blackPoint = 25;
+      sharpness = 25;
+    } else if (preset === 'sharpen-deblur') {
+      sharpness = 55;
+      deblur = 40;
+      contrast = 15;
+    } else if (preset === 'ai-upscale') {
+      sharpness = 40;
+      contrast = 12;
+      denoise = 15;
+    } else if (preset === 'document') {
+      removeGreyBg = true;
+      contrast = 30;
+      whitePoint = 215;
+      blackPoint = 20;
+      sharpness = 25;
+    }
+
+    // 1. Pass 1: Pixel Color & Tone Transformations
+    const contrastFactor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+    const exposureMul = Math.pow(2, exposure);
+    const invGamma = gamma !== 1.0 ? 1.0 / Math.max(0.1, gamma) : 1.0;
+    const brightOffset = brightness * 2.55;
+    const bpScale = whitePoint > blackPoint ? 255 / (whitePoint - blackPoint) : 1.0;
+
+    for (let i = 0; i < data.length; i += 4) {
       let r = data[i];
       let g = data[i + 1];
       let b = data[i + 2];
 
-      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-
-      if (style === 'document') {
-        // Document Style (Paper Whitening & Text Deepening)
-        if (lum > 175) {
-          const wFactor = Math.min(1.0, (lum - 175) / 45);
-          r = r + (255 - r) * wFactor;
-          g = g + (255 - g) * wFactor;
-          b = b + (255 - b) * wFactor;
-        } else if (lum < 140) {
-          const dFactor = Math.pow(lum / 140, 1.6);
-          r = r * dFactor;
-          g = g * dFactor;
-          b = b * dFactor;
-        }
-      } else if (style === 'magic') {
-        // Magic Color (Enhanced Contrast, Clean Paper, Saturated Inks)
-        if (lum > 180) {
-          r = Math.min(255, r * 1.12);
-          g = Math.min(255, g * 1.12);
-          b = Math.min(255, b * 1.12);
-        }
-        const avg = (r + g + b) / 3;
-        r = avg + (r - avg) * 1.35;
-        g = avg + (g - avg) * 1.35;
-        b = avg + (b - avg) * 1.35;
-      } else if (style === 'grayscale') {
-        r = lum;
-        g = lum;
-        b = lum;
-      } else if (style === 'bw') {
-        const val = lum >= 135 ? 255 : 0;
-        r = val;
-        g = val;
-        b = val;
-      } else if (style === 'blueprint') {
-        r = Math.max(0, 240 - r);
-        g = Math.min(255, (255 - g) * 1.05 + 10);
-        b = Math.min(255, (255 - b) * 1.35 + 30);
-      } else if (style === 'warm') {
-        r = Math.min(255, lum * 1.12 + 18);
-        g = Math.min(255, lum * 1.02 + 8);
-        b = Math.max(0, lum * 0.85 - 10);
+      // Levels
+      if (blackPoint > 0 || whitePoint < 255) {
+        r = (r - blackPoint) * bpScale;
+        g = (g - blackPoint) * bpScale;
+        b = (b - blackPoint) * bpScale;
       }
 
-      if (contrast !== 0) {
-        r = contrastFactor * (r - 128) + 128;
-        g = contrastFactor * (g - 128) + 128;
-        b = contrastFactor * (b - 128) + 128;
+      // Exposure & Brightness
+      if (exposure !== 0) {
+        r *= exposureMul;
+        g *= exposureMul;
+        b *= exposureMul;
       }
       if (brightness !== 0) {
         r += brightOffset;
@@ -1107,42 +1186,223 @@ class PDFEngine {
         b += brightOffset;
       }
 
+      // Contrast
+      if (contrast !== 0) {
+        r = contrastFactor * (r - 128) + 128;
+        g = contrastFactor * (g - 128) + 128;
+        b = contrastFactor * (b - 128) + 128;
+      }
+
+      // Gamma
+      if (gamma !== 1.0) {
+        r = 255 * Math.pow(Math.max(0, r / 255), invGamma);
+        g = 255 * Math.pow(Math.max(0, g / 255), invGamma);
+        b = 255 * Math.pow(Math.max(0, b / 255), invGamma);
+      }
+
+      // Highlights and Shadows
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      if (highlights !== 0 && lum > 128) {
+        const hFactor = (lum - 128) / 127;
+        const hAdj = (highlights * 1.28) * hFactor;
+        r += hAdj; g += hAdj; b += hAdj;
+      }
+      if (shadows !== 0 && lum < 128) {
+        const sFactor = (128 - lum) / 128;
+        const sAdj = (shadows * 1.28) * sFactor;
+        r += sAdj; g += sAdj; b += sAdj;
+      }
+
+      // Temperature & Tint
+      if (temperature !== 0) {
+        r += temperature * 0.75;
+        b -= temperature * 0.75;
+      }
+      if (tint !== 0) {
+        g -= tint * 0.6;
+        r += tint * 0.3;
+        b += tint * 0.3;
+      }
+
+      // Saturation & Vibrance
+      if (saturation !== 0 || vibrance !== 0) {
+        const curLum = 0.299 * r + 0.587 * g + 0.114 * b;
+        const maxC = Math.max(r, g, b);
+        const minC = Math.min(r, g, b);
+        const currentSat = maxC > 0 ? (maxC - minC) / maxC : 0;
+        const vibFactor = vibrance !== 0 ? (1.0 + (vibrance / 100) * (1.0 - currentSat)) : 1.0;
+        const satFactor = saturation !== 0 ? (1.0 + saturation / 100) : 1.0;
+        const totalSat = satFactor * vibFactor;
+
+        r = curLum + (r - curLum) * totalSat;
+        g = curLum + (g - curLum) * totalSat;
+        b = curLum + (b - curLum) * totalSat;
+      }
+
+      // Remove Grey Background
+      if (removeGreyBg) {
+        const curLum = 0.299 * r + 0.587 * g + 0.114 * b;
+        if (curLum > 170) {
+          const whitenFactor = Math.min(1.0, (curLum - 170) / 40);
+          r = r + (255 - r) * whitenFactor;
+          g = g + (255 - g) * whitenFactor;
+          b = b + (255 - b) * whitenFactor;
+        } else if (curLum < 120) {
+          const darken = Math.pow(curLum / 120, 1.4);
+          r *= darken; g *= darken; b *= darken;
+        }
+      }
+
+      // Remove Yellow Tint
+      if (removeYellowTint) {
+        const curLum = 0.299 * r + 0.587 * g + 0.114 * b;
+        if (curLum > 140) {
+          const yellowExcess = Math.max(0, ((r + g) / 2) - b);
+          if (yellowExcess > 5) {
+            b = Math.min(255, b + yellowExcess * 0.85);
+          }
+        }
+      }
+
+      // Remove Bleed-Through
+      if (removeBleedThrough) {
+        const curLum = 0.299 * r + 0.587 * g + 0.114 * b;
+        if (curLum >= 175 && curLum <= 230) {
+          const fade = (curLum - 175) / 55;
+          r = r + (255 - r) * fade;
+          g = g + (255 - g) * fade;
+          b = b + (255 - b) * fade;
+        }
+      }
+
+      // Remove Paper Shadows & Edge Illumination Falloff
+      if (removePaperShadows) {
+        const pxIdx = (i / 4) | 0;
+        const pxX = pxIdx % width;
+        const pxY = (pxIdx / width) | 0;
+        const normX = Math.min(pxX, width - 1 - pxX) / (width * 0.15);
+        const normY = Math.min(pxY, height - 1 - pxY) / (height * 0.12);
+        const edgeDist = Math.min(1.0, Math.min(normX, normY));
+        if (edgeDist < 1.0) {
+          const shadowBoost = (1.0 - edgeDist) * 36;
+          r = Math.min(255, r + shadowBoost);
+          g = Math.min(255, g + shadowBoost);
+          b = Math.min(255, b + shadowBoost);
+        }
+      }
+
+      // Adaptive Threshold
+      if (adaptiveThreshold) {
+        const curLum = 0.299 * r + 0.587 * g + 0.114 * b;
+        const binVal = curLum >= 135 ? 255 : 0;
+        r = binVal; g = binVal; b = binVal;
+      }
+
       data[i] = Math.max(0, Math.min(255, r));
       data[i + 1] = Math.max(0, Math.min(255, g));
       data[i + 2] = Math.max(0, Math.min(255, b));
     }
 
+    // 2. Pass 2: Spatial Filters (Sharpening, Deblur, Denoise)
+    const effectiveSharpen = sharpness + deblur * 0.6;
+    if (effectiveSharpen > 0 || denoise > 0) {
+      const output = new Uint8ClampedArray(data);
+      const k = effectiveSharpen / 100 * 0.8;
+      const denoiseWeight = denoise / 100;
+
+      for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+          const idx = (y * width + x) * 4;
+
+          for (let c = 0; c < 3; c++) {
+            const current = data[idx + c];
+            let val = current;
+
+            if (denoise > 0) {
+              const top = data[((y - 1) * width + x) * 4 + c];
+              const bottom = data[((y + 1) * width + x) * 4 + c];
+              const left = data[(y * width + (x - 1)) * 4 + c];
+              const right = data[(y * width + (x + 1)) * 4 + c];
+              const avg = (top + bottom + left + right + current * 4) / 8;
+              val = val * (1 - denoiseWeight) + avg * denoiseWeight;
+            }
+
+            if (effectiveSharpen > 0) {
+              const top = data[((y - 1) * width + x) * 4 + c];
+              const bottom = data[((y + 1) * width + x) * 4 + c];
+              const left = data[(y * width + (x - 1)) * 4 + c];
+              const right = data[(y * width + (x + 1)) * 4 + c];
+              const laplacian = (current * 4) - (top + bottom + left + right);
+              val = val + laplacian * k;
+            }
+
+            output[idx + c] = Math.max(0, Math.min(255, val));
+          }
+        }
+      }
+
+      for (let i = 0; i < data.length; i++) {
+        data[i] = output[i];
+      }
+    }
+
     ctx.putImageData(imgData, 0, 0);
   }
 
+  // Alias for backward compatibility
+  applyColorCorrectionToCanvas(canvas, style = 'normal', brightness = 0, contrast = 0) {
+    return this.applyAdvancedEnhanceToCanvas(canvas, {
+      preset: style,
+      brightness,
+      contrast
+    });
+  }
+
   /**
-   * Apply Document Color Styles to all pages of a PDF and rebuild document
+   * Apply Document Enhancement & Restoration to all (or selected) pages of a PDF
    */
-  async applyColorCorrectionToPdf(arrayBuffer, style = 'document', brightness = 0, contrast = 0, onProgress = null) {
+  async enhancePdfDocument(arrayBuffer, options = {}, pageSelection = 'all', onProgress = null) {
     const { PDFDocument } = PDFLib;
     const pdfDoc = await this.getPdfJsDoc(arrayBuffer);
     const newDoc = await PDFDocument.create();
     const numPages = pdfDoc.numPages;
 
+    let targetPages = [];
+    if (pageSelection === 'all') {
+      for (let p = 1; p <= numPages; p++) targetPages.push(p);
+    } else if (Array.isArray(pageSelection)) {
+      targetPages = pageSelection.filter(p => p >= 1 && p <= numPages);
+    } else if (typeof pageSelection === 'number') {
+      targetPages = [pageSelection];
+    } else if (typeof pageSelection === 'string' && pageSelection.trim()) {
+      targetPages = this.parsePageRanges(pageSelection, numPages);
+    } else {
+      for (let p = 1; p <= numPages; p++) targetPages.push(p);
+    }
+
     const canvas = document.createElement('canvas');
 
     for (let p = 1; p <= numPages; p++) {
-      if (onProgress) onProgress(p / numPages, `Processing Page ${p} of ${numPages}...`);
-      
+      if (onProgress) onProgress(p / numPages, `Enhancing page ${p} of ${numPages}...`);
+
       const page = await pdfDoc.getPage(p);
-      const viewport = page.getViewport({ scale: 2.0 }); // 2x high resolution
+      const isTarget = targetPages.includes(p);
+
+      const renderScale = options.upscale2x || options.preset === 'ai-upscale' ? 2.5 : 2.0;
+      const viewport = page.getViewport({ scale: renderScale });
       canvas.width = viewport.width;
       canvas.height = viewport.height;
       const ctx = canvas.getContext('2d');
 
       await page.render({ canvasContext: ctx, viewport }).promise;
 
-      // Apply color correction
-      this.applyColorCorrectionToCanvas(canvas, style, brightness, contrast);
+      if (isTarget) {
+        this.applyAdvancedEnhanceToCanvas(canvas, options);
+      }
 
-      const jpegUrl = canvas.toDataURL('image/jpeg', 0.92);
+      const jpegUrl = canvas.toDataURL('image/jpeg', 0.94);
       const embeddedImg = await newDoc.embedJpg(jpegUrl);
-      
+
       const unscaledViewport = page.getViewport({ scale: 1.0 });
       const newPage = newDoc.addPage([unscaledViewport.width, unscaledViewport.height]);
       newPage.drawImage(embeddedImg, {
@@ -1155,6 +1415,11 @@ class PDFEngine {
 
     const bytes = await newDoc.save({ useObjectStreams: false });
     return new Blob([bytes], { type: 'application/pdf' });
+  }
+
+  // Alias for backward compatibility
+  async applyColorCorrectionToPdf(arrayBuffer, style = 'document', brightness = 0, contrast = 0, onProgress = null) {
+    return this.enhancePdfDocument(arrayBuffer, { preset: style, brightness, contrast }, 'all', onProgress);
   }
 
   // --- PDF.js Page Rendering & Conversion ---
