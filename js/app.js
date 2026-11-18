@@ -97,6 +97,16 @@ const TOOLS_CONFIG = [
     color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900',
     handler: (c) => OptimizeTools.renderOCR(c)
   },
+  {
+    id: 'color-correction',
+    name: 'Color Correction',
+    category: 'optimize',
+    categoryLabel: 'OPTIMIZE PDF',
+    desc: 'Enhance scanned documents: apply Normal, Clean Document (paper white), Magic Color, Grayscale, B&W, and contrast fixes.',
+    icon: 'palette',
+    color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900',
+    handler: (c) => OptimizeTools.renderColorCorrection(c)
+  },
 
   // 3. CONVERT TO PDF
   {

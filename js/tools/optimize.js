@@ -602,6 +602,303 @@ const OptimizeTools = {
       const blob = new Blob([outputText.value], { type: 'text/plain;charset=utf-8' });
       window.pdfEngine.downloadBlob(blob, `${currentFile.name.replace(/\.pdf$/i, '')}_ocr.txt`);
     });
+  },
+
+  // 4. COLOR CORRECTION & DOCUMENT STYLES
+  renderColorCorrection(container) {
+    let currentFile = null;
+    let currentBuffer = null;
+    let pdfDoc = null;
+    let currentPageNum = 1;
+    let totalPages = 1;
+    let currentZoom = 1.0;
+    let selectedStyle = 'document'; // default to document style
+    let brightness = 0;
+    let contrast = 0;
+
+    const COLOR_FILTERS = {
+      normal: 'none',
+      document: 'contrast(1.65) brightness(1.12) grayscale(0.65)',
+      magic: 'contrast(1.35) brightness(1.08) saturate(1.3)',
+      grayscale: 'grayscale(1) contrast(1.1)',
+      bw: 'contrast(2.8) grayscale(1)',
+      blueprint: 'invert(1) hue-rotate(180deg) contrast(1.2)',
+      warm: 'sepia(0.55) contrast(1.05) brightness(1.02)'
+    };
+
+    container.innerHTML = `
+      <div class="max-w-5xl mx-auto space-y-6">
+        <div class="text-center space-y-2">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+            <i data-lucide="palette" class="w-3.5 h-3.5"></i>
+            <span>Document Color Styles & Enhancement</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">Document Color Correction</h2>
+          <p class="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto">Enhance scanned documents and PDFs: apply Clean Document (paper whitening), Magic Color, Grayscale, or B&W with real-time preview and fine-tuning sliders.</p>
+        </div>
+
+        <div id="cc-dropzone" class="dropzone p-8 rounded-2xl text-center cursor-pointer hover:border-emerald-500 transition border-2 border-dashed border-slate-300 bg-white dark:bg-slate-800 shadow-sm">
+          <input type="file" id="cc-file-input" accept="application/pdf" class="hidden">
+          <div class="flex flex-col items-center gap-3">
+            <div class="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center shadow-inner">
+              <i data-lucide="wand-2" class="w-8 h-8"></i>
+            </div>
+            <div>
+              <p class="font-bold text-slate-800 dark:text-slate-100">Choose PDF or drop it here to enhance</p>
+              <p class="text-xs text-slate-400 mt-1" id="cc-file-status">Select a document to adjust color styles and contrast</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="cc-workspace" class="p-4 sm:p-6 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-lg space-y-5 hidden">
+          <!-- Style Presets Grid -->
+          <div class="space-y-2">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Select Document Color Style:</span>
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2" id="cc-styles-grid">
+              <button data-style="normal" class="cc-style-btn p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-emerald-400 text-center transition flex flex-col items-center gap-1.5">
+                <span class="w-6 h-6 rounded-full bg-gradient-to-tr from-blue-400 via-rose-400 to-amber-300 shadow-xs"></span>
+                <span class="font-bold text-xs text-slate-800 dark:text-slate-100">Normal</span>
+                <span class="text-[10px] text-slate-400">Original</span>
+              </button>
+
+              <button data-style="document" class="cc-style-btn p-3 rounded-2xl border-2 border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/30 text-center transition flex flex-col items-center gap-1.5 active">
+                <span class="w-6 h-6 rounded-full bg-white border border-slate-400 shadow-xs flex items-center justify-center text-slate-900 font-extrabold text-[10px]">A</span>
+                <span class="font-bold text-xs text-emerald-700 dark:text-emerald-300">Document</span>
+                <span class="text-[10px] text-slate-400">Paper White</span>
+              </button>
+
+              <button data-style="magic" class="cc-style-btn p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-emerald-400 text-center transition flex flex-col items-center gap-1.5">
+                <span class="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-500 to-emerald-400 shadow-xs"></span>
+                <span class="font-bold text-xs text-slate-800 dark:text-slate-100">Magic Color</span>
+                <span class="text-[10px] text-slate-400">Enhanced</span>
+              </button>
+
+              <button data-style="grayscale" class="cc-style-btn p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-emerald-400 text-center transition flex flex-col items-center gap-1.5">
+                <span class="w-6 h-6 rounded-full bg-slate-500 shadow-xs"></span>
+                <span class="font-bold text-xs text-slate-800 dark:text-slate-100">Grayscale</span>
+                <span class="text-[10px] text-slate-400">Monochrome</span>
+              </button>
+
+              <button data-style="bw" class="cc-style-btn p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-emerald-400 text-center transition flex flex-col items-center gap-1.5">
+                <span class="w-6 h-6 rounded-full bg-black border border-white shadow-xs"></span>
+                <span class="font-bold text-xs text-slate-800 dark:text-slate-100">B&W Crisp</span>
+                <span class="text-[10px] text-slate-400">High Contrast</span>
+              </button>
+
+              <button data-style="blueprint" class="cc-style-btn p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-emerald-400 text-center transition flex flex-col items-center gap-1.5">
+                <span class="w-6 h-6 rounded-full bg-blue-900 border border-cyan-400 shadow-xs"></span>
+                <span class="font-bold text-xs text-slate-800 dark:text-slate-100">Blueprint</span>
+                <span class="text-[10px] text-slate-400">Inverted</span>
+              </button>
+
+              <button data-style="warm" class="cc-style-btn p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-emerald-400 text-center transition flex flex-col items-center gap-1.5">
+                <span class="w-6 h-6 rounded-full bg-amber-200 border border-amber-400 shadow-xs"></span>
+                <span class="font-bold text-xs text-slate-800 dark:text-slate-100">Warm</span>
+                <span class="text-[10px] text-slate-400">Sepia Read</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Fine-Tuning Controls -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs">
+            <div class="space-y-1">
+              <div class="flex justify-between font-bold text-slate-700 dark:text-slate-300">
+                <span>Brightness:</span>
+                <span id="cc-brightness-val">0%</span>
+              </div>
+              <input type="range" id="cc-brightness" min="-50" max="50" value="0" class="w-full accent-emerald-600">
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex justify-between font-bold text-slate-700 dark:text-slate-300">
+                <span>Contrast:</span>
+                <span id="cc-contrast-val">0%</span>
+              </div>
+              <input type="range" id="cc-contrast" min="-50" max="50" value="0" class="w-full accent-emerald-600">
+            </div>
+          </div>
+
+          <!-- Viewer Toolbar -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <!-- Zoom Controls -->
+            <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 px-2.5 py-1.5 rounded-xl text-xs font-bold">
+              <button id="cc-zoom-out" class="p-1 hover:bg-white dark:hover:bg-slate-800 rounded text-slate-600 transition" title="Zoom Out">
+                <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
+              </button>
+              <span id="cc-zoom-val" class="min-w-[42px] text-center font-extrabold text-slate-800 dark:text-slate-100">100%</span>
+              <button id="cc-zoom-in" class="p-1 hover:bg-white dark:hover:bg-slate-800 rounded text-slate-600 transition" title="Zoom In">
+                <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+              </button>
+              <button id="cc-zoom-reset" class="px-1.5 py-0.5 rounded text-[10px] font-semibold text-slate-500 hover:text-slate-900 hover:bg-white transition">Reset</button>
+            </div>
+
+            <!-- Page Navigation -->
+            <div class="flex items-center gap-2 text-xs font-bold bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-xl">
+              <button id="cc-prev-page" class="p-1 hover:bg-white dark:hover:bg-slate-800 rounded text-slate-600 transition disabled:opacity-40">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+              </button>
+              <span>Page <strong id="cc-page-num" class="text-emerald-600">1</strong> of <strong id="cc-page-total">1</strong></span>
+              <button id="cc-next-page" class="p-1 hover:bg-white dark:hover:bg-slate-800 rounded text-slate-600 transition disabled:opacity-40">
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+              </button>
+            </div>
+
+            <!-- Action Button -->
+            <button id="cc-apply-btn" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition flex items-center gap-2">
+              <i data-lucide="check-circle" class="w-4 h-4"></i>
+              <span>Enhance & Download PDF</span>
+            </button>
+          </div>
+
+          <!-- Document Canvas Viewer Container -->
+          <div class="flex justify-center p-4 bg-slate-100 dark:bg-slate-900 rounded-2xl overflow-auto max-h-[70vh]">
+            <canvas id="cc-page-canvas" class="border border-slate-300 dark:border-slate-700 shadow-xl bg-white transition-all"></canvas>
+          </div>
+        </div>
+      </div>
+    `;
+
+    if (window.lucide) window.lucide.createIcons();
+
+    // DOM References
+    const dropzone = container.querySelector('#cc-dropzone');
+    const input = container.querySelector('#cc-file-input');
+    const statusEl = container.querySelector('#cc-file-status');
+    const workspace = container.querySelector('#cc-workspace');
+    const pageCanvas = container.querySelector('#cc-page-canvas');
+
+    const styleBtns = container.querySelectorAll('.cc-style-btn');
+    const brightnessInput = container.querySelector('#cc-brightness');
+    const contrastInput = container.querySelector('#cc-contrast');
+    const brightnessVal = container.querySelector('#cc-brightness-val');
+    const contrastVal = container.querySelector('#cc-contrast-val');
+
+    const zoomOutBtn = container.querySelector('#cc-zoom-out');
+    const zoomInBtn = container.querySelector('#cc-zoom-in');
+    const zoomVal = container.querySelector('#cc-zoom-val');
+    const zoomResetBtn = container.querySelector('#cc-zoom-reset');
+
+    const prevPageBtn = container.querySelector('#cc-prev-page');
+    const nextPageBtn = container.querySelector('#cc-next-page');
+    const pageNumEl = container.querySelector('#cc-page-num');
+    const pageTotalEl = container.querySelector('#cc-page-total');
+    const applyBtn = container.querySelector('#cc-apply-btn');
+
+    const updateFilterDisplay = () => {
+      let filter = COLOR_FILTERS[selectedStyle] || 'none';
+      if (brightness !== 0) filter += ` brightness(${1 + brightness / 100})`;
+      if (contrast !== 0) filter += ` contrast(${1 + contrast / 100})`;
+      pageCanvas.style.filter = filter;
+    };
+
+    styleBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        styleBtns.forEach(b => {
+          b.classList.remove('border-emerald-500', 'bg-emerald-50/40', 'dark:bg-emerald-950/30');
+          b.classList.add('border-slate-200', 'dark:border-slate-700');
+        });
+        btn.classList.add('border-emerald-500', 'bg-emerald-50/40', 'dark:bg-emerald-950/30');
+        btn.classList.remove('border-slate-200', 'dark:border-slate-700');
+
+        selectedStyle = btn.dataset.style;
+        updateFilterDisplay();
+      });
+    });
+
+    brightnessInput.addEventListener('input', (e) => {
+      brightness = parseInt(e.target.value, 10);
+      brightnessVal.innerText = `${brightness > 0 ? '+' : ''}${brightness}%`;
+      updateFilterDisplay();
+    });
+
+    contrastInput.addEventListener('input', (e) => {
+      contrast = parseInt(e.target.value, 10);
+      contrastVal.innerText = `${contrast > 0 ? '+' : ''}${contrast}%`;
+      updateFilterDisplay();
+    });
+
+    const renderPage = async (pageIdx) => {
+      if (!pdfDoc) return;
+      currentPageNum = pageIdx;
+      pageNumEl.innerText = currentPageNum;
+      pageTotalEl.innerText = totalPages;
+      prevPageBtn.disabled = currentPageNum <= 1;
+      nextPageBtn.disabled = currentPageNum >= totalPages;
+
+      const baseWidth = Math.min(800, Math.max(480, window.innerWidth - 100));
+      const targetWidth = Math.round(baseWidth * currentZoom);
+      await window.pdfEngine.renderPageToCanvas(pdfDoc, currentPageNum, pageCanvas, targetWidth);
+      updateFilterDisplay();
+    };
+
+    zoomInBtn.addEventListener('click', () => {
+      currentZoom = Math.min(2.5, currentZoom + 0.25);
+      zoomVal.innerText = `${Math.round(currentZoom * 100)}%`;
+      renderPage(currentPageNum);
+    });
+
+    zoomOutBtn.addEventListener('click', () => {
+      currentZoom = Math.max(0.5, currentZoom - 0.25);
+      zoomVal.innerText = `${Math.round(currentZoom * 100)}%`;
+      renderPage(currentPageNum);
+    });
+
+    zoomResetBtn.addEventListener('click', () => {
+      currentZoom = 1.0;
+      zoomVal.innerText = '100%';
+      renderPage(currentPageNum);
+    });
+
+    prevPageBtn.addEventListener('click', () => {
+      if (currentPageNum > 1) renderPage(currentPageNum - 1);
+    });
+
+    nextPageBtn.addEventListener('click', () => {
+      if (currentPageNum < totalPages) renderPage(currentPageNum + 1);
+    });
+
+    UI.setupDropzone(dropzone, input, async (files) => {
+      if (files.length === 0) return;
+      currentFile = files[0];
+      statusEl.innerText = `${currentFile.name} (${window.pdfEngine.formatBytes(currentFile.size)})`;
+      currentBuffer = await window.pdfEngine.readFileAsArrayBuffer(currentFile);
+      workspace.classList.remove('hidden');
+
+      pdfDoc = await window.pdfEngine.getPdfJsDoc(currentBuffer);
+      totalPages = pdfDoc.numPages;
+      currentZoom = 1.0;
+      zoomVal.innerText = '100%';
+      await renderPage(1);
+    });
+
+    applyBtn.addEventListener('click', async () => {
+      if (!currentBuffer) return;
+      try {
+        UI.showProgress(0.05, 'Starting document color enhancement...');
+        const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
+
+        const correctedBlob = await window.pdfEngine.applyColorCorrectionToPdf(
+          window.pdfEngine.cloneBuffer(bufferToUse),
+          selectedStyle,
+          brightness,
+          contrast,
+          (pct, status) => UI.showProgress(pct, status)
+        );
+
+        UI.hideProgress();
+        UI.celebrate();
+        UI.showToast(`Applied ${selectedStyle} color style across all ${totalPages} page(s)!`, 'success');
+        UI.showResultPreview({
+          title: 'Enhanced Document Ready',
+          subtitle: `Style: ${selectedStyle.toUpperCase()} | Contrast: ${contrast}% | Brightness: ${brightness}%`,
+          blob: correctedBlob,
+          filename: `${currentFile.name.replace(/\.pdf$/i, '')}_${selectedStyle}.pdf`
+        });
+      } catch (err) {
+        UI.hideProgress();
+        UI.showToast(err.message, 'error');
+      }
+    });
   }
 };
 

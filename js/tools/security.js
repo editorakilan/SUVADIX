@@ -397,26 +397,39 @@ const SecurityTools = {
     });
   },
 
-  // 4. REDACT PDF (Blackout sensitive information with interactive drag & resize)
+  // 4. REDACT PDF (Blackout sensitive information with interactive drag, zoomer, and color correction)
   renderRedact(container) {
     let currentBuffer = null;
     let currentFile = null;
     let pdfDoc = null;
     let currentPageNum = 1;
     let totalPages = 1;
+    let currentZoom = 1.0;
+    const zoomLevels = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5];
     let redactions = []; // [{ id, pageIndex, xRatio, yRatio, wRatio, hRatio, color, text }]
     let selectedBoxId = null;
     let activeMode = 'black'; // 'black' | 'white' | 'text'
+    let activeColorStyle = 'normal';
+
+    const COLOR_FILTERS = {
+      normal: 'none',
+      document: 'contrast(1.65) brightness(1.12) grayscale(0.65)',
+      magic: 'contrast(1.35) brightness(1.08) saturate(1.3)',
+      grayscale: 'grayscale(1) contrast(1.1)',
+      bw: 'contrast(2.8) grayscale(1)',
+      blueprint: 'invert(1) hue-rotate(180deg) contrast(1.2)',
+      warm: 'sepia(0.55) contrast(1.05) brightness(1.02)'
+    };
 
     container.innerHTML = `
-      <div class="max-w-5xl mx-auto space-y-6">
+      <div class="max-w-6xl mx-auto space-y-6">
         <div class="text-center space-y-2">
           <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
             <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
-            <span>Interactive Visual Redaction</span>
+            <span>Interactive Redaction Studio</span>
           </div>
           <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">Redact PDF (Blackout & Sanitization)</h2>
-          <p class="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto">Permanently blackout confidential data, SSNs, medical records, or whiteout unwanted text. Fully client-side with adjustable, draggable, and resizable redaction boxes.</p>
+          <p class="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto">Permanently blackout confidential data, SSNs, medical records, or whiteout unwanted text. Includes zoom controls, drag & resize handles, arrow-key micro-nudging, and document color styles.</p>
         </div>
 
         <!-- Dropzone -->
@@ -435,13 +448,13 @@ const SecurityTools = {
 
         <!-- Interactive Workspace -->
         <div id="redact-workspace" class="p-4 sm:p-6 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-lg space-y-5 hidden">
-          <!-- Control Toolbar -->
+          <!-- Main Control Toolbar -->
           <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-slate-700">
-            <!-- Mode Selector -->
+            <!-- Left: Mode Selector -->
             <div class="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-900 rounded-xl text-xs font-bold">
               <button id="redact-mode-black" class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm flex items-center gap-1.5 transition">
                 <span class="w-2.5 h-2.5 rounded-full bg-black"></span>
-                <span>Solid Blackout</span>
+                <span>Blackout</span>
               </button>
               <button id="redact-mode-white" class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 flex items-center gap-1.5 transition">
                 <span class="w-2.5 h-2.5 rounded-full bg-white border border-slate-400"></span>
@@ -449,12 +462,46 @@ const SecurityTools = {
               </button>
               <button id="redact-mode-text" class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 flex items-center gap-1.5 transition">
                 <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span>
-                <span>REDACTED Stamp</span>
+                <span>REDACTED</span>
               </button>
             </div>
 
+            <!-- Middle: Zoom Controls (Zoomer) -->
+            <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 px-2.5 py-1.5 rounded-xl text-xs font-bold shadow-xs">
+              <span class="text-slate-400 text-[10px] uppercase font-bold mr-1 hidden sm:inline">Zoom:</span>
+              <button id="redact-zoom-out" class="p-1 hover:bg-white dark:hover:bg-slate-800 rounded text-slate-600 transition" title="Zoom Out (-)">
+                <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
+              </button>
+              <span id="redact-zoom-label" class="min-w-[42px] text-center font-extrabold text-slate-800 dark:text-slate-100">100%</span>
+              <button id="redact-zoom-in" class="p-1 hover:bg-white dark:hover:bg-slate-800 rounded text-slate-600 transition" title="Zoom In (+)">
+                <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+              </button>
+              <div class="h-3 w-px bg-slate-300 dark:bg-slate-700 mx-1"></div>
+              <button id="redact-zoom-reset" class="px-1.5 py-0.5 rounded text-[10px] font-semibold text-slate-500 hover:text-slate-900 hover:bg-white transition" title="Reset Zoom to 100%">
+                100%
+              </button>
+              <button id="redact-zoom-fit" class="px-1.5 py-0.5 rounded text-[10px] font-semibold text-slate-500 hover:text-slate-900 hover:bg-white transition" title="Fit to Screen Width">
+                Fit
+              </button>
+            </div>
+
+            <!-- Middle: Document Color Style Dropdown -->
+            <div class="flex items-center gap-1.5 text-xs font-bold bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-xl">
+              <i data-lucide="palette" class="w-3.5 h-3.5 text-indigo-600"></i>
+              <span class="text-slate-500 hidden sm:inline">Color Style:</span>
+              <select id="redact-color-style" class="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs font-bold outline-none cursor-pointer">
+                <option value="normal">Normal (Original)</option>
+                <option value="document">Document (Paper White & Text)</option>
+                <option value="magic">Magic Color (Enhanced)</option>
+                <option value="grayscale">Grayscale (Monochrome)</option>
+                <option value="bw">B&W (High Contrast Crisp)</option>
+                <option value="blueprint">Blueprint / Inverted</option>
+                <option value="warm">Warm / Sepia</option>
+              </select>
+            </div>
+
             <!-- Page Navigation -->
-            <div class="flex items-center gap-2 text-xs font-bold bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-xl">
+            <div class="flex items-center gap-1.5 text-xs font-bold bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-xl">
               <button id="redact-prev-page" class="p-1 hover:bg-white dark:hover:bg-slate-800 rounded text-slate-600 transition disabled:opacity-40" title="Previous Page">
                 <i data-lucide="chevron-left" class="w-4 h-4"></i>
               </button>
@@ -466,13 +513,13 @@ const SecurityTools = {
               </button>
             </div>
 
-            <!-- Box Action Buttons -->
+            <!-- Right: Action Buttons -->
             <div class="flex items-center gap-2">
-              <button id="redact-add-box-btn" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-100 font-bold text-xs transition flex items-center gap-1.5 shadow-sm">
+              <button id="redact-add-box-btn" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-100 font-bold text-xs transition flex items-center gap-1.5 shadow-sm">
                 <i data-lucide="plus-circle" class="w-4 h-4 text-sky-600"></i>
-                <span>+ Add Redaction Box</span>
+                <span>+ Add Box</span>
               </button>
-              <button id="redact-clear-page-btn" class="px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition">
+              <button id="redact-clear-page-btn" class="px-2.5 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition">
                 Clear Page
               </button>
               <button id="redact-run-btn" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md shadow-sky-600/20 transition flex items-center gap-2">
@@ -482,30 +529,36 @@ const SecurityTools = {
             </div>
           </div>
 
-          <!-- Instructions & HUD banner -->
+          <!-- Instructions & HUD banner with Nudge Hint -->
           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-slate-500 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800 gap-2">
             <div class="flex items-center gap-2">
               <i data-lucide="info" class="w-4 h-4 text-sky-500 flex-shrink-0"></i>
-              <span><strong>Click & drag</strong> on the document to draw a redaction box, or click <strong>+ Add Redaction Box</strong>. Drag center to move, drag any corner handle to resize. Press <strong>Delete / Backspace</strong> or click <strong>&times;</strong> to remove.</span>
+              <span><strong>Drag to move:</strong> Grab the top header or drag the box to move anywhere. Use <strong>Arrow keys (&uarr; &darr; &larr; &rarr;)</strong> to nudge 2px (or Shift+Arrow for 10px). Drag corner handles to resize.</span>
             </div>
-            <div class="whitespace-nowrap font-bold text-slate-700 dark:text-slate-300">
-              <span id="redact-page-count-badge">0</span> box(es) on this page (<span id="redact-total-count-badge">0</span> total)
+            <div class="flex items-center gap-3">
+              <label class="flex items-center gap-1.5 cursor-pointer text-slate-600 dark:text-slate-300 font-semibold select-none">
+                <input type="checkbox" id="redact-apply-color-chk" class="rounded accent-sky-600">
+                <span>Burn color style into PDF</span>
+              </label>
+              <span class="font-bold text-slate-700 dark:text-slate-300">
+                <span id="redact-page-count-badge">0</span> on page (<span id="redact-total-count-badge">0</span> total)
+              </span>
             </div>
           </div>
 
-          <!-- Viewer & Overlay Wrapper -->
-          <div class="flex justify-center p-3 sm:p-6 bg-slate-100 dark:bg-slate-900 rounded-2xl overflow-auto max-h-[75vh]">
-            <div id="redact-canvas-wrapper" class="relative inline-block border border-slate-300 dark:border-slate-700 shadow-2xl select-none bg-white" style="user-select: none;">
-              <!-- Document Page Canvas -->
-              <canvas id="redact-page-canvas" class="block"></canvas>
+          <!-- Viewer & Overlay Wrapper with Zoom scroll container -->
+          <div id="redact-viewer-scroll-container" class="flex justify-center p-3 sm:p-6 bg-slate-100 dark:bg-slate-900 rounded-2xl overflow-auto max-h-[75vh] transition-all">
+            <div id="redact-canvas-wrapper" class="relative inline-block border border-slate-300 dark:border-slate-700 shadow-2xl select-none bg-white transition-all duration-150 origin-top" style="user-select: none;">
+              <!-- Document Page Canvas (z-0) -->
+              <canvas id="redact-page-canvas" class="block transition-all"></canvas>
               
-              <!-- Placed Redaction Boxes Container -->
-              <div id="redact-boxes-container" class="absolute inset-0 pointer-events-none"></div>
-
-              <!-- Interactive Drawing Surface for new boxes -->
-              <div id="redact-draw-surface" class="absolute inset-0 cursor-crosshair pointer-events-auto">
+              <!-- Interactive Drawing Surface for new boxes (z-10, behind boxes!) -->
+              <div id="redact-draw-surface" class="absolute inset-0 cursor-crosshair pointer-events-auto z-10">
                 <div id="redact-draw-preview" class="absolute hidden border-2 border-dashed border-red-500 bg-red-500/25 pointer-events-none"></div>
               </div>
+
+              <!-- Placed Redaction Boxes Container (z-20, on top of drawing surface!) -->
+              <div id="redact-boxes-container" class="absolute inset-0 pointer-events-none z-20"></div>
             </div>
           </div>
         </div>
@@ -519,11 +572,21 @@ const SecurityTools = {
     const input = container.querySelector('#redact-file-input');
     const statusEl = container.querySelector('#redact-file-status');
     const workspace = container.querySelector('#redact-workspace');
+    const scrollContainer = container.querySelector('#redact-viewer-scroll-container');
     const canvasWrapper = container.querySelector('#redact-canvas-wrapper');
     const pageCanvas = container.querySelector('#redact-page-canvas');
     const boxesContainer = container.querySelector('#redact-boxes-container');
     const drawSurface = container.querySelector('#redact-draw-surface');
     const drawPreview = container.querySelector('#redact-draw-preview');
+
+    const zoomOutBtn = container.querySelector('#redact-zoom-out');
+    const zoomInBtn = container.querySelector('#redact-zoom-in');
+    const zoomLabelEl = container.querySelector('#redact-zoom-label');
+    const zoomResetBtn = container.querySelector('#redact-zoom-reset');
+    const zoomFitBtn = container.querySelector('#redact-zoom-fit');
+
+    const colorStyleSelect = container.querySelector('#redact-color-style');
+    const applyColorChk = container.querySelector('#redact-apply-color-chk');
 
     const prevPageBtn = container.querySelector('#redact-prev-page');
     const nextPageBtn = container.querySelector('#redact-next-page');
@@ -554,6 +617,39 @@ const SecurityTools = {
     modeWhiteBtn.addEventListener('click', () => setMode('white'));
     modeTextBtn.addEventListener('click', () => setMode('text'));
 
+    // Color Style changing
+    colorStyleSelect.addEventListener('change', () => {
+      activeColorStyle = colorStyleSelect.value;
+      pageCanvas.style.filter = COLOR_FILTERS[activeColorStyle] || 'none';
+    });
+
+    // Zoomer changing
+    const setZoom = async (newZoom) => {
+      currentZoom = Math.max(0.4, Math.min(3.0, newZoom));
+      zoomLabelEl.innerText = `${Math.round(currentZoom * 100)}%`;
+      await renderPage(currentPageNum);
+    };
+
+    zoomInBtn.addEventListener('click', () => {
+      const nextLevel = zoomLevels.find(z => z > currentZoom + 0.05) || (currentZoom + 0.25);
+      setZoom(nextLevel);
+    });
+
+    zoomOutBtn.addEventListener('click', () => {
+      const prevLevel = [...zoomLevels].reverse().find(z => z < currentZoom - 0.05) || (currentZoom - 0.25);
+      setZoom(prevLevel);
+    });
+
+    zoomResetBtn.addEventListener('click', () => setZoom(1.0));
+
+    zoomFitBtn.addEventListener('click', () => {
+      if (!scrollContainer) return;
+      const availW = scrollContainer.clientWidth - 48;
+      const baseW = 750;
+      const fitZoom = Math.max(0.5, Math.min(2.0, availW / baseW));
+      setZoom(fitZoom);
+    });
+
     // Render active page
     const renderPage = async (pageIdx) => {
       if (!pdfDoc) return;
@@ -563,9 +659,13 @@ const SecurityTools = {
       prevPageBtn.disabled = currentPageNum <= 1;
       nextPageBtn.disabled = currentPageNum >= totalPages;
 
-      // Render PDF page to canvas with optimal target width (750px max on desktop, fits mobile)
-      const targetWidth = Math.min(800, Math.max(480, window.innerWidth - 80));
+      // Base target width scaled by currentZoom
+      const baseWidth = Math.min(800, Math.max(480, window.innerWidth - 100));
+      const targetWidth = Math.round(baseWidth * currentZoom);
       await window.pdfEngine.renderPageToCanvas(pdfDoc, currentPageNum, pageCanvas, targetWidth);
+
+      // Apply active color style filter
+      pageCanvas.style.filter = COLOR_FILTERS[activeColorStyle] || 'none';
 
       // Align canvasWrapper dimensions exactly with canvas CSS dimensions
       const cssW = pageCanvas.offsetWidth;
@@ -590,7 +690,7 @@ const SecurityTools = {
         const box = document.createElement('div');
         box.dataset.redId = red.id;
         box.className = `absolute pointer-events-auto select-none group transition-shadow ${
-          isSelected ? 'ring-2 ring-red-500 shadow-2xl z-30' : 'z-20 hover:ring-1 hover:ring-sky-400'
+          isSelected ? 'ring-2 ring-red-500 shadow-2xl z-40' : 'z-30 hover:ring-2 hover:ring-sky-400'
         }`;
         box.style.left = `${red.xRatio * 100}%`;
         box.style.top = `${red.yRatio * 100}%`;
@@ -602,8 +702,17 @@ const SecurityTools = {
         const hasText = !!red.text;
 
         box.innerHTML = `
+          <!-- Top Drag Bar Handle -->
+          <div class="redact-drag-header absolute -top-5 left-0 right-0 h-5 bg-slate-900/95 text-white rounded-t flex items-center justify-between px-1.5 cursor-grab active:cursor-grabbing text-[9px] font-bold select-none z-40 shadow transition ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}">
+            <div class="flex items-center gap-1 pointer-events-none text-sky-400">
+              <i data-lucide="grip-horizontal" class="w-3 h-3"></i>
+              <span class="tracking-wide uppercase text-[8px]">Drag to Move</span>
+            </div>
+            <div class="text-[8px] font-mono text-slate-300 pointer-events-none">X:${Math.round(red.xRatio * 100)}% Y:${Math.round(red.yRatio * 100)}%</div>
+          </div>
+
           <!-- Blackout / Whiteout Body -->
-          <div class="w-full h-full flex items-center justify-center overflow-hidden ${
+          <div class="w-full h-full flex items-center justify-center overflow-hidden cursor-move ${
             isWhite 
               ? 'bg-white border-2 border-dashed border-slate-400 shadow-sm' 
               : 'bg-black text-white shadow-md'
@@ -612,23 +721,25 @@ const SecurityTools = {
           </div>
 
           <!-- Delete Button (Top-Right) -->
-          <button class="redact-box-del absolute -top-3 -right-3 w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-black flex items-center justify-center shadow-lg transition-transform hover:scale-110 z-40 cursor-pointer pointer-events-auto" title="Delete Redaction Box">
+          <button class="redact-box-del absolute -top-3 -right-3 w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-black flex items-center justify-center shadow-lg transition-transform hover:scale-110 z-50 cursor-pointer pointer-events-auto" title="Delete Redaction Box">
             &times;
           </button>
 
-          <!-- 8 Interactive Resize Handles (Visible when selected or hovered) -->
-          <div class="redact-resize-handle handle-nw absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-red-600 rounded-sm cursor-nwse-resize z-40 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
-          <div class="redact-resize-handle handle-ne absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-red-600 rounded-sm cursor-nesw-resize z-40 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
-          <div class="redact-resize-handle handle-sw absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-red-600 rounded-sm cursor-nesw-resize z-40 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
-          <div class="redact-resize-handle handle-se absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-red-600 rounded-sm cursor-nwse-resize z-40 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+          <!-- 8 Interactive Resize Handles -->
+          <div class="redact-resize-handle handle-nw absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-red-600 rounded-sm cursor-nwse-resize z-50 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+          <div class="redact-resize-handle handle-ne absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-red-600 rounded-sm cursor-nesw-resize z-50 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+          <div class="redact-resize-handle handle-sw absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-red-600 rounded-sm cursor-nesw-resize z-50 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+          <div class="redact-resize-handle handle-se absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-red-600 rounded-sm cursor-nwse-resize z-50 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
 
-          <div class="redact-resize-handle handle-n absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-red-600 rounded-sm cursor-ns-resize z-40 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
-          <div class="redact-resize-handle handle-s absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-red-600 rounded-sm cursor-ns-resize z-40 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
-          <div class="redact-resize-handle handle-w absolute top-1/2 -left-1.5 -translate-y-1/2 w-2.5 h-4 bg-white border-2 border-red-600 rounded-sm cursor-ew-resize z-40 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
-          <div class="redact-resize-handle handle-e absolute top-1/2 -right-1.5 -translate-y-1/2 w-2.5 h-4 bg-white border-2 border-red-600 rounded-sm cursor-ew-resize z-40 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+          <div class="redact-resize-handle handle-n absolute -top-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-red-600 rounded-sm cursor-ns-resize z-50 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+          <div class="redact-resize-handle handle-s absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-2.5 bg-white border-2 border-red-600 rounded-sm cursor-ns-resize z-50 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+          <div class="redact-resize-handle handle-w absolute top-1/2 -left-1.5 -translate-y-1/2 w-2.5 h-4 bg-white border-2 border-red-600 rounded-sm cursor-ew-resize z-50 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
+          <div class="redact-resize-handle handle-e absolute top-1/2 -right-1.5 -translate-y-1/2 w-2.5 h-4 bg-white border-2 border-red-600 rounded-sm cursor-ew-resize z-50 shadow ${isSelected ? 'block' : 'hidden group-hover:block'}"></div>
         `;
 
-        // Click to select
+        if (window.lucide) window.lucide.createIcons();
+
+        // Dragging and selecting the box
         box.addEventListener('mousedown', (e) => {
           if (e.target.closest('.redact-box-del') || e.target.classList.contains('redact-resize-handle')) return;
           selectedBoxId = red.id;
@@ -683,6 +794,9 @@ const SecurityTools = {
       const boxW = boxEl.offsetWidth;
       const boxH = boxEl.offsetHeight;
 
+      const dragHeader = boxEl.querySelector('.redact-drag-header');
+      if (dragHeader) dragHeader.classList.add('cursor-grabbing');
+
       const onMouseMove = (ev) => {
         const dx = ev.clientX - startX;
         const dy = ev.clientY - startY;
@@ -697,9 +811,11 @@ const SecurityTools = {
         boxEl.style.top = `${newT}px`;
       };
 
-      const onMouseUp = (ev) => {
+      const onMouseUp = () => {
         window.removeEventListener('mousemove', onMouseMove);
         window.removeEventListener('mouseup', onMouseUp);
+
+        if (dragHeader) dragHeader.classList.remove('cursor-grabbing');
 
         // Commit updated ratios
         redObj.xRatio = boxEl.offsetLeft / parentW;
@@ -847,12 +963,32 @@ const SecurityTools = {
       }
     });
 
-    // Delete selected box on keydown
+    // Keyboard controls: Arrow Keys nudging and Delete / Backspace
     const onKeyDown = (e) => {
       if (!selectedBoxId) return;
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) return;
+
+      const red = redactions.find(r => r.id === selectedBoxId);
+      if (!red) return;
+
+      const parentW = canvasWrapper.clientWidth;
+      const parentH = canvasWrapper.clientHeight;
+      if (!parentW || !parentH) return;
+
+      // Arrow Keys micro-movement / nudge feature!
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 2; // 2px fine nudge, or 10px fast nudge with Shift
+        if (e.key === 'ArrowLeft') red.xRatio = Math.max(0, red.xRatio - (step / parentW));
+        if (e.key === 'ArrowRight') red.xRatio = Math.min(1 - red.wRatio, red.xRatio + (step / parentW));
+        if (e.key === 'ArrowUp') red.yRatio = Math.max(0, red.yRatio - (step / parentH));
+        if (e.key === 'ArrowDown') red.yRatio = Math.min(1 - red.hRatio, red.yRatio + (step / parentH));
+        renderBoxes();
+        return;
+      }
+
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        const activeEl = document.activeElement;
-        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) return;
         redactions = redactions.filter(r => r.id !== selectedBoxId);
         selectedBoxId = null;
         renderBoxes();
@@ -913,6 +1049,9 @@ const SecurityTools = {
       totalPages = pdfDoc.numPages;
       redactions = [];
       selectedBoxId = null;
+      currentZoom = 1.0;
+      zoomLabelEl.innerText = '100%';
+      activeColorStyle = colorStyleSelect.value || 'normal';
       await renderPage(1);
     });
 
@@ -925,8 +1064,19 @@ const SecurityTools = {
 
       try {
         UI.showProgress(0.3, 'Permanently applying redactions and sanitizing PDF...');
-        const bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
+        let bufferToUse = currentBuffer?.byteLength > 0 ? currentBuffer : await currentFile.arrayBuffer();
 
+        // If user chose to burn in color style
+        if (applyColorChk && applyColorChk.checked && activeColorStyle !== 'normal') {
+          UI.showProgress(0.5, `Applying ${activeColorStyle} document color style...`);
+          const colorCorrectedBlob = await window.pdfEngine.applyColorCorrectionToPdf(
+            window.pdfEngine.cloneBuffer(bufferToUse),
+            activeColorStyle
+          );
+          bufferToUse = await colorCorrectedBlob.arrayBuffer();
+        }
+
+        UI.showProgress(0.8, 'Burning in permanent redaction boxes...');
         const redactedBlob = await window.pdfEngine.applyRedactions(
           window.pdfEngine.cloneBuffer(bufferToUse),
           redactions

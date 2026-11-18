@@ -223,6 +223,19 @@ const PDF_TOOLS = [
     howTo: ['Select the damaged or unreadable PDF file.', 'Click "Repair PDF" to trigger structural reconstruction.', 'Download your recovered, clean PDF document.'],
     features: ['Rebuilds damaged xref streams', 'Recovers unreadable page objects', 'Client-side recovery engine', 'Free with no limits']
   },
+  {
+    id: 'color-correction',
+    name: 'Color Correction',
+    short: 'Enhance scanned documents: Clean Document paper white, Magic Color, Grayscale, and B&W.',
+    desc: 'Enhance scanned documents and PDFs: apply Clean Document (paper whitening), Magic Color, Grayscale, or B&W with real-time preview and fine-tuning sliders.',
+    icon: 'fa-palette',
+    color: '#059669',
+    category: 'optimize',
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    minFiles: 1,
+    cta: 'Enhance Document'
+  },
 
   // =================== CONVERT TO PDF ===================
   {

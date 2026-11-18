@@ -1030,6 +1030,133 @@ class PDFEngine {
     return new Blob([bytes], { type: 'application/pdf' });
   }
 
+  /**
+   * Apply Document Color Styles (Normal, Document, Magic Color, Grayscale, B&W, Blueprint, Warm)
+   * to an HTML5 Canvas in-place
+   */
+  applyColorCorrectionToCanvas(canvas, style = 'normal', brightness = 0, contrast = 0) {
+    if (style === 'normal' && brightness === 0 && contrast === 0) return;
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
+    const len = data.length;
+
+    // Contrast lookup factor: -100 to 100
+    const clampedContrast = Math.max(-100, Math.min(100, contrast));
+    const contrastFactor = (259 * (clampedContrast + 255)) / (255 * (259 - clampedContrast));
+    const brightOffset = Math.max(-100, Math.min(100, brightness)) * 2.55;
+
+    for (let i = 0; i < len; i += 4) {
+      let r = data[i];
+      let g = data[i + 1];
+      let b = data[i + 2];
+
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+      if (style === 'document') {
+        // Document Style (Paper Whitening & Text Deepening)
+        if (lum > 175) {
+          const wFactor = Math.min(1.0, (lum - 175) / 45);
+          r = r + (255 - r) * wFactor;
+          g = g + (255 - g) * wFactor;
+          b = b + (255 - b) * wFactor;
+        } else if (lum < 140) {
+          const dFactor = Math.pow(lum / 140, 1.6);
+          r = r * dFactor;
+          g = g * dFactor;
+          b = b * dFactor;
+        }
+      } else if (style === 'magic') {
+        // Magic Color (Enhanced Contrast, Clean Paper, Saturated Inks)
+        if (lum > 180) {
+          r = Math.min(255, r * 1.12);
+          g = Math.min(255, g * 1.12);
+          b = Math.min(255, b * 1.12);
+        }
+        const avg = (r + g + b) / 3;
+        r = avg + (r - avg) * 1.35;
+        g = avg + (g - avg) * 1.35;
+        b = avg + (b - avg) * 1.35;
+      } else if (style === 'grayscale') {
+        r = lum;
+        g = lum;
+        b = lum;
+      } else if (style === 'bw') {
+        const val = lum >= 135 ? 255 : 0;
+        r = val;
+        g = val;
+        b = val;
+      } else if (style === 'blueprint') {
+        r = Math.max(0, 240 - r);
+        g = Math.min(255, (255 - g) * 1.05 + 10);
+        b = Math.min(255, (255 - b) * 1.35 + 30);
+      } else if (style === 'warm') {
+        r = Math.min(255, lum * 1.12 + 18);
+        g = Math.min(255, lum * 1.02 + 8);
+        b = Math.max(0, lum * 0.85 - 10);
+      }
+
+      if (contrast !== 0) {
+        r = contrastFactor * (r - 128) + 128;
+        g = contrastFactor * (g - 128) + 128;
+        b = contrastFactor * (b - 128) + 128;
+      }
+      if (brightness !== 0) {
+        r += brightOffset;
+        g += brightOffset;
+        b += brightOffset;
+      }
+
+      data[i] = Math.max(0, Math.min(255, r));
+      data[i + 1] = Math.max(0, Math.min(255, g));
+      data[i + 2] = Math.max(0, Math.min(255, b));
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+  }
+
+  /**
+   * Apply Document Color Styles to all pages of a PDF and rebuild document
+   */
+  async applyColorCorrectionToPdf(arrayBuffer, style = 'document', brightness = 0, contrast = 0, onProgress = null) {
+    const { PDFDocument } = PDFLib;
+    const pdfDoc = await this.getPdfJsDoc(arrayBuffer);
+    const newDoc = await PDFDocument.create();
+    const numPages = pdfDoc.numPages;
+
+    const canvas = document.createElement('canvas');
+
+    for (let p = 1; p <= numPages; p++) {
+      if (onProgress) onProgress(p / numPages, `Processing Page ${p} of ${numPages}...`);
+      
+      const page = await pdfDoc.getPage(p);
+      const viewport = page.getViewport({ scale: 2.0 }); // 2x high resolution
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      // Apply color correction
+      this.applyColorCorrectionToCanvas(canvas, style, brightness, contrast);
+
+      const jpegUrl = canvas.toDataURL('image/jpeg', 0.92);
+      const embeddedImg = await newDoc.embedJpg(jpegUrl);
+      
+      const unscaledViewport = page.getViewport({ scale: 1.0 });
+      const newPage = newDoc.addPage([unscaledViewport.width, unscaledViewport.height]);
+      newPage.drawImage(embeddedImg, {
+        x: 0,
+        y: 0,
+        width: unscaledViewport.width,
+        height: unscaledViewport.height
+      });
+    }
+
+    const bytes = await newDoc.save({ useObjectStreams: false });
+    return new Blob([bytes], { type: 'application/pdf' });
+  }
+
   // --- PDF.js Page Rendering & Conversion ---
 
   async getPdfJsDoc(arrayBuffer) {
