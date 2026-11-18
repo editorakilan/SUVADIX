@@ -51,7 +51,7 @@
 
   <!-- Top Clean Navigation -->
   <header class="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs transition-colors duration-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+    <div class="max-w-[1760px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 h-16 flex items-center justify-between gap-4">
       
       <!-- Brand Logo Lockup -->
       <div class="flex items-center gap-3 cursor-pointer group select-none flex-shrink-0" onclick="window.app && window.app.closeToolWorkspace()">
@@ -109,18 +109,76 @@
         </button>
       </nav>
 
-      <div class="flex items-center gap-3 flex-shrink-0">
+      <div class="flex items-center gap-2.5 flex-shrink-0">
         <!-- Privacy Badge -->
         <div class="hidden sm:inline-flex items-center gap-2 h-9 px-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold shadow-2xs">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span>100% In-Browser Memory</span>
         </div>
+
+        <!-- Mobile & Tablet Menu Toggle Button (< xl) -->
+        <button id="mobile-menu-toggle" onclick="window.app && window.app.toggleMobileMenu()" class="xl:hidden h-9 px-3 inline-flex items-center gap-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-bold transition shadow-xs" title="Open navigation menu">
+          <i data-lucide="menu" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Menu</span>
+        </button>
       </div>
     </div>
   </header>
 
+  <!-- Responsive Mobile & Tablet Navigation Drawer -->
+  <div id="mobile-nav-drawer" class="fixed inset-0 z-50 flex flex-col justify-start p-4 sm:p-6 mobile-nav-hidden hidden">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-slate-900/60 mobile-nav-backdrop" onclick="window.app && window.app.closeMobileMenu()"></div>
+    <!-- Panel -->
+    <div class="relative w-full max-w-lg mx-auto bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-5 mobile-nav-panel max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <img src="assets/suvadix-icon-transparent.png" alt="SUVADIX" class="w-8 h-8 object-contain rounded-lg">
+          <span class="font-black text-lg text-slate-900 dark:text-white">SUVA<span class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">DIX</span></span>
+        </div>
+        <button onclick="window.app && window.app.closeMobileMenu()" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Quick Flagship Hubs -->
+      <div class="space-y-2">
+        <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Featured Hubs</span>
+        <div class="grid grid-cols-2 gap-2 text-xs font-bold">
+          <button onclick="window.app && window.app.openTool('pdf-to-img'); window.app.closeMobileMenu();" class="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-2">
+            <i data-lucide="image-down" class="w-4 h-4 text-indigo-600"></i>
+            <span>PDF to Image</span>
+          </button>
+          <button onclick="window.app && window.app.openTool('pdf-to-office'); window.app.closeMobileMenu();" class="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-2">
+            <i data-lucide="layers" class="w-4 h-4 text-blue-600"></i>
+            <span>PDF to Office</span>
+          </button>
+          <button onclick="window.app && window.app.openTool('office-to-pdf'); window.app.closeMobileMenu();" class="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-2">
+            <i data-lucide="file-plus-2" class="w-4 h-4 text-emerald-600"></i>
+            <span>Office to PDF</span>
+          </button>
+          <button onclick="window.app && window.app.openTool('color-correction'); window.app.closeMobileMenu();" class="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-4 h-4 text-emerald-600"></i>
+            <span>Enhance PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Categories List -->
+      <div class="space-y-3 pt-1" id="mobile-categories-list">
+        <!-- Dynamically populated by app.js -->
+      </div>
+
+      <!-- Launch Studio CTA -->
+      <button onclick="window.app && window.app.openTool('all-in-one'); window.app.closeMobileMenu();" class="w-full py-3 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white font-black text-xs shadow-md flex items-center justify-center gap-2">
+        <i data-lucide="sparkles" class="w-4 h-4"></i>
+        <span>Launch All-In-One Studio</span>
+      </button>
+    </div>
+  </div>
+
   <!-- Main Viewport -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <main class="flex-1 max-w-[1760px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-6 sm:py-8">
     
     <!-- DASHBOARD VIEW -->
     <div id="dashboard-view" class="space-y-8">
@@ -230,8 +288,8 @@
         </button>
       </div>
 
-      <!-- Tools Grid -->
-      <div id="tools-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-1">
+      <!-- Tools Grid (Adaptive 1-6 columns across all screen sizes) -->
+      <div id="tools-grid" class="tools-grid-adaptive grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5 pt-1">
         <!-- Rendered dynamically by app.js -->
       </div>
 
@@ -254,27 +312,27 @@
       </div>
     </div>
 
-    <!-- TOOL WORKSPACE VIEW (Hidden initially) -->
-    <div id="tool-workspace-view" class="space-y-6 hidden">
+    <!-- TOOL WORKSPACE VIEW (Fluid Auto-Fit on Large & Small Screens) -->
+    <div id="tool-workspace-view" class="space-y-6 hidden w-full max-w-[1600px] mx-auto">
       <!-- Breadcrumb Bar -->
-      <div class="flex items-center justify-between pb-4 border-b border-slate-200">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
         <div class="flex items-center gap-3">
-          <button id="tool-back-btn" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-xs font-bold transition shadow-sm">
+          <button id="tool-back-btn" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold transition shadow-xs">
             <i data-lucide="arrow-left" class="w-4 h-4"></i>
             <span>All Tools</span>
           </button>
-          <div class="h-4 w-px bg-slate-200"></div>
+          <div class="h-4 w-px bg-slate-200 dark:bg-slate-700"></div>
           <span id="workspace-tool-category" class="text-xs font-extrabold uppercase tracking-wider text-slate-400">CATEGORY</span>
-          <span class="text-slate-300">/</span>
-          <span id="workspace-tool-title" class="text-sm font-bold text-slate-800">Tool Name</span>
+          <span class="text-slate-300 dark:text-slate-600">/</span>
+          <span id="workspace-tool-title" class="text-sm font-bold text-slate-800 dark:text-slate-100">Tool Name</span>
         </div>
 
         <div class="flex items-center gap-3">
-          <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             100% In-Browser Memory
           </span>
-          <button id="tool-close-btn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition shadow-sm" onclick="window.app && window.app.closeToolWorkspace()" title="Close Tool and return to dashboard">
+          <button id="tool-close-btn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition shadow-xs" onclick="window.app && window.app.closeToolWorkspace()" title="Close Tool and return to dashboard">
             <i data-lucide="x" class="w-4 h-4 text-slate-500"></i>
             <span>Close Tool</span>
           </button>
@@ -290,8 +348,8 @@
   </main>
 
   <!-- Footer -->
-  <footer class="border-t border-slate-200 py-6 bg-white mt-auto">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+  <footer class="border-t border-slate-200 dark:border-slate-800 py-6 bg-white dark:bg-slate-900 mt-auto transition-colors">
+    <div class="max-w-[1760px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
       <div class="flex items-center gap-2.5">
         <img src="assets/suvadix-icon-transparent.png" alt="SUVADIX" class="w-6 h-6 object-contain rounded-md">
         <div class="flex items-center gap-2">

@@ -548,7 +548,43 @@ class App {
       </div>
     `;
 
+    // Populate Mobile & Tablet Drawer
+    const mobileList = document.getElementById('mobile-categories-list');
+    if (mobileList) {
+      mobileList.innerHTML = categories.map(cat => `
+        <div class="space-y-1.5 pt-2">
+          <span class="text-[10px] font-black uppercase tracking-wider ${cat.color} block">${cat.title} (${cat.tools.length})</span>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            ${cat.tools.map(t => `
+              <button class="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-2.5 transition" onclick="window.app && window.app.openTool('${t.id}'); window.app && window.app.closeMobileMenu();">
+                <i data-lucide="${t.icon}" class="w-4 h-4 text-slate-400"></i>
+                <span class="truncate">${t.name}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
     if (window.lucide) window.lucide.createIcons();
+  }
+
+  toggleMobileMenu() {
+    const drawer = document.getElementById('mobile-nav-drawer');
+    if (!drawer) return;
+    if (drawer.classList.contains('hidden')) {
+      drawer.classList.remove('hidden');
+      setTimeout(() => drawer.classList.remove('mobile-nav-hidden'), 10);
+    } else {
+      this.closeMobileMenu();
+    }
+  }
+
+  closeMobileMenu() {
+    const drawer = document.getElementById('mobile-nav-drawer');
+    if (!drawer) return;
+    drawer.classList.add('mobile-nav-hidden');
+    setTimeout(() => drawer.classList.add('hidden'), 250);
   }
 
   initTheme() {

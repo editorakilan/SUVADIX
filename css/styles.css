@@ -183,3 +183,91 @@ body {
   from { opacity: 0; transform: translateY(16px) scale(0.95); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* =========================================================================
+   RESPONSIVE AUTO-FIT & SCREEN ADAPTATION ENGINE
+   ========================================================================= */
+
+/* 1. Global Viewport Auto-Fit Guarantees */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+img, canvas, svg, video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* 2. Small Screen Adjustments (< 640px) */
+@media (max-width: 639px) {
+  .hero-heading {
+    font-size: 1.875rem !important;
+    line-height: 1.25 !important;
+  }
+  .tool-card {
+    padding: 1rem !important;
+  }
+  .cat-filter-container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+/* 3. Medium & Laptop Adjustments (768px - 1279px) */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .tools-grid-adaptive {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+/* 4. Large Monitor Adjustments (1440px - 1919px) */
+@media (min-width: 1440px) {
+  .tools-grid-adaptive {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+  #tool-workspace-view .max-w-3xl,
+  #tool-workspace-view .max-w-4xl,
+  #tool-workspace-view .max-w-5xl {
+    max-width: 1380px !important;
+  }
+  .studio-split-view,
+  .enhance-preview-box {
+    max-width: 1380px !important;
+  }
+}
+
+/* 5. Ultra-Wide & 4K Monitor Adjustments (>= 1920px) */
+@media (min-width: 1920px) {
+  .tools-grid-adaptive {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  }
+  #tool-workspace-view .max-w-3xl,
+  #tool-workspace-view .max-w-4xl,
+  #tool-workspace-view .max-w-5xl {
+    max-width: 1600px !important;
+  }
+  .studio-split-view,
+  .enhance-preview-box {
+    max-width: 1600px !important;
+  }
+}
+
+/* 6. Mobile Navigation Drawer Animation */
+.mobile-nav-backdrop {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: opacity 0.25s ease;
+}
+.mobile-nav-panel {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+}
+.mobile-nav-hidden .mobile-nav-backdrop {
+  opacity: 0;
+  pointer-events: none;
+}
+.mobile-nav-hidden .mobile-nav-panel {
+  transform: translateY(-20px) scale(0.98);
+  opacity: 0;
+  pointer-events: none;
+}
