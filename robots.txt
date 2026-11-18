@@ -2,4 +2,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://editorakilan.github.io/PDFNova/sitemap.xml
+Sitemap: https://editorakilan.github.io/SUVADIX/sitemap.xml

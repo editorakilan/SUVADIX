@@ -5,7 +5,7 @@
 </p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-success.svg)](https://editorakilan.github.io/PDFNova/)
+[![GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-success.svg)](https://editorakilan.github.io/SUVADIX/)
 [![Zero Server](https://img.shields.io/badge/Privacy-100%25%20In--Browser-emerald.svg)](#privacy-guarantee)
 [![PWA Ready](https://img.shields.io/badge/PWA-Installable-purple.svg)](manifest.json)
 [![Tools](https://img.shields.io/badge/Tools-38%2B%20Complete%20Suite-indigo.svg)](#complete-feature-matrix-38-tools)
@@ -13,7 +13,7 @@
 > **A high-performance, private, 100% client-side document & PDF suite.**  
 > Featuring **38+ complete tools** plus an **All-In-One Studio** running entirely inside your browser via WebAssembly and JavaScript (`pdf-lib`, `pdf.js`, `tesseract.js`, `jszip`). Zero files are ever uploaded to external servers — ensuring complete privacy, zero latency queues, and unlimited free use.
 
-🌐 **Live Website:** [https://editorakilan.github.io/PDFNova/](https://editorakilan.github.io/PDFNova/)
+🌐 **Live Website:** [https://editorakilan.github.io/SUVADIX/](https://editorakilan.github.io/SUVADIX/)
 
 ---
 
